@@ -1,0 +1,42 @@
+# --- secrets: never commit -------------------------------------------------
+.env
+*.env
+!*.env.example
+infra/.env
+**/.env.local
+
+# --- python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- node / next -----------------------------------------------------------
+node_modules/
+.next/
+out/
+frontend/.next/
+frontend/node_modules/
+playwright-report/
+test-results/
+.playwright/
+
+# --- data / infra ----------------------------------------------------------
+pgdata/
+minio-data/
+*.db
+*.sqlite3
+
+# --- os / editor -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+infra/.env.bak*
+.uvicorn.log*

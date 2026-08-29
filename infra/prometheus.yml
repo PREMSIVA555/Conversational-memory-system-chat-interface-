@@ -1,0 +1,24 @@
+# Prometheus scrape config, mounted read-only into the prometheus container at
+# /etc/prometheus/prometheus.yml by infra/docker-compose.yml.
+#
+# The FastAPI app runs on the host (uvicorn), not inside compose, so the target
+# is host.docker.internal — wired up via the `extra_hosts: host-gateway` entry
+# on the prometheus service.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: memory-system
+
+scrape_configs:
+  - job_name: memory-system-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+        labels:
+          service: api
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
