@@ -18,6 +18,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
+from api.chat import router as chat_router
+from capture.metrics import configure_logging
 from llm.config import resolve_completion_model, resolve_embedding_model
 from store.db import (
     close_pools,
@@ -28,6 +30,12 @@ from store.db import (
 )
 
 load_env()
+
+# Plan step 13: without this the `memsys.capture` logger inherits root's default
+# WARNING level and every structured capture log line is discarded before a
+# handler sees it. Honours LOG_LEVEL from infra/.env.
+configure_logging()
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -41,6 +49,8 @@ app = FastAPI(
     description="Persistent conversational-memory layer (M1: infra + schema + LLM seam)",
     lifespan=lifespan,
 )
+
+app.include_router(chat_router)  # M2: POST /chat
 
 # ---------------------------------------------------------------------------
 # metrics

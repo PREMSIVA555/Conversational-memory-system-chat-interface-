@@ -113,36 +113,36 @@ M2 makes the system actually remember: a LangGraph capture pipeline that runs as
 
 ### Implementation steps
 
-1. - [ ] Define the capture graph state schema in `graphs/capture_state.py`: a typed dict carrying `subject_id`, `actor_id`, `turn` (user + assistant messages), `candidates`, `redacted`, `scored`, `embedded`, `write_results`
-2. - [ ] Implement `capture/extract.py` — an LLM-backed node that takes a conversation turn and returns zero or more atomic candidate facts, each with a `source` tag; must return an empty list cleanly when the turn contains nothing memorable
-3. - [ ] Implement `capture/pii.py` — a Presidio-backed node that scans each candidate's text and returns a redacted version (SSN, email, phone, credit card at minimum), plus the list of entity types found
-4. - [ ] Implement `capture/evaluate.py` — a node that assigns `importance` (0–1) and `confidence` (0–1) to each candidate, and drops candidates below a configurable confidence floor
-5. - [ ] Implement `capture/embed.py` — a node that batch-embeds the surviving candidates via `llm/config.py:embed()` and attaches the vectors to state
-6. - [ ] Implement `capture/dedup.py` — a node that, for each candidate, runs a cosine-similarity query against existing non-deleted `memories` rows for that `subject_id`, and marks the candidate as `new` or `duplicate_of=<row id>` based on a configurable similarity threshold
-7. - [ ] Implement the reinforcement path in `store/memories.py`: `reinforce(memory_id)` bumps `reinforcement_count`, increases `weight`, refreshes `updated_at` / `last_accessed_at`, and does **not** insert a new row
-8. - [ ] Implement `store/memories.py:insert_memory()` writing `subject_id`, `actor_id`, redacted content, embedding, source, importance, confidence — inside a session that has the RLS GUCs set
-9. - [ ] Implement `capture/write.py` — the terminal node that dispatches each candidate to either `insert_memory()` or `reinforce()` and records the outcome in state
-10. - [ ] Wire the nodes into `graphs/capture_graph.py` as a LangGraph `StateGraph` in the fixed order extract → pii → evaluate → embed → dedup → write, with a short-circuit edge to END when the candidate list becomes empty at any stage
-11. - [ ] Add `capture/worker.py` — an async task runner (asyncio background task or Redis-queue consumer) that accepts a turn payload and invokes the capture graph off the request path
-12. - [ ] Wire the chat endpoint in `api/` to enqueue the capture job **after** the response has finished streaming, so nothing in the capture path can block or delay the user's reply
-13. - [ ] Add structured logging + a Prometheus counter per node (candidates in/out, PII entities redacted, dedup hits) so capture behaviour is observable
-14. - [ ] Add config knobs in `capture/config.py`: confidence floor, dedup cosine threshold, max candidates per turn, capture timeout
-15. - [ ] Write `tests/integration/conftest.py` fixtures: a clean per-test `subject_id`, a truncating DB fixture, and a helper that polls `memories` until a row appears or a bounded timeout expires
+1. - [x] Define the capture graph state schema in `graphs/capture_state.py`: a typed dict carrying `subject_id`, `actor_id`, `turn` (user + assistant messages), `candidates`, `redacted`, `scored`, `embedded`, `write_results`
+2. - [x] Implement `capture/extract.py` — an LLM-backed node that takes a conversation turn and returns zero or more atomic candidate facts, each with a `source` tag; must return an empty list cleanly when the turn contains nothing memorable
+3. - [x] Implement `capture/pii.py` — a Presidio-backed node that scans each candidate's text and returns a redacted version (SSN, email, phone, credit card at minimum), plus the list of entity types found
+4. - [x] Implement `capture/evaluate.py` — a node that assigns `importance` (0–1) and `confidence` (0–1) to each candidate, and drops candidates below a configurable confidence floor
+5. - [x] Implement `capture/embed.py` — a node that batch-embeds the surviving candidates via `llm/config.py:embed()` and attaches the vectors to state
+6. - [x] Implement `capture/dedup.py` — a node that, for each candidate, runs a cosine-similarity query against existing non-deleted `memories` rows for that `subject_id`, and marks the candidate as `new` or `duplicate_of=<row id>` based on a configurable similarity threshold
+7. - [x] Implement the reinforcement path in `store/memories.py`: `reinforce(memory_id)` bumps `reinforcement_count`, increases `weight`, refreshes `updated_at` / `last_accessed_at`, and does **not** insert a new row
+8. - [x] Implement `store/memories.py:insert_memory()` writing `subject_id`, `actor_id`, redacted content, embedding, source, importance, confidence — inside a session that has the RLS GUCs set
+9. - [x] Implement `capture/write.py` — the terminal node that dispatches each candidate to either `insert_memory()` or `reinforce()` and records the outcome in state
+10. - [x] Wire the nodes into `graphs/capture_graph.py` as a LangGraph `StateGraph` in the fixed order extract → pii → evaluate → embed → dedup → write, with a short-circuit edge to END when the candidate list becomes empty at any stage
+11. - [x] Add `capture/worker.py` — an async task runner (asyncio background task or Redis-queue consumer) that accepts a turn payload and invokes the capture graph off the request path
+12. - [x] Wire the chat endpoint in `api/` to enqueue the capture job **after** the response has finished streaming, so nothing in the capture path can block or delay the user's reply
+13. - [x] Add structured logging + a Prometheus counter per node (candidates in/out, PII entities redacted, dedup hits) so capture behaviour is observable
+14. - [x] Add config knobs in `capture/config.py`: confidence floor, dedup cosine threshold, max candidates per turn, capture timeout
+15. - [x] Write `tests/integration/conftest.py` fixtures: a clean per-test `subject_id`, a truncating DB fixture, and a helper that polls `memories` until a row appears or a bounded timeout expires
 
 ### Test cases
 
-- [ ] `test_capture_writes_memory_async` (integration, `tests/integration/test_capture_graph.py`) — posts a synthetic conversation turn to the chat endpoint, polls Postgres, asserts a `memories` row appears within a bounded timeout with non-null `source`, `importance`, and `confidence`
-- [ ] `test_capture_does_not_block_response` (integration) — measures the chat endpoint's response completion time with an artificially slowed capture graph; asserts response latency is unaffected, proving capture is off the critical path
-- [ ] `test_pii_ssn_is_redacted_before_persistence` (integration) — feeds a fixture turn containing a fake SSN; asserts the stored `content` does not contain the SSN digits and shows a redaction placeholder
-- [ ] `test_pii_email_is_redacted_before_persistence` (integration) — feeds a fixture turn containing a fake email address; asserts the stored `content` contains no `@`-bearing original address
-- [ ] `test_duplicate_fact_reinforces_single_row` (integration) — submits the same fact twice in different wording; asserts exactly one row exists for that fact and its `reinforcement_count` incremented, rather than two rows
-- [ ] `test_distinct_facts_create_separate_rows` (integration) — submits two genuinely unrelated facts; asserts two rows are written, proving the dedup threshold is not over-aggressive
-- [ ] `test_extract_returns_empty_for_nonmemorable_turn` (unit, `tests/unit/test_capture_nodes.py`, additional, empty-input case) — feeds "hi" / "thanks"; asserts zero candidates and that the graph reaches END without writing
-- [ ] `test_low_confidence_candidate_is_dropped` (unit, additional) — feeds a candidate scored below the confidence floor; asserts it never reaches the write node
-- [ ] `test_embed_node_batches_candidates` (unit, additional) — asserts multiple candidates are embedded in one `embed()` call, not N calls
-- [ ] `test_dedup_scoped_to_subject_id` (integration, additional, auth-boundary) — writes an identical fact under subject A, then submits it under subject B; asserts B gets its own new row and A's `reinforcement_count` is untouched
-- [ ] `test_concurrent_identical_turns_do_not_double_write` (integration, additional, concurrency) — fires the same turn twice concurrently; asserts the end state is one row, not two
-- [ ] `test_capture_graph_node_order` (unit, additional) — inspects the compiled graph; asserts the node sequence is exactly extract → pii → evaluate → embed → dedup → write
+- [x] `test_capture_writes_memory_async` (integration, `tests/integration/test_capture_graph.py`) — posts a synthetic conversation turn to the chat endpoint, polls Postgres, asserts a `memories` row appears within a bounded timeout with non-null `source`, `importance`, and `confidence`
+- [x] `test_capture_does_not_block_response` (integration) — measures the chat endpoint's response completion time with an artificially slowed capture graph; asserts response latency is unaffected, proving capture is off the critical path
+- [x] `test_pii_ssn_is_redacted_before_persistence` (integration) — feeds a fixture turn containing a fake SSN; asserts the stored `content` does not contain the SSN digits and shows a redaction placeholder
+- [x] `test_pii_email_is_redacted_before_persistence` (integration) — feeds a fixture turn containing a fake email address; asserts the stored `content` contains no `@`-bearing original address
+- [x] `test_duplicate_fact_reinforces_single_row` (integration) — submits the same fact twice in different wording; asserts exactly one row exists for that fact and its `reinforcement_count` incremented, rather than two rows
+- [x] `test_distinct_facts_create_separate_rows` (integration) — submits two genuinely unrelated facts; asserts two rows are written, proving the dedup threshold is not over-aggressive
+- [x] `test_extract_returns_empty_for_nonmemorable_turn` (unit, `tests/unit/test_capture_nodes.py`, additional, empty-input case) — feeds "hi" / "thanks"; asserts zero candidates and that the graph reaches END without writing
+- [x] `test_low_confidence_candidate_is_dropped` (unit, additional) — feeds a candidate scored below the confidence floor; asserts it never reaches the write node
+- [x] `test_embed_node_batches_candidates` (unit, additional) — asserts multiple candidates are embedded in one `embed()` call, not N calls
+- [x] `test_dedup_scoped_to_subject_id` (integration, additional, auth-boundary) — writes an identical fact under subject A, then submits it under subject B; asserts B gets its own new row and A's `reinforcement_count` is untouched
+- [x] `test_concurrent_identical_turns_do_not_double_write` (integration, additional, concurrency) — fires the same turn twice concurrently; asserts the end state is one row, not two
+- [x] `test_capture_graph_node_order` (unit, additional) — inspects the compiled graph; asserts the node sequence is exactly extract → pii → evaluate → embed → dedup → write
 
 ### Definition of Done — how to verify this milestone yourself
 
@@ -173,36 +173,36 @@ M3 builds the read path: a retriever that fans out in parallel to pgvector HNSW 
 
 ### Implementation steps
 
-1. - [ ] Define the retrieval interfaces in `retrieve/types.py`: a `RetrievalCandidate` dataclass (`memory_id`, `content`, `score`, `path` ∈ {`semantic`, `keyword`}, raw metadata) and a `RetrievalQuery` input type
-2. - [ ] Implement `retrieve/semantic.py` — embeds the query, runs a pgvector cosine `ORDER BY embedding <=> $1 LIMIT k` search against non-deleted rows for the subject, returns candidates tagged `path="semantic"`
-3. - [ ] Implement `retrieve/keyword.py` — builds a `websearch_to_tsquery` from the query and runs a `content_tsv @@ query` search with `ts_rank`, returns candidates tagged `path="keyword"`
-4. - [ ] Implement `retrieve/hybrid.py` — runs both searches **concurrently** via `asyncio.gather`, then merges by `memory_id`, keeping per-path scores and a merged `paths` set on each candidate
-5. - [ ] Add per-path timeouts and per-path error isolation in `retrieve/hybrid.py`: if one path fails or times out, the other path's results are still returned (log the degradation)
-6. - [ ] Normalize scores per path (e.g. min-max within each result set) so the two scales are comparable before merging; document the choice inline
-7. - [ ] Add a `retrieve/config.py` with `SEMANTIC_TOP_K`, `KEYWORD_TOP_K`, `PATH_TIMEOUT_MS`
-8. - [ ] Explicitly add a `retrieve/README.md` note recording that graph search is deferred to a v2 shelf and is out of scope for this milestone
-9. - [ ] Create `evals/golden_set.jsonl` — an initial labeled set of query → expected-memory-id records; include at least one query that is keyword-only matchable (rare literal token, semantically unrelated phrasing) and at least one that is semantic-only matchable (paraphrase sharing no content words)
-10. - [ ] Write `evals/fixtures/seed_memories.py` — deterministically seeds the memory rows the golden set refers to, so eval runs are reproducible from a clean DB
-11. - [ ] Write `evals/metrics.py` — precision, recall, and F1 computation given retrieved vs. expected id sets
-12. - [ ] Write `evals/run_eval.py` — accepts `--suite <name>`, loads the matching jsonl, seeds fixtures, runs the hybrid retriever per query, prints per-query and aggregate precision/recall, and exits non-zero if the run errored
-13. - [ ] Have `run_eval.py` also print a per-path breakdown (how many results came from semantic vs. keyword vs. both) so it is visible that both paths ran
-14. - [ ] Write the aggregate result to `evals/results/golden_set_v1.json` so M8 can compare against this baseline
-15. - [ ] Wire retrieval into the API as an internal function (not yet the chat critical path — that lands in M5)
+1. - [x] Define the retrieval interfaces in `retrieve/types.py`: a `RetrievalCandidate` dataclass (`memory_id`, `content`, `score`, `path` ∈ {`semantic`, `keyword`}, raw metadata) and a `RetrievalQuery` input type
+2. - [x] Implement `retrieve/semantic.py` — embeds the query, runs a pgvector cosine `ORDER BY embedding <=> $1 LIMIT k` search against non-deleted rows for the subject, returns candidates tagged `path="semantic"`
+3. - [x] Implement `retrieve/keyword.py` — builds a `websearch_to_tsquery` from the query and runs a `content_tsv @@ query` search with `ts_rank`, returns candidates tagged `path="keyword"`
+4. - [x] Implement `retrieve/hybrid.py` — runs both searches **concurrently** via `asyncio.gather`, then merges by `memory_id`, keeping per-path scores and a merged `paths` set on each candidate
+5. - [x] Add per-path timeouts and per-path error isolation in `retrieve/hybrid.py`: if one path fails or times out, the other path's results are still returned (log the degradation)
+6. - [x] Normalize scores per path (e.g. min-max within each result set) so the two scales are comparable before merging; document the choice inline
+7. - [x] Add a `retrieve/config.py` with `SEMANTIC_TOP_K`, `KEYWORD_TOP_K`, `PATH_TIMEOUT_MS`
+8. - [x] Explicitly add a `retrieve/README.md` note recording that graph search is deferred to a v2 shelf and is out of scope for this milestone
+9. - [x] Create `evals/golden_set.jsonl` — an initial labeled set of query → expected-memory-id records; include at least one query that is keyword-only matchable (rare literal token, semantically unrelated phrasing) and at least one that is semantic-only matchable (paraphrase sharing no content words)
+10. - [x] Write `evals/fixtures/seed_memories.py` — deterministically seeds the memory rows the golden set refers to, so eval runs are reproducible from a clean DB
+11. - [x] Write `evals/metrics.py` — precision, recall, and F1 computation given retrieved vs. expected id sets
+12. - [x] Write `evals/run_eval.py` — accepts `--suite <name>`, loads the matching jsonl, seeds fixtures, runs the hybrid retriever per query, prints per-query and aggregate precision/recall, and exits non-zero if the run errored
+13. - [x] Have `run_eval.py` also print a per-path breakdown (how many results came from semantic vs. keyword vs. both) so it is visible that both paths ran
+14. - [x] Write the aggregate result to `evals/results/golden_set_v1.json` so M8 can compare against this baseline
+15. - [x] Wire retrieval into the API as an internal function (not yet the chat critical path — that lands in M5)
 
 ### Test cases
 
-- [ ] `test_semantic_path_returns_results` (integration, `tests/integration/test_retrieval.py`) — seeds a memory, queries with a paraphrase; asserts at least one candidate tagged `path="semantic"` comes back
-- [ ] `test_keyword_path_returns_results` (integration) — seeds a memory with a rare literal token, queries with that token; asserts at least one candidate tagged `path="keyword"` comes back
-- [ ] `test_keyword_only_fixture_query_returns_results` (integration) — uses the golden-set query designed to match only via keyword; asserts results are non-empty and that the keyword path contributed them
-- [ ] `test_semantic_only_fixture_query_returns_results` (integration) — uses the golden-set query designed to match only via embedding similarity; asserts results are non-empty and that the semantic path contributed them
-- [ ] `test_hybrid_merges_both_paths_not_just_one` (integration) — runs a query matching both ways; asserts the merged result set contains candidates attributed to both paths, proving the merge is real
-- [ ] `test_paths_run_concurrently` (unit, `tests/unit/test_hybrid.py`, additional) — patches both path functions with measurable delays; asserts total elapsed time is closer to max(a,b) than a+b
-- [ ] `test_one_path_failure_still_returns_other_path` (unit, additional) — forces the keyword path to raise; asserts semantic results still return and a degradation is logged
-- [ ] `test_deleted_memories_excluded_from_both_paths` (integration, additional) — sets `deleted_at` on a seeded row; asserts neither path returns it
-- [ ] `test_retrieval_scoped_to_subject_id` (integration, additional, auth-boundary) — seeds rows under two subjects; asserts a query as subject A never returns subject B's rows
-- [ ] `test_empty_query_returns_empty_not_error` (unit, additional, empty-input case) — passes an empty/whitespace query; asserts an empty list is returned and no exception is raised
-- [ ] `test_run_eval_reports_precision_and_recall` (integration, `tests/integration/test_eval_harness.py`) — invokes the eval runner on the seeded golden set; asserts precision and recall are both computed and strictly greater than 0
-- [ ] `test_metrics_math_is_correct` (unit, additional) — feeds known retrieved/expected sets to `evals/metrics.py`; asserts precision/recall match hand-computed values
+- [x] `test_semantic_path_returns_results` (integration, `tests/integration/test_retrieval.py`) — seeds a memory, queries with a paraphrase; asserts at least one candidate tagged `path="semantic"` comes back
+- [x] `test_keyword_path_returns_results` (integration) — seeds a memory with a rare literal token, queries with that token; asserts at least one candidate tagged `path="keyword"` comes back
+- [x] `test_keyword_only_fixture_query_returns_results` (integration) — uses the golden-set query designed to match only via keyword; asserts results are non-empty and that the keyword path contributed them
+- [x] `test_semantic_only_fixture_query_returns_results` (integration) — uses the golden-set query designed to match only via embedding similarity; asserts results are non-empty and that the semantic path contributed them
+- [x] `test_hybrid_merges_both_paths_not_just_one` (integration) — runs a query matching both ways; asserts the merged result set contains candidates attributed to both paths, proving the merge is real
+- [x] `test_paths_run_concurrently` (unit, `tests/unit/test_hybrid.py`, additional) — patches both path functions with measurable delays; asserts total elapsed time is closer to max(a,b) than a+b
+- [x] `test_one_path_failure_still_returns_other_path` (unit, additional) — forces the keyword path to raise; asserts semantic results still return and a degradation is logged
+- [x] `test_deleted_memories_excluded_from_both_paths` (integration, additional) — sets `deleted_at` on a seeded row; asserts neither path returns it
+- [x] `test_retrieval_scoped_to_subject_id` (integration, additional, auth-boundary) — seeds rows under two subjects; asserts a query as subject A never returns subject B's rows
+- [x] `test_empty_query_returns_empty_not_error` (unit, additional, empty-input case) — passes an empty/whitespace query; asserts an empty list is returned and no exception is raised
+- [x] `test_run_eval_reports_precision_and_recall` (integration, `tests/integration/test_eval_harness.py`) — invokes the eval runner on the seeded golden set; asserts precision and recall are both computed and strictly greater than 0
+- [x] `test_metrics_math_is_correct` (unit, additional) — feeds known retrieved/expected sets to `evals/metrics.py`; asserts precision/recall match hand-computed values
 
 ### Definition of Done — how to verify this milestone yourself
 

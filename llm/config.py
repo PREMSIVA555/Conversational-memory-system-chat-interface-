@@ -23,14 +23,34 @@ empty string with ``finish_reason='stop'`` — it looks like a broken model, but
 it is a truncated reasoning phase. ``DEFAULT_MAX_TOKENS`` is therefore floored
 at 512 and ``complete()`` refuses to go below ``MIN_MAX_TOKENS``. Do not "fix"
 an empty completion by switching models.
+
+RATE LIMIT TRAP — why there is a retry loop here
+------------------------------------------------
+The Voyage key is on the no-payment tier: **3 requests per minute**, metered per
+request rather than per token. LiteLLM's own ``num_retries`` is not enough — it
+does not honour ``Retry-After`` and its backoff is far too short for a per-minute
+window, so a 429 propagates to the caller and whatever was being embedded is
+simply lost.
+
+That made M1's embedding test flaky the moment a second agent embedded in
+parallel: it failed under concurrency and passed on every isolated re-run, which
+is the signature of a shared quota rather than a bug in the test.
+
+``_with_rate_limit_retry`` below wraps both calls with jittered exponential
+backoff that prefers the provider's own ``Retry-After`` when present. It turns a
+hard failure into a slow success, which is the right trade for a background
+capture path. Callers that genuinely cannot wait should pass a smaller
+``rate_limit_attempts``.
 """
 
 from __future__ import annotations
 
 import asyncio
 import os
+import random
+import re
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Awaitable, Callable, Iterable, Sequence, TypeVar
 
 _ENV_PATH = Path(__file__).resolve().parent.parent / "infra" / ".env"
 _env_loaded = False
@@ -46,6 +66,10 @@ DEFAULTS = {
     "LLM_MAX_TOKENS": "1024",
     "LLM_TIMEOUT_SECONDS": "60",
     "LLM_MAX_RETRIES": "2",
+    # 429 handling — see RATE LIMIT TRAP in the module docstring.
+    "LLM_RATE_LIMIT_ATTEMPTS": "6",
+    "LLM_RATE_LIMIT_BASE_DELAY": "4.0",
+    "LLM_RATE_LIMIT_MAX_DELAY": "60.0",
 }
 
 
@@ -107,6 +131,93 @@ def max_retries() -> int:
     return int(_env("LLM_MAX_RETRIES"))
 
 
+def rate_limit_attempts() -> int:
+    return int(_env("LLM_RATE_LIMIT_ATTEMPTS"))
+
+
+# ---------------------------------------------------------------------------
+# 429 handling
+# ---------------------------------------------------------------------------
+
+T = TypeVar("T")
+
+_RETRY_AFTER_RE = re.compile(r"retry[- _]?after[\"'\s:=]+([0-9]+(?:\.[0-9]+)?)", re.I)
+
+
+def _is_rate_limit(exc: BaseException) -> bool:
+    """True when ``exc`` is a provider 429.
+
+    Matched structurally where possible (LiteLLM raises ``RateLimitError`` and
+    sets ``status_code``); the string check is a fallback for wrapped errors,
+    since both providers surface 429 differently.
+    """
+    if type(exc).__name__ in {"RateLimitError", "APIStatusError"}:
+        return True
+    if getattr(exc, "status_code", None) == 429:
+        return True
+    text = str(exc).lower()
+    return "429" in text or "rate limit" in text or "rate_limit" in text
+
+
+def _retry_after_seconds(exc: BaseException) -> float | None:
+    """The provider's own requested wait, if it gave one. Always beats our guess."""
+    value = getattr(exc, "retry_after", None)
+    if value is None:
+        headers = getattr(exc, "response_headers", None) or getattr(exc, "headers", None)
+        if isinstance(headers, dict):
+            value = headers.get("retry-after") or headers.get("Retry-After")
+    if value is None:
+        match = _RETRY_AFTER_RE.search(str(exc))
+        value = match.group(1) if match else None
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+async def _with_rate_limit_retry(
+    operation: Callable[[], Awaitable[T]],
+    *,
+    attempts: int | None = None,
+    what: str = "llm call",
+) -> T:
+    """Run ``operation``, retrying only on 429 with jittered exponential backoff.
+
+    Deliberately narrow: any error that is not a rate limit is re-raised on the
+    first occurrence. Retrying a malformed request or a bad key just wastes a
+    minute and hides the real cause.
+    """
+    total = attempts if attempts is not None else rate_limit_attempts()
+    total = max(1, total)
+    base = float(_env("LLM_RATE_LIMIT_BASE_DELAY"))
+    ceiling = float(_env("LLM_RATE_LIMIT_MAX_DELAY"))
+
+    last: BaseException | None = None
+    for attempt in range(total):
+        try:
+            return await operation()
+        except BaseException as exc:  # noqa: BLE001 — re-raised below unless 429
+            if not _is_rate_limit(exc):
+                raise
+            last = exc
+            if attempt == total - 1:
+                break
+            requested = _retry_after_seconds(exc)
+            if requested is not None:
+                delay = min(requested, ceiling)
+            else:
+                delay = min(base * (2**attempt), ceiling)
+            # Jitter so parallel workers do not re-collide on the same window.
+            delay += random.uniform(0, min(1.0, delay * 0.25))
+            await asyncio.sleep(delay)
+
+    raise RuntimeError(
+        f"{what} exhausted {total} attempts against a provider rate limit. "
+        "The Voyage no-payment tier allows 3 requests/minute; either slow the "
+        "caller down or raise LLM_RATE_LIMIT_ATTEMPTS."
+    ) from last
+
+
 # ---------------------------------------------------------------------------
 # calls
 # ---------------------------------------------------------------------------
@@ -137,6 +248,7 @@ async def complete(
     temperature: float = 0.2,
     timeout: float | None = None,
     num_retries: int | None = None,
+    rate_limit_attempts_override: int | None = None,
     **kw: Any,
 ) -> str:
     """One chat completion. Returns the assistant's text content.
@@ -156,14 +268,20 @@ async def complete(
     budget = max(MIN_MAX_TOKENS, int(budget))
 
     litellm = _litellm()
-    response = await litellm.acompletion(
-        model=resolved_model,
-        messages=list(messages),
-        max_tokens=budget,
-        temperature=temperature,
-        timeout=timeout if timeout is not None else request_timeout(),
-        num_retries=num_retries if num_retries is not None else max_retries(),
-        **kw,
+
+    async def _call():
+        return await litellm.acompletion(
+            model=resolved_model,
+            messages=list(messages),
+            max_tokens=budget,
+            temperature=temperature,
+            timeout=timeout if timeout is not None else request_timeout(),
+            num_retries=num_retries if num_retries is not None else max_retries(),
+            **kw,
+        )
+
+    response = await _with_rate_limit_retry(
+        _call, attempts=rate_limit_attempts_override, what=f"completion ({resolved_model})"
     )
     content = response.choices[0].message.content
     return content or ""
@@ -175,6 +293,7 @@ async def embed(
     model: str | None = None,
     timeout: float | None = None,
     num_retries: int | None = None,
+    rate_limit_attempts_override: int | None = None,
     **kw: Any,
 ) -> list[list[float]]:
     """Embed one or more texts. Returns a list of vectors, input order preserved.
@@ -192,12 +311,18 @@ async def embed(
     resolved_model = model or resolve_embedding_model()
 
     litellm = _litellm()
-    response = await litellm.aembedding(
-        model=resolved_model,
-        input=batch,
-        timeout=timeout if timeout is not None else request_timeout(),
-        num_retries=num_retries if num_retries is not None else max_retries(),
-        **kw,
+
+    async def _call():
+        return await litellm.aembedding(
+            model=resolved_model,
+            input=batch,
+            timeout=timeout if timeout is not None else request_timeout(),
+            num_retries=num_retries if num_retries is not None else max_retries(),
+            **kw,
+        )
+
+    response = await _with_rate_limit_retry(
+        _call, attempts=rate_limit_attempts_override, what=f"embedding ({resolved_model})"
     )
     items = sorted(response.data, key=lambda d: d.get("index", 0))
     return [list(item["embedding"]) for item in items]

@@ -27,11 +27,11 @@ Definition of Done commands yourself and saw the expected output with your own e
 
 | # | Milestone | Wave | Status | Verified by |
 | --- | --- | --- | --- | --- |
-| M1 | Docker infra, core tables (HNSW+GIN+RLS), `/health`, LiteLLM wrapper | W1 | 📋 | verifier running |
-| M2 | Capture graph: extract → PII → evaluate → embed → dedup → write | W2 | ⬜ | — |
-| M3 | Hybrid retrieval (pgvector ∥ tsvector) + golden-set eval harness | W2 | ⬜ | — |
-| M2.5 | *(inserted)* Thin chat UI — first visible demo | W3 | ⬜ | — |
-| M4 | Weighted ranking + token-bounded context composer | W3 | ⬜ | — |
+| M1 | Docker infra, core tables (HNSW+GIN+RLS), `/health`, LiteLLM wrapper | W1 | ✅ | independent agent — 12/12 DoD, 13/13 tests |
+| M2 | Capture graph: extract → PII → evaluate → embed → dedup → write | W2 | ✅ | independent agent — 7/7 DoD, 12/12 tests, lock proven by control experiment |
+| M3 | Hybrid retrieval (pgvector ∥ tsvector) + golden-set eval harness | W2 | ✅ | independent agent — **failed once**, reworked, passed on re-verification |
+| M2.5 | *(inserted)* Thin chat UI — first visible demo | W3 | 🔨 | — |
+| M4 | Weighted ranking + token-bounded context composer | W3 | 🔨 | — |
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ⬜ | — |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ⬜ | — |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ⬜ | — |
@@ -105,6 +105,26 @@ ports exists to catch exactly that, and it earned its place here.
 `uvicorn api.main:app` breaks the app while `python -m api.main` works — uvicorn's CLI
 builds the loop before the app is imported.
 
+**3. The long-running dev server on :8000 goes stale, and it has already cost two
+verifications.** It keeps serving whatever code was on disk when it started. For M1 that was a
+46-second-old build; for M2 the server predated the chat router entirely and returned **404 on
+`/chat`** — anyone following that milestone's Definition of Done literally would have concluded
+M2 had failed. **Restart it after any code change** (`python -m api.main`), and prefer
+in-process ASGI test clients over the long-running server. Stale processes also leak: two were
+found running at once.
+
+**4. The Voyage key is rate-limited to 3 requests/minute** ("no payment method on file"). This
+is the single biggest drag on iteration — the M2 suite takes 6–14 minutes, almost all of it in
+backoff. `llm/config.py` retries 429s so correctness is unaffected, but two consequences
+follow: batching embeds is a **quota** requirement rather than an efficiency nicety, and "slow"
+is no longer distinguishable from "hung" by observation, so every test needs a bounded timeout.
+
+**5. LiteLLM memoises a global async HTTP client bound to one event loop.** pytest-asyncio
+builds a fresh loop per test, so the second test to call a provider inherits a dead client and
+fails with `Event loop is closed` (surfacing as `APIConnectionError`). Handled by an autouse
+flush fixture in the repo-root `conftest.py`. **This looks exactly like a rate limit** — both
+present as "fails in a full run, passes alone". The traceback is what tells them apart.
+
 ---
 
 ## A defect in the plan itself
@@ -130,8 +150,15 @@ change it knowingly than find your verification command quietly rewritten.
 
 ## Open items
 
-- [ ] **Rotate the Groq and Voyage keys at project end** — both were pasted into a chat
-      transcript, so treat them as disclosed.
+- [ ] **Rotate the Voyage key now, not at project end.** Beyond having been pasted into a chat
+      transcript, LiteLLM was observed dumping request headers — including the key in
+      plaintext — into a failing traceback during M2. Anywhere those logs were written or
+      copied has the key in clear text. Rotate the Groq key too, on the transcript grounds.
+- [ ] **Consider adding a payment method to the Voyage account.** The key is throttled to
+      **3 requests/minute** ("no payment method on file"). This is now the single largest
+      drag on the build: the M2 suite takes 6–14 minutes almost entirely in rate-limit
+      backoff, and M8's expanded evals will be worse. Correctness is unaffected — the retry
+      layer turns 429s into slow successes — but iteration speed is roughly quota-bound.
 - [ ] Decide whether to stop the native PostgreSQL 18 / Memurai services and reclaim the
       standard ports, or keep the 55432 / 56379 mapping.
 - [ ] Consider amending the plan's `pg_policies` DoD line to use `coalesce(qual, with_check)`.

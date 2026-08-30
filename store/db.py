@@ -142,16 +142,39 @@ def embedding_dim() -> int:
 
 _pools: dict[str, AsyncConnectionPool] = {}
 
+# One lock per DSN, guarding the create-and-store critical section below.
+# asyncio.Lock binds to the running loop on first use (not at construction) on
+# Python 3.10+, so building these lazily at module scope is safe here.
+_pool_locks: dict[str, asyncio.Lock] = {}
+
 
 async def get_pool(dsn: str | None = None, *, min_size: int = 1, max_size: int = 10) -> AsyncConnectionPool:
     """Return (creating on first call) the async pool for ``dsn``.
 
     Defaults to the *application* DSN, not the admin one — callers have to opt
     in explicitly to the privileged connection.
+
+    Creation is serialized per-DSN. The obvious version of this function checks
+    ``_pools``, awaits ``pool.open()``, then stores the result — but that check
+    and that store straddle an await, so two concurrent first-touch callers both
+    see an empty cache and both *open* a pool. Only the last one is recorded;
+    the other is orphaned holding up to ``max_size`` connections, invisible to
+    ``close_pools()``, for the life of the process. It stayed latent until the
+    hybrid retriever became the first code here to hit the DB concurrently.
     """
     dsn = dsn or app_dsn()
+
     pool = _pools.get(dsn)
-    if pool is None or pool.closed:
+    if pool is not None and not pool.closed:
+        return pool
+
+    lock = _pool_locks.setdefault(dsn, asyncio.Lock())
+    async with lock:
+        # Re-check inside the lock: a racing caller may have finished while we waited.
+        pool = _pools.get(dsn)
+        if pool is not None and not pool.closed:
+            return pool
+
         pool = AsyncConnectionPool(
             conninfo=dsn,
             min_size=min_size,
@@ -159,9 +182,14 @@ async def get_pool(dsn: str | None = None, *, min_size: int = 1, max_size: int =
             open=False,
             kwargs={"row_factory": dict_row},
         )
-        await pool.open(wait=True, timeout=15.0)
+        try:
+            await pool.open(wait=True, timeout=15.0)
+        except BaseException:
+            # Never leave a half-open pool behind if open() fails or is cancelled.
+            await pool.close()
+            raise
         _pools[dsn] = pool
-    return pool
+        return pool
 
 
 async def close_pools() -> None:

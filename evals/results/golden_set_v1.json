@@ -1,0 +1,490 @@
+{
+  "suite": "golden_set_v1",
+  "generated_at": "2026-08-30T14:04:54.028897+00:00",
+  "top_k": 5,
+  "subject_id": "93e6200f-ff8f-5502-98fb-a4643a815412",
+  "corpus_size": 44,
+  "aggregate": {
+    "queries": 9,
+    "macro_precision": 0.266667,
+    "macro_recall": 1.0,
+    "macro_f1": 0.406085,
+    "micro_precision": 0.266667,
+    "micro_recall": 1.0,
+    "micro_f1": 0.421053,
+    "mrr": 1.0,
+    "mean_precision_at_r": 1.0,
+    "precision": 0.266667,
+    "recall": 1.0,
+    "f1": 0.406085,
+    "mean_expected_size": 1.333333
+  },
+  "per_path_totals": {
+    "semantic_only": 40,
+    "keyword_only": 1,
+    "both": 4
+  },
+  "path_expectations_met": true,
+  "path_expectation_failures": [],
+  "queries": [
+    {
+      "query_id": "gs-001",
+      "retrieved": [
+        "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef",
+        "1a4bd77d-64d7-56de-8f65-80a4eb98f8c8",
+        "cc26e768-d0ad-5fdc-b241-b13c74ba571f",
+        "b8cb1ced-289c-5aac-bef5-6e7fb001c798"
+      ],
+      "expected": [
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef",
+        "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2"
+      ],
+      "hits": [
+        "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef"
+      ],
+      "precision": 0.4,
+      "recall": 1.0,
+      "f1": 0.571429,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Which foods upset my stomach?",
+      "expected_slugs": [
+        "lactose",
+        "onions"
+      ],
+      "retrieved_slugs": [
+        "onions",
+        "lactose",
+        "catallergy",
+        "coffee",
+        "veg"
+      ],
+      "path_expectation": "semantic_only",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 65.22,
+      "separation": {
+        "corpus_size": 44,
+        "target_id": "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
+        "target_rank": 1,
+        "target_distance": 0.358505,
+        "boundary_rank": 5,
+        "boundary_distance": 0.626404,
+        "margin": -0.267899,
+        "outside_top_k": false
+      }
+    },
+    {
+      "query_id": "gs-002",
+      "retrieved": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e",
+        "dd80ad30-709a-5909-ad07-c31736bf028a",
+        "b8cb1ced-289c-5aac-bef5-6e7fb001c798",
+        "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef"
+      ],
+      "expected": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e"
+      ],
+      "hits": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "origin",
+      "expected_slugs": [
+        "tiles"
+      ],
+      "retrieved_slugs": [
+        "tiles",
+        "sister",
+        "veg",
+        "onions",
+        "lactose"
+      ],
+      "path_expectation": "keyword_only",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "keyword"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 54.57,
+      "separation": {
+        "corpus_size": 44,
+        "target_id": "22284a05-c5bf-590c-afba-149d19c20f7e",
+        "target_rank": 31,
+        "target_distance": 0.875589,
+        "boundary_rank": 5,
+        "boundary_distance": 0.745199,
+        "margin": 0.13039,
+        "outside_top_k": true
+      }
+    },
+    {
+      "query_id": "gs-003",
+      "retrieved": [
+        "d00a6470-1470-5e91-abe9-670c7e454315",
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef",
+        "1bd83389-5e65-547e-ab0a-54128aef5b27"
+      ],
+      "expected": [
+        "d00a6470-1470-5e91-abe9-670c7e454315"
+      ],
+      "hits": [
+        "d00a6470-1470-5e91-abe9-670c7e454315"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Bristol half marathon",
+      "expected_slugs": [
+        "bristol"
+      ],
+      "retrieved_slugs": [
+        "bristol",
+        "physio",
+        "commute",
+        "lactose",
+        "shoes"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 50.78,
+      "separation": null
+    },
+    {
+      "query_id": "gs-004",
+      "retrieved": [
+        "1bd83389-5e65-547e-ab0a-54128aef5b27",
+        "d00a6470-1470-5e91-abe9-670c7e454315",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb",
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef"
+      ],
+      "expected": [
+        "1bd83389-5e65-547e-ab0a-54128aef5b27"
+      ],
+      "hits": [
+        "1bd83389-5e65-547e-ab0a-54128aef5b27"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Saucony running shoes",
+      "expected_slugs": [
+        "shoes"
+      ],
+      "retrieved_slugs": [
+        "shoes",
+        "bristol",
+        "commute",
+        "physio",
+        "lactose"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 55.0,
+      "separation": null
+    },
+    {
+      "query_id": "gs-005",
+      "retrieved": [
+        "fa070cef-0115-5aef-a864-93cf7b449201",
+        "468094b4-1765-507d-ad5c-7c5e2d7daaee",
+        "942d9b49-0ef7-51d7-aa56-439e1d828ae0",
+        "fdc706d3-fb09-5481-8899-b0285fbc383f",
+        "e9095d02-b2e3-54db-9e93-ea28c6708392"
+      ],
+      "expected": [
+        "fa070cef-0115-5aef-a864-93cf7b449201"
+      ],
+      "hits": [
+        "fa070cef-0115-5aef-a864-93cf7b449201"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "fingerstyle guitar",
+      "expected_slugs": [
+        "guitar"
+      ],
+      "retrieved_slugs": [
+        "guitar",
+        "strings",
+        "chords",
+        "lessons",
+        "openmic"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 54.01,
+      "separation": null
+    },
+    {
+      "query_id": "gs-006",
+      "retrieved": [
+        "dfcf6044-f841-5094-addd-20e4ee35b230",
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a",
+        "a82310fe-e4ea-5322-811e-b348cecbcb98",
+        "485bba0a-88c0-530a-80d6-df49349b9e1c",
+        "468094b4-1765-507d-ad5c-7c5e2d7daaee"
+      ],
+      "expected": [
+        "dfcf6044-f841-5094-addd-20e4ee35b230"
+      ],
+      "hits": [
+        "dfcf6044-f841-5094-addd-20e4ee35b230"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "compliance report due",
+      "expected_slugs": [
+        "deadline"
+      ],
+      "retrieved_slugs": [
+        "deadline",
+        "manager",
+        "dentist",
+        "wifi",
+        "strings"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 53.08,
+      "separation": null
+    },
+    {
+      "query_id": "gs-007",
+      "retrieved": [
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f",
+        "d00a6470-1470-5e91-abe9-670c7e454315",
+        "cc26e768-d0ad-5fdc-b241-b13c74ba571f",
+        "1bd83389-5e65-547e-ab0a-54128aef5b27",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef"
+      ],
+      "expected": [
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f"
+      ],
+      "hits": [
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "How do I prepare before long runs?",
+      "expected_slugs": [
+        "physio"
+      ],
+      "retrieved_slugs": [
+        "physio",
+        "bristol",
+        "coffee",
+        "shoes",
+        "lactose"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 54.73,
+      "separation": null
+    },
+    {
+      "query_id": "gs-008",
+      "retrieved": [
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a",
+        "dfcf6044-f841-5094-addd-20e4ee35b230",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb",
+        "cc26e768-d0ad-5fdc-b241-b13c74ba571f",
+        "e9095d02-b2e3-54db-9e93-ea28c6708392"
+      ],
+      "expected": [
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a"
+      ],
+      "hits": [
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Who should I send written status updates to?",
+      "expected_slugs": [
+        "manager"
+      ],
+      "retrieved_slugs": [
+        "manager",
+        "deadline",
+        "commute",
+        "coffee",
+        "openmic"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 52.34,
+      "separation": null
+    },
+    {
+      "query_id": "gs-009",
+      "retrieved": [
+        "1ca20969-985f-51dc-b654-24253017f571",
+        "c13c27e9-e592-50ef-9313-8cf7ef089b69",
+        "7ceede21-3a5e-591b-8540-9cc3409605a3",
+        "455de1a9-329d-5637-94cb-fc89a968bfa6",
+        "f117b75a-a870-51b6-90a4-ad75627352b6"
+      ],
+      "expected": [
+        "c13c27e9-e592-50ef-9313-8cf7ef089b69",
+        "1ca20969-985f-51dc-b654-24253017f571",
+        "7ceede21-3a5e-591b-8540-9cc3409605a3"
+      ],
+      "hits": [
+        "1ca20969-985f-51dc-b654-24253017f571",
+        "c13c27e9-e592-50ef-9313-8cf7ef089b69",
+        "7ceede21-3a5e-591b-8540-9cc3409605a3"
+      ],
+      "precision": 0.6,
+      "recall": 1.0,
+      "f1": 0.75,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Polish family history",
+      "expected_slugs": [
+        "halina",
+        "surname",
+        "godmother"
+      ],
+      "retrieved_slugs": [
+        "surname",
+        "halina",
+        "godmother",
+        "uncle",
+        "cousin"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 53.26,
+      "separation": null
+    }
+  ]
+}
