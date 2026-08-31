@@ -68,12 +68,36 @@ async def test_extract_returns_empty_for_nonmemorable_turn(message, monkeypatch,
 
     monkeypatch.setattr(llm_config, "complete", spy_complete)
 
-    with caplog.at_level(logging.WARNING, logger="memsys.capture"):
+    # INFO, not WARNING: the pre-filter event is an INFO-level positive signal.
+    with caplog.at_level(logging.INFO, logger="memsys.capture"):
         candidates = await extract_module.extract_candidates(turn)
 
-    assert candidates == [], f"expected no memorable facts in {message!r}, got {candidates}"
+    # -- diagnose the cause BEFORE asserting the shape ------------------------
+    # Assertion order is deliberate. A dead provider makes both "0 candidates"
+    # and "0 provider calls" true, so checking the call count first reports
+    # `extractor made 0 provider calls` and buries the actual reason. Checking
+    # the logged provider error first means a broken key or a throttled
+    # provider names itself in the failure message.
+    errors = [
+        r.getMessage() for r in caplog.records
+        if "capture.extract.provider_error" in r.getMessage()
+    ]
+    assert not errors, (
+        "the extraction path is broken, so this test cannot say anything about "
+        f"the model's judgement on {message!r}. Provider error: {errors}"
+    )
 
-    # -- the empty list came from a model that actually answered --------------
+    # `hi`/`thanks` are NOT pre-filtered -- only a genuinely empty turn is --
+    # so the model must actually have been consulted.
+    pre_filtered = [
+        r.getMessage() for r in caplog.records
+        if extract_module.PRE_FILTER_EVENT in r.getMessage()
+    ]
+    assert not pre_filtered, (
+        f"{message!r} was skipped by the pre-filter, so the model never judged it. "
+        "The pre-filter must only fire on empty turns"
+    )
+
     assert len(provider_responses) == 1, (
         f"extractor made {len(provider_responses)} provider calls, expected exactly 1 -- "
         "an empty candidate list is only meaningful if the model was really asked"
@@ -83,8 +107,7 @@ async def test_extract_returns_empty_for_nonmemorable_turn(message, monkeypatch,
         "nothing about the model's judgement"
     )
 
-    errors = [r.getMessage() for r in caplog.records if "capture.extract.provider_error" in r.getMessage()]
-    assert not errors, f"extraction failed rather than finding nothing memorable: {errors}"
+    assert candidates == [], f"expected no memorable facts in {message!r}, got {candidates}"
 
     reached_write = False
 
@@ -100,6 +123,79 @@ async def test_extract_returns_empty_for_nonmemorable_turn(message, monkeypatch,
     assert final["candidates"] == []
     assert final["write_results"] == []
     assert not reached_write, "graph must short-circuit to END, not reach the write node"
+
+
+@pytest.mark.parametrize(
+    "turn",
+    [
+        {},
+        {"user": "", "assistant": ""},
+        {"user": "   ", "assistant": "\n\t "},
+    ],
+    ids=["no_keys", "empty_strings", "whitespace_only"],
+)
+async def test_pre_filter_skips_empty_turns_without_a_provider_call(turn, monkeypatch, caplog):
+    """An empty turn is skipped locally, and says so with its own log event.
+
+    This is case (1) of the three ways to get an empty candidate list. It must
+    be positively identifiable, or it would be indistinguishable from case (3),
+    a swallowed provider failure.
+    """
+    calls = 0
+
+    async def must_not_be_called(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return "[]"
+
+    monkeypatch.setattr(llm_config, "complete", must_not_be_called)
+
+    with caplog.at_level(logging.INFO, logger="memsys.capture"):
+        candidates = await extract_module.extract_candidates(turn)
+
+    assert candidates == []
+    assert calls == 0, "an empty turn must not cost a provider round-trip"
+    assert any(
+        extract_module.PRE_FILTER_EVENT in r.getMessage() for r in caplog.records
+    ), "a pre-filtered turn must log a positive signal, not just return []"
+    assert not any(
+        "capture.extract.provider_error" in r.getMessage() for r in caplog.records
+    ), "a healthy pre-filter must never look like a provider failure"
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "hi",
+        "thanks",
+        "I'm coeliac",
+        "I'm allergic to peanuts.",
+        "Call me Sam.",
+        "No.",
+    ],
+)
+def test_pre_filter_only_fires_on_empty_turns(message):
+    """Short does not mean unmemorable -- the pre-filter must never judge content.
+
+    "I'm coeliac" is shorter than "thanks" and is exactly the kind of durable,
+    safety-relevant fact this system exists to remember. The pre-filter is a
+    pure emptiness check for precisely this reason; anything cleverer would
+    silently suppress real extractions and would widen over time. This test
+    pins the boundary so a future "optimisation" has to break it deliberately.
+    """
+    from graphs.capture_state import turn_text
+
+    text = turn_text({"user": message, "assistant": "Hello! How can I help?"})
+    assert extract_module.pre_filter_reason(text) is None, (
+        f"{message!r} was pre-filtered -- the model must be the one to judge it"
+    )
+
+
+def test_pre_filter_reason_is_a_reason_not_a_bool():
+    """The skip path reports *why*, so the log event carries a cause."""
+    assert extract_module.pre_filter_reason("") == "empty_turn"
+    assert extract_module.pre_filter_reason("   \n\t ") == "empty_turn"
+    assert extract_module.pre_filter_reason("User: I play the cello.") is None
 
 
 async def test_extract_provider_failure_is_logged_not_silent(monkeypatch, caplog):
@@ -291,6 +387,46 @@ async def test_embed_node_drops_wrong_width_vectors(monkeypatch):
         {"subject_id": "s", "actor_id": "s", "scored": [Candidate(text="x")]}
     )
     assert result["embedded"] == []
+
+
+# ---------------------------------------------------------------------------
+# the BackgroundTask threadpool trap
+# ---------------------------------------------------------------------------
+
+
+async def test_enqueue_off_event_loop_raises_a_named_error():
+    """Touching the worker from a threadpool names the trap instead of a bare error.
+
+    This is the exact production failure: Starlette's `BackgroundTask` sends a
+    sync callable through `run_in_threadpool`, and in that worker thread
+    `get_worker()` found no running loop. It used to surface as an unexplained
+    `RuntimeError: no running event loop` several frames from the cause.
+    """
+    from starlette.concurrency import run_in_threadpool
+
+    from capture.worker import CaptureWorkerNotOnEventLoop, get_worker
+
+    with pytest.raises(CaptureWorkerNotOnEventLoop, match="BackgroundTask"):
+        await run_in_threadpool(get_worker)
+
+
+def test_chat_background_task_callable_is_async():
+    """The non-streaming path must hand `BackgroundTask` an awaitable callable.
+
+    Starlette threadpools a sync callable and awaits an async one. Because the
+    enqueue helper is deliberately sync (so it cannot be awaited into the
+    request path), the background wrapper MUST be async or the non-streaming
+    branch 500s. Asserting the shape directly means the guarantee cannot regress
+    quietly if someone "simplifies" the wrapper away.
+    """
+    from api import chat as chat_module
+
+    assert not asyncio.iscoroutinefunction(chat_module._enqueue_capture), (
+        "_enqueue_capture must stay sync so it cannot be awaited on the request path"
+    )
+    assert asyncio.iscoroutinefunction(chat_module._enqueue_capture_background), (
+        "_enqueue_capture_background must be async or Starlette will threadpool it"
+    )
 
 
 # ---------------------------------------------------------------------------

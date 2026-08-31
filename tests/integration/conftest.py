@@ -163,6 +163,14 @@ class MemoryStore:
 # and applies to every test in the tree; do not re-add a local copy.
 
 
+# NOTE: `_isolate_loop_bound_resources` — which closes loop-bound connection
+# pools and cancels worker tasks after every test — has been promoted to
+# `tests/conftest.py`, so the suites added by M5 (`tests/reliability/`), M7
+# (`tests/acceptance/`) and M8 (`tests/distributed/`) inherit it rather than each
+# rediscovering the `PoolTimeout` failure it prevents. Do not re-add a local
+# copy: two autouse copies would close the pools twice per test.
+
+
 @pytest.fixture
 async def store() -> MemoryStore:
     """Per-test table access. Purges every subject it handed out at teardown."""

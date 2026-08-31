@@ -1,0 +1,233 @@
+:root {
+  --bg: #fbfbfa;
+  --panel: #ffffff;
+  --border: #e4e2dd;
+  --text: #1f1e1c;
+  --muted: #6b6862;
+  --user-bg: #1f1e1c;
+  --user-text: #fbfbfa;
+  --assistant-bg: #f2f0ec;
+  --error-bg: #fdf0ee;
+  --error-border: #d9a79b;
+  --error-text: #8a3320;
+  --accent: #b4552d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1917;
+    --panel: #222120;
+    --border: #38352f;
+    --text: #eeece6;
+    --muted: #9a958c;
+    --user-bg: #eeece6;
+    --user-text: #1a1917;
+    --assistant-bg: #2c2a27;
+    --error-bg: #3a221c;
+    --error-border: #7a4436;
+    --error-text: #f0b6a4;
+    --accent: #d9784b;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.shell {
+  max-width: 780px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px 20px;
+  gap: 16px;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+.masthead p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.transcript {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 85%;
+}
+
+.turn--user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.turn--assistant {
+  align-self: flex-start;
+}
+
+.turn__role {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.turn__body {
+  border-radius: 12px;
+  padding: 10px 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.turn--user .turn__body {
+  background: var(--user-bg);
+  color: var(--user-text);
+}
+
+.turn--assistant .turn__body {
+  background: var(--assistant-bg);
+  border: 1px solid var(--border);
+}
+
+.turn__note {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pending {
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* The always-present role="status" element collapses when it has no text. */
+.pending:empty {
+  display: none;
+}
+
+.pending--tick {
+  font-size: 0.85rem;
+}
+
+.error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+}
+
+.error strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.error code {
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+}
+
+.composer label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.composer input {
+  flex: 1;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.composer input:focus-visible,
+.composer button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.composer button {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 18px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.composer button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.footnote {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin: 0;
+}

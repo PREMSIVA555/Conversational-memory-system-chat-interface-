@@ -26,6 +26,7 @@ frontend/node_modules/
 playwright-report/
 test-results/
 .playwright/
+*.tsbuildinfo
 
 # --- data / infra ----------------------------------------------------------
 pgdata/

@@ -86,6 +86,33 @@ def _enqueue_capture(subject_id: str, actor_id: str, message: str, reply: str) -
     )
 
 
+async def _enqueue_capture_background(
+    subject_id: str, actor_id: str, message: str, reply: str
+) -> None:
+    """Async wrapper used for the non-streaming path's ``BackgroundTask``.
+
+    WHY THIS EXISTS — it fixes a 500 that only the non-streaming path hit.
+
+    ``_enqueue_capture`` is deliberately a plain ``def`` so no caller can await
+    it, which is exactly right for the streaming path where it is called inside
+    the response generator with a loop already running.
+
+    But Starlette's ``BackgroundTask`` inspects the callable: a **sync** function
+    is dispatched via ``run_in_threadpool``, and in that worker thread there is
+    no running event loop, so ``get_worker()`` — which builds an
+    ``asyncio.Queue`` — raises ``RuntimeError: no running event loop`` and the
+    request 500s *after* the reply was generated.
+
+    Wrapping it in an ``async def`` makes Starlette await it on the loop
+    instead. The wrapper adds no await of its own, so the non-blocking property
+    the streaming path relies on is preserved.
+
+    Found in production, not by the suite: every test and the default request
+    shape use ``stream=True``, so the threadpool branch was never exercised.
+    """
+    _enqueue_capture(subject_id, actor_id, message, reply)
+
+
 async def _generate_reply(message: str) -> str:
     return await llm_config.complete(
         [
@@ -105,7 +132,9 @@ async def chat(request: ChatRequest):
 
     if not request.stream:
         background = (
-            BackgroundTask(_enqueue_capture, subject_id, actor_id, request.message, reply)
+            BackgroundTask(
+                _enqueue_capture_background, subject_id, actor_id, request.message, reply
+            )
             if request.capture
             else None
         )

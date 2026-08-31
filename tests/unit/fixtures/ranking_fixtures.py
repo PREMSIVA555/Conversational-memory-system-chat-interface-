@@ -90,46 +90,89 @@ def make_candidate(
 #
 #  id       sem   age   rec     n   freq   imp    0.4*sem + 0.2*rec + 0.2*freq + 0.2*imp
 #  ------------------------------------------------------------------------------------
-#  mem-01   0.90    0   1.000   9   0.75   0.80   0.360 + 0.200 + 0.150 + 0.160 = 0.870
-#  mem-02   0.80   30   0.500   3   0.50   0.60   0.320 + 0.100 + 0.100 + 0.120 = 0.640
-#  mem-03   0.60   60   0.250   1   0.25   0.50   0.240 + 0.050 + 0.050 + 0.100 = 0.440
-#  mem-04   0.50   90   0.125   0   0.00   0.40   0.200 + 0.025 + 0.000 + 0.080 = 0.305
-#  mem-05   0.30   90   0.125   0   0.00   0.20   0.120 + 0.025 + 0.000 + 0.040 = 0.185
-#  mem-06   0.20   90   0.125   0   0.00   0.10   0.080 + 0.025 + 0.000 + 0.020 = 0.125
+#  mem-01   0.95   90   0.125   0   0.00   0.10   0.380 + 0.025 + 0.000 + 0.020 = 0.425
+#  mem-02   0.60    0   1.000   9   0.75   0.80   0.240 + 0.200 + 0.150 + 0.160 = 0.750
+#  mem-03   0.80   30   0.500   3   0.50   0.50   0.320 + 0.100 + 0.100 + 0.100 = 0.620
+#  mem-04   0.70   60   0.250   1   0.25   0.30   0.280 + 0.050 + 0.050 + 0.060 = 0.440
+#  mem-05   0.35   30   0.500   9   0.75   0.90   0.140 + 0.100 + 0.150 + 0.180 = 0.570
+#  mem-06   0.25   90   0.125   0   0.00   0.20   0.100 + 0.025 + 0.000 + 0.040 = 0.165
 #
-# Note the ordering is NOT the same as ordering by `semantic` alone would give if
-# the other signals were ignored — mem-01 beats mem-02 by more than its semantic
-# lead, which is what makes this set able to fail a "sorted by score only"
-# implementation.
+# THE SIGNALS ARE DELIBERATELY ANTI-CORRELATED. READ THIS BEFORE EDITING THEM.
+# ---------------------------------------------------------------------------
+# The first version of this fixture had all four signals rise together —
+# the best memory was best at everything, the worst worst at everything. Every
+# hand-set number was correct and the resulting order was genuinely the weighted
+# order, so it looked fine. It was worthless.
+#
+# When all four signals are co-monotonic, EVERY set of positive weights produces
+# the SAME order. The verifier re-ranked that fixture under five schemes — the
+# correct 0.4/0.2/0.2/0.2, equal 0.25 each, semantic-only 1/0/0/0, an inverted
+# 0.2/0.2/0.2/0.4 and a recency-heavy 0.1/0.7/0.1/0.1 — and all five agreed.
+# `test_ranking_order_matches_weighted_formula` would have passed against a
+# ranker that ignored three of its four inputs.
+#
+# This set is built so the schemes DISAGREE, which is the only way an ordering
+# test can testify to anything:
+#
+#   mem-01  the trap. Best semantic match in the set (0.95) and worst at
+#           everything else — stale, never reinforced, judged unimportant. A
+#           semantic-only ranker puts it FIRST; the correct weighting puts it
+#           FIFTH. One candidate does most of the discriminating work.
+#   mem-05  the mirror image. Weak semantic match (0.35), but fresh, heavily
+#           reinforced and the most important thing in the set. Importance- and
+#           recency-heavy schemes lift it above mem-03; the correct weighting
+#           does not.
+#
+# `WRONG_WEIGHTINGS` below records the four schemes, and
+# `test_ranking_order_would_break_under_a_wrong_weighting` asserts each one
+# actually reorders this set. If you change a signal here, that test is what
+# tells you whether you destroyed the fixture's discriminating power.
 
 EXPECTED_SIGNALS: dict[str, dict[str, float]] = {
-    "mem-01": {"semantic": 0.90, "recency": 1.000, "frequency": 0.75, "importance": 0.80},
-    "mem-02": {"semantic": 0.80, "recency": 0.500, "frequency": 0.50, "importance": 0.60},
-    "mem-03": {"semantic": 0.60, "recency": 0.250, "frequency": 0.25, "importance": 0.50},
-    "mem-04": {"semantic": 0.50, "recency": 0.125, "frequency": 0.00, "importance": 0.40},
-    "mem-05": {"semantic": 0.30, "recency": 0.125, "frequency": 0.00, "importance": 0.20},
-    "mem-06": {"semantic": 0.20, "recency": 0.125, "frequency": 0.00, "importance": 0.10},
+    "mem-01": {"semantic": 0.95, "recency": 0.125, "frequency": 0.00, "importance": 0.10},
+    "mem-02": {"semantic": 0.60, "recency": 1.000, "frequency": 0.75, "importance": 0.80},
+    "mem-03": {"semantic": 0.80, "recency": 0.500, "frequency": 0.50, "importance": 0.50},
+    "mem-04": {"semantic": 0.70, "recency": 0.250, "frequency": 0.25, "importance": 0.30},
+    "mem-05": {"semantic": 0.35, "recency": 0.500, "frequency": 0.75, "importance": 0.90},
+    "mem-06": {"semantic": 0.25, "recency": 0.125, "frequency": 0.00, "importance": 0.20},
 }
 
 # Hand-computed weighted totals — see the table above.
 EXPECTED_SCORES: dict[str, float] = {
-    "mem-01": 0.870,
-    "mem-02": 0.640,
-    "mem-03": 0.440,
-    "mem-04": 0.305,
-    "mem-05": 0.185,
-    "mem-06": 0.125,
+    "mem-01": 0.425,
+    "mem-02": 0.750,
+    "mem-03": 0.620,
+    "mem-04": 0.440,
+    "mem-05": 0.570,
+    "mem-06": 0.165,
 }
 
-# The order those scores imply, highest first.
-EXPECTED_ORDER: list[str] = ["mem-01", "mem-02", "mem-03", "mem-04", "mem-05", "mem-06"]
+# The order those scores imply, highest first. Note it is NOT the order of the
+# ids, NOT the order of `semantic` (which would start mem-01), and NOT the order
+# of `importance` (which would start mem-05).
+EXPECTED_ORDER: list[str] = ["mem-02", "mem-03", "mem-05", "mem-04", "mem-01", "mem-06"]
+
+# Weightings that are wrong but plausible — each is something a mis-implemented
+# ranker would actually do. Every one of these must reorder the set above.
+WRONG_WEIGHTINGS: dict[str, tuple[float, float, float, float]] = {
+    # (semantic, recency, frequency, importance)
+    "equal": (0.25, 0.25, 0.25, 0.25),
+    "semantic_only": (1.0, 0.0, 0.0, 0.0),
+    "importance_heavy": (0.2, 0.2, 0.2, 0.4),
+    "recency_heavy": (0.1, 0.7, 0.1, 0.1),
+}
 
 CONTENTS: dict[str, str] = {
-    "mem-01": "The user plays the cello.",
-    "mem-02": "The user plays the cello on Sunday mornings at the community hall.",
-    "mem-03": "The user's daughter is named Priya and started school this year.",
-    "mem-04": "The user is allergic to shellfish.",
-    "mem-05": "The user prefers replies of three sentences or fewer.",
+    # The best lexical match in the set, and nearly worthless: a one-off
+    # question from months ago that the user never returned to.
+    "mem-01": "The user once asked which rosin suits a cello bow in dry weather.",
+    # The near-duplicate pair M2's extractor really produced from one turn —
+    # both rows exist, their similarity is below the 0.82 dedup threshold.
+    "mem-02": "The user plays the cello.",
+    "mem-03": "The user plays the cello on Sunday mornings at the community hall.",
+    "mem-04": "The user's cello case has a broken latch.",
+    # Weak match for a cello query, but the single most important fact here.
+    "mem-05": "The user is severely allergic to shellfish.",
     "mem-06": "The user mentioned liking the smell of rain on hot pavement.",
 }
 
@@ -142,12 +185,12 @@ def known_score_candidates() -> list[RetrievalCandidate]:
     """
     spec = [
         # (id, semantic, age_days, reinforcement_count, importance, path)
-        ("mem-04", 0.50, 90, 0, 0.40, KEYWORD),
-        ("mem-01", 0.90, 0, 9, 0.80, SEMANTIC),
-        ("mem-06", 0.20, 90, 0, 0.10, KEYWORD),
-        ("mem-03", 0.60, 60, 1, 0.50, SEMANTIC),
-        ("mem-05", 0.30, 90, 0, 0.20, KEYWORD),
-        ("mem-02", 0.80, 30, 3, 0.60, SEMANTIC),
+        ("mem-04", 0.70, 60, 1, 0.30, KEYWORD),
+        ("mem-01", 0.95, 90, 0, 0.10, SEMANTIC),
+        ("mem-06", 0.25, 90, 0, 0.20, KEYWORD),
+        ("mem-03", 0.80, 30, 3, 0.50, SEMANTIC),
+        ("mem-05", 0.35, 30, 9, 0.90, KEYWORD),
+        ("mem-02", 0.60, 0, 9, 0.80, SEMANTIC),
     ]
     return [
         make_candidate(

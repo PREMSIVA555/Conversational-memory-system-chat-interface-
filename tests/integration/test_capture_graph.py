@@ -43,19 +43,37 @@ ASSISTANT_ACK = "Got it, I'll remember that."
 # ---------------------------------------------------------------------------
 
 
-async def test_capture_writes_memory_async(chat_client, capture_worker, store, subject_id):
-    """POST a memorable turn; a complete `memories` row appears within the bound."""
+@pytest.mark.parametrize("stream", [True, False], ids=["streaming", "non_streaming"])
+async def test_capture_writes_memory_async(chat_client, capture_worker, store, subject_id, stream):
+    """POST a memorable turn; a complete `memories` row appears within the bound.
+
+    PARAMETRISED OVER BOTH RESPONSE SHAPES ON PURPOSE. The two branches reach
+    the worker by genuinely different routes -- the streaming path enqueues
+    after the final `yield` of the response generator, the non-streaming path
+    via a Starlette `BackgroundTask` -- so they can and did diverge.
+
+    The `stream=False` branch shipped broken: `BackgroundTask` threadpools a
+    sync callable, and `get_worker()` needs a running loop, so a real turn
+    returned 500 after generating its reply and captured nothing. Every test
+    used the `stream=True` default, so nothing caught it. This parametrisation
+    closes the class, not just that instance.
+    """
     response = await chat_client.post(
         "/chat",
         json={
             "message": "I'm allergic to peanuts, and I work as a nurse in Lisbon.",
             "subject_id": subject_id,
             "actor_id": subject_id,
+            "stream": stream,
         },
     )
 
-    assert response.status_code == 200
-    assert response.text.strip(), "the chat endpoint must return a non-empty reply"
+    assert response.status_code == 200, (
+        f"stream={stream} returned {response.status_code}: {response.text[:400]}"
+    )
+
+    reply = response.text if stream else response.json()["reply"]
+    assert reply.strip(), "the chat endpoint must return a non-empty reply"
     assert response.headers["X-Subject-Id"] == subject_id
 
     # The row must NOT exist yet at the moment the response completed: capture
@@ -88,10 +106,17 @@ async def test_capture_writes_memory_async(chat_client, capture_worker, store, s
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("stream", [True, False], ids=["streaming", "non_streaming"])
 async def test_capture_does_not_block_response(
-    chat_client, capture_worker, store, subject_id, monkeypatch
+    chat_client, capture_worker, store, subject_id, monkeypatch, stream
 ):
     """With capture artificially slowed to 5s, the reply still returns in well under 1s.
+
+    Parametrised over both response shapes for the same reason as the test
+    above. The non-streaming branch is the sharper case: Starlette runs a
+    `BackgroundTask` *before* the ASGI call returns, so if that task did the
+    capture work itself rather than merely enqueuing it, this assertion would
+    catch it -- the client would wait out the full 5 seconds.
 
     The reply generation is stubbed to a constant so the measurement isolates
     the capture path -- otherwise provider latency would dominate and the test
@@ -128,12 +153,15 @@ async def test_capture_does_not_block_response(
             "message": "I ride a red bicycle to work every day.",
             "subject_id": subject_id,
             "actor_id": subject_id,
+            "stream": stream,
         },
     )
     elapsed = time.perf_counter() - started
 
-    assert response.status_code == 200
-    assert response.text == "Understood."
+    assert response.status_code == 200, (
+        f"stream={stream} returned {response.status_code}: {response.text[:400]}"
+    )
+    assert (response.text if stream else response.json()["reply"]) == "Understood."
     assert elapsed < latency_budget, (
         f"response took {elapsed:.2f}s with a {capture_delay}s capture delay -- "
         "capture is on the critical path"

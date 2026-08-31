@@ -567,6 +567,184 @@ Standing rule from here: **restart the API before dispatching any verifier**, an
 in-process ASGI clients in tests over the long-running server. Recorded in kickoff.md's
 gotchas so it does not have to be rediscovered a third time.
 
+---
+
+### W3 — M2.5 (thin chat UI) ∥ M4 (ranking + composer)
+
+Both built. Both under independent verification. Disjoint by construction: `frontend/` vs
+`context/` + `retrieve/features,ranking`.
+
+### D11 — A production bug the whole verification chain missed
+
+`POST /chat` with `stream: false` returned **500 after generating the reply** — the user got an
+answer and nothing was captured. Silent memory loss, which is the worst possible failure for
+this system.
+
+```
+api/chat.py:78 _enqueue_capture → capture/worker.py:185 get_worker
+RuntimeError: no running event loop
+```
+
+**Root cause.** `_enqueue_capture` is deliberately a plain `def` so no caller can await it —
+correct on the streaming path, where it runs inside the response generator with a loop already
+running. But Starlette's `BackgroundTask` **inspects the callable**: a sync function is
+dispatched via `run_in_threadpool`, and in that worker thread there is no loop, so
+`get_worker()` cannot build its `asyncio.Queue`. *The exact property that makes it safe on one
+path breaks it on the other.*
+
+**Why every layer missed it.** Every test and the default request shape use `stream=True`. The
+`stream=False` branch had **no test and no default traffic** — invisible to the builder, to the
+verifier, and to me. It surfaced only because the M2.5 frontend's proxy needs JSON and
+therefore sends `stream: false`, and because the plan's own DoD line says *"send one real chat
+turn through the running app"*. That instruction earned its place.
+
+Fixed with an `async def` wrapper so Starlette awaits it on the loop; the wrapper adds no await
+of its own, preserving the non-blocking property. M2 then did better than the fix: it
+**parametrised the capture tests over `stream=[True, False]`**, closing the whole class rather
+than the instance, and proved the test catches the bug by reverting the fix:
+
+```
+test_capture_writes_memory_async[streaming]     PASSED
+test_capture_writes_memory_async[non_streaming] FAILED
+E  CaptureWorkerNotOnEventLoop: ... Fix: wrap the callable in an `async def`.
+```
+
+It also made `get_worker()` raise a **named** error pointing at `BackgroundTask` /
+`run_in_threadpool`, and deliberately declined to make it *tolerate* a missing loop — a queue
+built off-loop would have no consumers, so `enqueue()` would accept jobs and silently drop
+them: the same silent-loss shape as the incident, minus the 500 that revealed it. Correct call.
+
+Sibling audit came back clean: one `BackgroundTask` site (now wrapped), two `get_worker()` call
+sites both on-loop, and the only other threadpool hop uses the sync psycopg driver.
+
+**Standing lesson:** a code path with neither a test nor default traffic is invisible to every
+layer of this process. Non-default flags deserve parametrised coverage, not a single-shape test.
+
+### D12 — A latent bug that would have failed a *future* milestone's tests
+
+While adding those cases, M2 hit `PoolTimeout: couldn't get a connection after 30.00 sec` on a
+test that had nothing to do with its change.
+
+`store.db` memoises `AsyncConnectionPool` globally, but pytest-asyncio closes the loop per test.
+A pool built on test 1's loop is not `closed`, so test 2 reuses it; its connections raise, are
+never returned, and the pool **drains one test at a time**. The failure then lands on whichever
+test happens to be running when the last connection dies — *not* on the test that caused it.
+Adding two unrelated parametrised cases upstream merely **moved** the failure onto the
+worker-pool test.
+
+That is the diagnostic detail worth keeping: a failure that migrates when you add unrelated
+tests is a shared-resource leak, not a bug in the test it lands on.
+
+M2 fixed it with an autouse teardown that cancels worker tasks and calls `close_pools()`, and
+correctly flagged that **any suite touching Postgres across more than ~10 tests will hit this**.
+
+**I promoted it from `tests/integration/conftest.py` to `tests/conftest.py`** so the suites
+M5 (`tests/reliability/`), M7 (`tests/acceptance/`) and M8 (`tests/distributed/`) will add
+inherit it, rather than each rediscovering a `PoolTimeout` that points at the wrong test.
+Verified the promotion is safe — an async autouse fixture applied to sync unit tests was the
+risk, and it is not one: **42 unit passed**, **21 integration passed**. Both teardown calls are
+no-ops on an empty registry, so unit tests pay effectively nothing.
+
+This is the second fixture promoted to a shared conftest (after the LiteLLM client-cache
+flush). Both were found by a milestone agent, reported rather than patched locally, and
+generalised centrally — the file-ownership rule working as intended.
+
+### D13 — CORS: server-side proxy rather than backend middleware
+There is no `CORSMiddleware` in `api/`; `OPTIONS /chat` returns 405, so a preflighted POST from
+a browser to `:8000` would be blocked. The M2.5 agent **did not edit the backend it does not
+own**. It added a server-side proxy at `frontend/app/api/chat/route.ts` so the browser talks
+same-origin.
+
+Keeping that shape. It is the better architecture here: the backend never needs to be
+browser-reachable and no origin allowlist has to be maintained. The alternative — adding
+`CORSMiddleware` and pointing `sendChat` at `resolveApiBaseUrl()` — is documented in
+`frontend/README.md` if we ever want the browser to call `:8000` directly. **Open question for
+M6:** the proxy must pass token streaming through unchanged; the W3 verifier has been asked to
+assess that specifically, since M6 streams through this same route.
+
+### D14 — `infra/.env` was overwritten with the blank template
+
+**The most dangerous incident so far**, because everything kept appearing to work.
+
+At some point an agent copied `infra/.env.example` over `infra/.env`. The file's own header
+gave it away — it read *"This file must always carry the same variable names with EMPTY
+values"*, which is the example's docstring, not the real file's. **All 30 values were blank**,
+including both API keys and every DSN.
+
+**Why it stayed invisible for hours.** The running API process and the containers already had
+their environment loaded in memory, so `/health` returned 200, chat turns returned replies, and
+the containers stayed healthy. Nothing that was already running noticed. Only a *fresh* process
+reading the file saw the damage.
+
+**How it surfaced.** Two independent symptoms that looked unrelated:
+
+1. My scratchpad script failed with `DATABASE_URL is not set` while the app was demonstrably
+   talking to Postgres.
+2. Two of M2's unit tests failed with `extractor made 0 provider calls`.
+
+**I misdiagnosed the second one.** M4 reported the failures; I inferred a collision between
+M2's new triviality pre-filter and the provider-call guard, and briefed M2 on that theory with
+some confidence. It was wrong. M2 **verified before changing anything** and found the real
+cause: `GROQ_API_KEY=` empty produced `GroqException - Illegal header value b'Bearer '`. The
+pre-filter only fires on genuinely empty text; `"hi"` expands to a non-empty turn, so the
+provider *was* being called. Recording this because the lesson is mine: a plausible mechanism
+that explains the symptom is not a diagnosis, and I should have read the failing path before
+briefing a fix.
+
+**The guard vindicated itself.** Those two tests exist because I asked M2 to close a
+vacuous-pass hole. With the keys blanked, the old version would have reported **green** — an
+empty candidate list is exactly what a dead provider produces. The guard converted a silent
+credential failure into a loud test failure. That is the entire argument for it.
+
+**Restoring it had its own trap.** `docker inspect memsys-postgres` reports
+`POSTGRES_PASSWORD=memory`, so I restored that — and got
+`FATAL: password authentication failed`. `POSTGRES_PASSWORD` only takes effect when the data
+volume is **first initialized**; this volume was created with `memory_local_dev` and kept it,
+while the compose config drifted. **The volume is ground truth, not the container env.** Noted
+in the restored file so the next person does not repeat it.
+
+Restored from `docker inspect` for the container-owned values plus the DSNs recovered from an
+earlier on-disk snapshot. Verified: `62 passed` across M1/M3/M4 suites, `65 passed` unit,
+`git check-ignore` still confirms the file is ignored.
+
+**Preventive change:** the restored file's header now states plainly that it carries the real
+values and that the example must never be copied over it. The deeper fix — a preflight that
+fails loudly when a required value is present-but-empty — is worth doing; `load_env()`
+currently "succeeds" against a fully blank file, which is what made this silent.
+
+### D15 — The pool handed out dead connections
+
+Found while chasing D14: a real capture write died at the final INSERT with
+
+```
+OperationalError: sending query failed: could not receive data from server:
+Software caused connection abort (10053)
+```
+
+The memory had been extracted, PII-scrubbed, scored and embedded — then lost at the last step.
+`AsyncConnectionPool` was created without `check=`, so it will lend a socket the server has
+already dropped. An idle pooled connection can die for reasons entirely outside the app
+(server restart, NAT/firewall idle reaping, laptop sleep), and a background capture worker
+holding a pool across quiet periods is precisely the shape that hits it.
+
+Added `check=AsyncConnectionPool.check_connection` plus a 30s acquire timeout and
+`max_idle=300`. Cost is one cheap round-trip per checkout; the alternative is silently losing
+writes.
+
+**Proved by killing a connection server-side** rather than trusting the parameter:
+
+```
+pooled connection backend pid = 15426
+terminated backend 15426 server-side
+query after kill: ok=1  served by pid=15427
+RESULT: PASS - pool discarded the dead connection
+```
+
+This is the second silent-write-loss bug in this project (after the `stream:false` 500). Both
+had the same signature: the reply succeeded, the user saw nothing wrong, and the memory
+vanished. For a memory system that is the worst failure mode there is, and neither was caught
+by a test — both were found by running the thing for real.
+
 ### D9 — Rate limits are now the dominant constraint, not correctness
 Both W2 agents have been killed twice by session rate limits mid-task. Both times I surveyed
 the on-disk state first and **resumed** rather than cold-restarting, so each agent kept its

@@ -23,7 +23,7 @@ from typing import Any
 from llm import config as llm_config
 
 from capture import config as capture_config
-from capture.metrics import log_warning, node_span
+from capture.metrics import log_event, log_warning, node_span
 from graphs.capture_state import Candidate, CaptureState, Turn, turn_text
 
 # Free-form source tags the model may pick from. Anything else it invents is
@@ -123,21 +123,46 @@ def _coerce_candidates(items: list[Any]) -> list[Candidate]:
     return out
 
 
-def _is_trivially_empty(text: str) -> bool:
-    """Skip the provider round-trip when there is provably no text to read.
+#: Log event emitted when a turn is skipped without consulting the model.
+PRE_FILTER_EVENT = "capture.extract.pre_filtered"
 
-    Deliberately narrow: it fires only on genuinely empty input. Deciding that
-    "hi" or "thanks" is non-memorable is the *model's* job, not a keyword list's
-    -- a stoplist here would make `test_extract_returns_empty_for_nonmemorable_turn`
-    pass without the extractor ever being exercised.
+
+def pre_filter_reason(text: str) -> str | None:
+    """Why this turn can be skipped without a provider call, or None to ask the model.
+
+    Deliberately narrow: it fires ONLY on a turn with no text at all. Deciding
+    that "hi" or "thanks" is non-memorable is the *model's* job, not a keyword
+    list's -- a stoplist here would make
+    `test_extract_returns_empty_for_nonmemorable_turn` pass without the
+    extractor ever being exercised, and would risk swallowing short but highly
+    memorable turns ("I'm coeliac", "I'm allergic to peanuts"), which are
+    exactly the facts worth remembering. `test_pre_filter_only_fires_on_empty_turns`
+    pins that boundary.
+
+    WHY IT RETURNS A REASON RATHER THAN A BOOL -- an empty candidate list now has
+    three possible causes, and they must stay distinguishable:
+
+      1. pre-filtered trivial turn  -> healthy, 0 provider calls, logs this event
+      2. model ran, found nothing   -> healthy, 1 provider call, no error logged
+      3. provider failed            -> BROKEN,  0 provider calls, logs provider_error
+
+    A bare bool would leave (1) and (3) looking identical from the outside,
+    which is the ambiguity the call-count guard exists to remove. Emitting a
+    distinct event means each case has its own positive signal.
     """
-    return not text.strip()
+    if not text.strip():
+        return "empty_turn"
+    return None
 
 
 async def extract_candidates(turn: Turn, *, max_candidates: int | None = None) -> list[Candidate]:
     """Extract zero or more atomic facts from `turn`."""
     text = turn_text(turn)
-    if _is_trivially_empty(text):
+    skipped = pre_filter_reason(text)
+    if skipped is not None:
+        # A positive signal, so "skipped a trivial turn" is never mistaken for
+        # "the provider died and the error was swallowed".
+        log_event(PRE_FILTER_EVENT, reason=skipped)
         return []
 
     cap = max_candidates if max_candidates is not None else capture_config.max_candidates_per_turn()

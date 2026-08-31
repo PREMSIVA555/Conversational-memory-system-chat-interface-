@@ -40,6 +40,22 @@ QUEUE_DEPTH = Gauge(
 )
 
 
+class CaptureWorkerNotOnEventLoop(RuntimeError):
+    """The worker was touched from a thread with no running event loop.
+
+    Deliberately NOT made "robust" by silently tolerating the situation. The
+    worker's whole contract is that an enqueued turn is eventually captured; a
+    queue created off-loop would have no consumers draining it, so enqueuing
+    into it would accept the job and then lose it. A loud failure beats silent
+    data loss -- the production incident this replaces was exactly that shape,
+    except the reply had already been generated when it blew up.
+
+    Running a private background loop in its own thread would make it work, but
+    that is an architectural change with real hazards (psycopg connections are
+    bound to the loop that created them), and it is not M2's to make.
+    """
+
+
 class CaptureJob(dict):
     """A queued turn. `{'job_id', 'subject_id', 'actor_id', 'turn'}`."""
 
@@ -59,8 +75,27 @@ class CaptureWorker:
     # -- lifecycle ---------------------------------------------------------
 
     def ensure_started(self) -> None:
-        """Bind to the running loop, rebuilding the pool if the loop changed."""
-        loop = asyncio.get_running_loop()
+        """Bind to the running loop, rebuilding the pool if the loop changed.
+
+        Raises `CaptureWorkerNotOnEventLoop` when called off-loop -- see that
+        class for the trap this names.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError as exc:
+            raise CaptureWorkerNotOnEventLoop(
+                "CaptureWorker.ensure_started() was called with no running event loop. "
+                "The worker owns an asyncio.Queue and consumer tasks, which can only be "
+                "created on a loop.\n\n"
+                "The usual cause is a SYNC callable handed to something that dispatches "
+                "it to a thread -- most often starlette.background.BackgroundTask, which "
+                "inspects the callable and sends a plain `def` through run_in_threadpool. "
+                "In that worker thread there is no loop and this raises.\n\n"
+                "Fix: wrap the callable in an `async def`. Starlette awaits async "
+                "background callables on the loop instead of threadpooling them, and the "
+                "wrapper need not await anything itself, so a deliberately non-blocking "
+                "enqueue stays non-blocking. See api/chat.py:_enqueue_capture_background."
+            ) from exc
         if self._loop is loop and self._tasks and not all(t.done() for t in self._tasks):
             return
         self._loop = loop

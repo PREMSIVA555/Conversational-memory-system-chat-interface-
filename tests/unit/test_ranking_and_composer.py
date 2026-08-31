@@ -16,10 +16,12 @@ import math
 import pytest
 
 from context import config as context_config
-from context.composer import compose, compose_profile_block, render_line
-from context.tokens import count_tokens
+from context import tokens
+from context.composer import compose, compose_profile_block, render_block, render_line
+from context.tokens import count_tokens, estimate_tokens
 from retrieve import config as retrieve_config
 from retrieve import features
+from retrieve import ranking
 from retrieve.ranking import (
     WEIGHT_FREQUENCY,
     WEIGHT_IMPORTANCE,
@@ -37,7 +39,9 @@ from tests.unit.fixtures.ranking_fixtures import (
     NULL_SIGNAL_EXPECTED_SCORE,
     TIED_EXPECTED_ORDER,
     TIED_EXPECTED_SCORE,
+    WRONG_WEIGHTINGS,
     known_score_candidates,
+    make_candidate,
     null_signal_candidate,
     oversized_candidates,
     single_oversized_candidate,
@@ -70,16 +74,16 @@ def test_ranking_order_matches_weighted_formula():
 def test_score_matches_hand_computed_value():
     """score_candidate() reproduces 0.4/0.2/0.2/0.2 exactly on a known fixture.
 
-    mem-02's signals are semantic 0.80, recency 0.50, frequency 0.50,
-    importance 0.60, so the weighted score must be
+    mem-03's signals are semantic 0.80, recency 0.50, frequency 0.50,
+    importance 0.50, so the weighted score must be
 
-        0.4*0.80 + 0.2*0.50 + 0.2*0.50 + 0.2*0.60
-      = 0.320    + 0.100    + 0.100    + 0.120     = 0.640
+        0.4*0.80 + 0.2*0.50 + 0.2*0.50 + 0.2*0.50
+      = 0.320    + 0.100    + 0.100    + 0.100     = 0.620
     """
-    candidate = next(c for c in known_score_candidates() if c.memory_id == "mem-02")
+    candidate = next(c for c in known_score_candidates() if c.memory_id == "mem-03")
 
     breakdown = score_breakdown(candidate, NOW)
-    signals = EXPECTED_SIGNALS["mem-02"]
+    signals = EXPECTED_SIGNALS["mem-03"]
 
     # Each signal is what the fixture set it to...
     assert breakdown.semantic == pytest.approx(signals["semantic"], abs=TOLERANCE)
@@ -87,14 +91,53 @@ def test_score_matches_hand_computed_value():
     assert breakdown.frequency == pytest.approx(signals["frequency"], abs=TOLERANCE)
     assert breakdown.importance == pytest.approx(signals["importance"], abs=TOLERANCE)
 
-    # ...and the total is the hand-computed 0.640, spelled out here so a
+    # ...and the total is the hand-computed 0.620, spelled out here so a
     # reweighting cannot pass by changing both the code and one constant.
-    assert score_candidate(candidate, NOW) == pytest.approx(0.640, abs=TOLERANCE)
-    assert breakdown.total == pytest.approx(0.640, abs=TOLERANCE)
+    assert score_candidate(candidate, NOW) == pytest.approx(0.620, abs=TOLERANCE)
+    assert breakdown.total == pytest.approx(0.620, abs=TOLERANCE)
 
-    # A wrong weighting that still sums to 1 (e.g. 0.25 each) would give 0.6125,
-    # so this fixture genuinely discriminates between weightings.
-    assert 0.25 * (0.80 + 0.50 + 0.50 + 0.60) != pytest.approx(0.640, abs=1e-3)
+    # A wrong weighting that still sums to 1 — 0.25 each — gives
+    # 0.25 * (0.80 + 0.50 + 0.50 + 0.50) = 0.25 * 2.30 = 0.575, not 0.620, so
+    # this fixture discriminates between weightings on the score as well as on
+    # the order.
+    assert 0.25 * (0.80 + 0.50 + 0.50 + 0.50) == pytest.approx(0.575, abs=TOLERANCE)
+    assert 0.575 != pytest.approx(0.620, abs=1e-3)
+
+
+@pytest.mark.parametrize("scheme", sorted(WRONG_WEIGHTINGS))
+def test_ranking_order_would_break_under_a_wrong_weighting(monkeypatch, scheme):
+    """Additional: the ordering fixture actually discriminates between weightings.
+
+    THIS IS THE TEST THAT GIVES `test_ranking_order_matches_weighted_formula`
+    ITS MEANING. An ordering assertion proves nothing unless a wrong ranker
+    would fail it, and the first version of this fixture had all four signals
+    rising together, so every positive weighting produced the identical order —
+    the order test would have passed against a ranker that ignored three of its
+    four inputs.
+
+    Here each wrong-but-plausible weighting is patched over the real constants
+    and the fixture is re-ranked. Every scheme must produce a DIFFERENT order
+    from `EXPECTED_ORDER`; if one does not, this fixture has lost its teeth and
+    the order test has quietly become decorative again.
+
+    The weights are patched on `retrieve.ranking` rather than on
+    `retrieve.config`, because `score_breakdown()` reads its module globals —
+    patching the source module would not change the arithmetic.
+    """
+    semantic, recency, frequency, importance = WRONG_WEIGHTINGS[scheme]
+    monkeypatch.setattr(ranking, "WEIGHT_SEMANTIC", semantic)
+    monkeypatch.setattr(ranking, "WEIGHT_RECENCY", recency)
+    monkeypatch.setattr(ranking, "WEIGHT_FREQUENCY", frequency)
+    monkeypatch.setattr(ranking, "WEIGHT_IMPORTANCE", importance)
+
+    candidates = known_score_candidates()
+    wrong_order = [item.memory_id for item in rank(candidates, top_k=len(candidates), now=NOW)]
+
+    assert wrong_order != EXPECTED_ORDER, (
+        f"the {scheme!r} weighting produced the same order as the correct one; "
+        "the fixture's signals must be anti-correlated enough that a wrong "
+        "weighting reorders them, or the ordering test proves nothing"
+    )
 
 
 def test_weights_sum_to_one():
@@ -175,8 +218,6 @@ def test_composer_respects_token_budget():
     ranked = rank(oversized_candidates(6), top_k=6, now=NOW)
 
     # Premise: the full set really does not fit.
-    from context.composer import render_block
-
     assert count_tokens(render_block(ranked)) > budget
 
     result = compose_profile_block(ranked, budget=budget)
@@ -246,6 +287,55 @@ def test_composer_does_not_truncate_by_position():
         assert by_id[dropped_id].content not in result.block
 
 
+def test_composer_drop_policy_is_score_based_not_positional():
+    """Additional: the same memories survive however the list is ordered.
+
+    `test_composer_does_not_truncate_by_position` rules out cutting the string;
+    this rules out the other positional shortcut — dropping from the end of the
+    list. Handing the composer a reversed (worst-first) list changes every
+    position and no score, so a position-based drop keeps the wrong set and a
+    score-based drop keeps exactly the same set.
+    """
+    ranked = rank(oversized_candidates(6), top_k=6, now=NOW)
+
+    in_order = compose_profile_block(ranked, budget=60)
+    reversed_order = compose_profile_block(list(reversed(ranked)), budget=60)
+
+    assert in_order.dropped_ids, "budget must actually force drops"
+    assert set(reversed_order.memory_ids) == set(in_order.memory_ids)
+    assert set(reversed_order.dropped_ids) == set(in_order.dropped_ids)
+
+
+def test_composer_tie_break_is_by_memory_id_not_list_position():
+    """Additional: equal-scoring candidates drop in the same order, any input order.
+
+    `_lowest_scored_index` used to break ties on list position, which matches
+    `memory_id` order only when the caller already sorted. `compose()` always
+    ranks first so it never saw the difference — but `compose_profile_block()`
+    is exported and takes whatever order it is given, and reversing that order
+    changed which memories survived.
+    """
+    ranked = rank(tied_candidates(), top_k=4, now=NOW)
+    assert len({round(item.score, 12) for item in ranked}) == 1, "premise: all tied"
+
+    # A budget that fits some but not all of the tied memories.
+    budget = count_tokens(render_block(ranked[:2]))
+
+    orderings = {
+        "ranked": list(ranked),
+        "reversed": list(reversed(ranked)),
+        "rotated": ranked[2:] + ranked[:2],
+    }
+    kept = {
+        name: tuple(sorted(compose_profile_block(items, budget=budget).memory_ids))
+        for name, items in orderings.items()
+    }
+
+    assert len(set(kept.values())) == 1, f"input order changed the surviving set: {kept}"
+    # And the set kept is the ids that sort first — the ones rank() prefers.
+    assert kept["ranked"] == tuple(sorted(TIED_EXPECTED_ORDER[: len(kept["ranked"])]))
+
+
 def test_composer_empty_candidates_returns_empty_block():
     """An empty candidate list yields an empty block and raises nothing."""
     for result in (compose([]), compose_profile_block([]), compose(None)):
@@ -272,13 +362,100 @@ def test_single_oversized_memory_yields_empty_block():
 
 
 # ---------------------------------------------------------------------------
+# the tokenizer-free fallback (plan step 6)
+# ---------------------------------------------------------------------------
+
+# Scripts and shapes where a chars-per-token divisor breaks down. Each of these
+# costs a BPE trained mostly on English far more than one token per character.
+NON_ASCII_SAMPLES = [
+    "ユーザーはチェロを弾きます。",                      # Japanese
+    "🎻🎼🎶 the user practises daily 🎻🎼🎶",             # emoji
+    "🇯🇵🇬🇧🇧🇷",                                          # flag emoji (surrogate pairs)
+    "המשתמש מנגן בצ'לו",                                # Hebrew
+    "L'utilisateur préfère des réponses très concises.",  # accented Latin
+    "!!!???...---___===+++***&&&^^^%%%$$$###@@@!!!???",   # punctuation-dense ASCII
+    "The user plays the cello on Sunday mornings.",       # plain English control
+]
+
+
+@pytest.mark.parametrize("sample", NON_ASCII_SAMPLES)
+def test_token_estimate_never_undercounts_non_ascii(sample):
+    """The tokenizer-free fallback is an upper bound, not a guess.
+
+    The original fallback divided character count by 3.0 and under-counted 12 of
+    21 samples — Japanese 19 real tokens against 9 estimated, emoji 20 against 7,
+    flag emoji 12 against 2. Composed live, that produced a block 60% over its
+    budget while believing itself inside it, and the composer's own guard could
+    not catch it because the guard re-uses this counter.
+
+    Every sample here would fail that version. The bound now used — UTF-8 byte
+    length — holds for any script because a BPE token never decodes to fewer
+    than one byte.
+    """
+    real = count_tokens(sample)  # exact tokenizer for the configured model
+    estimated = estimate_tokens(sample)
+
+    assert estimated >= real, (
+        f"estimate {estimated} under-counted the real {real} tokens for {sample!r}; "
+        "an under-counting estimate emits over-budget blocks"
+    )
+
+
+def test_composer_respects_budget_with_no_tokenizer_available(monkeypatch):
+    """The budget guarantee survives the degraded counter, on non-ASCII content.
+
+    Forces the no-tokenizer path and composes Japanese — the case that made the
+    old estimate emit a block it believed was 76 tokens and the real tokenizer
+    called 163, against a 120-token budget.
+
+    Both halves matter. The sweep's tight budgets are the ones the old estimate
+    failed; the loose budget at the end is there so the test cannot pass by
+    composing nothing at all.
+    """
+    japanese = [
+        make_candidate(
+            f"jp-{index:02d}",
+            "ユーザーは日曜日の朝にチェロを弾きます。コミュニティホールで練習します。",
+            semantic=0.9 - 0.05 * index,
+            age_days=0,
+            reinforcement_count=3,
+            importance=0.5,
+        )
+        for index in range(5)
+    ]
+    ranked = rank(japanese, top_k=5, now=NOW)
+
+    # Bind the real counter before the tokenizer is taken away.
+    real_count = count_tokens
+    real_full_block = real_count(render_block(ranked))
+
+    monkeypatch.setattr(tokens, "encoding_for", lambda model=None: None)
+    results = {
+        budget: compose_profile_block(ranked, budget=budget) for budget in (120, 160, 200, 400)
+    }
+    monkeypatch.undo()
+
+    for budget, result in results.items():
+        # The degraded counter's own view is within budget...
+        assert result.token_count <= budget
+        # ...and so is the truth, which is the property that actually matters.
+        assert real_count(result.block) <= budget, (
+            f"block was {real_count(result.block)} real tokens against a "
+            f"{budget}-token budget; the fallback counter under-counted"
+        )
+
+    # Non-vacuity: the tight budgets are meaningful (the whole set really does
+    # not fit at 120), and the loose one still composes something.
+    assert real_full_block > 120
+    assert results[400].memory_ids
+
+
+# ---------------------------------------------------------------------------
 # additional coverage for plan steps 9 and 12 (not in the plan's test list)
 # ---------------------------------------------------------------------------
 
 def test_block_overhead_counts_inside_the_budget():
     """Plan step 9: the header's tokens come out of the budget, not on top."""
-    from context.composer import render_block
-
     ranked = rank(oversized_candidates(3), top_k=3, now=NOW)
 
     line_tokens = sum(count_tokens(render_line(item)) for item in ranked)

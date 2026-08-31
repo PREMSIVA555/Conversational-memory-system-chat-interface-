@@ -234,35 +234,35 @@ M4 turns raw retrieval candidates into a usable prompt block: a ranking node app
 
 ### Implementation steps
 
-1. - [ ] Implement `retrieve/features.py` — pure functions computing each of the four normalized 0–1 signals from a candidate: `semantic_score`, `recency_score` (decaying on `last_accessed_at`), `frequency_score` (from `reinforcement_count`), `importance_score`
-2. - [ ] Make each feature function total and bounded: define explicit behaviour for missing/null inputs (default value, never `None` propagating into the sum)
-3. - [ ] Implement `retrieve/ranking.py:score_candidate()` applying exactly `0.4*semantic + 0.2*recency + 0.2*frequency + 0.2*importance`, with the weights declared as named constants in one place
-4. - [ ] Implement `retrieve/ranking.py:rank()` — scores all candidates, sorts descending, applies a deterministic tiebreaker (e.g. `memory_id`), and returns the top-k
-5. - [ ] Add `RANKING_TOP_K` and the weight constants to `retrieve/config.py`, and assert at import time that the weights sum to 1.0
-6. - [ ] Implement `context/tokens.py` — a `count_tokens(text)` helper wrapping the chosen tokenizer, with the model name sourced from `LLM_MODEL`
-7. - [ ] Implement `context/composer.py:compose_profile_block()` — takes ranked candidates plus a `TOKEN_BUDGET`, renders each memory into a formatted line, and accumulates until the budget would be exceeded
-8. - [ ] Implement the drop policy explicitly: when over budget, remove the **lowest-scored** memory and recompute — never truncate the rendered string by raw position, and never drop a higher-ranked memory while a lower-ranked one survives
-9. - [ ] Account for the block's fixed overhead (header text, delimiters) inside the budget, not on top of it
-10. - [ ] Handle the degenerate case where even a single memory exceeds the budget: return an empty block (or the header only) rather than emitting an over-budget block
-11. - [ ] Add `TOKEN_BUDGET` and the block template to `context/config.py`
-12. - [ ] Expose `context/composer.py:compose()` as the single entry point M5's response graph will call, returning both the rendered block and the list of memory ids actually included (for later audit logging in M7)
-13. - [ ] Write `tests/unit/fixtures/ranking_fixtures.py` with candidates whose four signals are hand-set so the expected ranking order is computable by hand
-14. - [ ] Add debug logging of the per-candidate score breakdown behind a flag, so ranking decisions are inspectable when tuning
+1. - [x] Implement `retrieve/features.py` — pure functions computing each of the four normalized 0–1 signals from a candidate: `semantic_score`, `recency_score` (decaying on `last_accessed_at`), `frequency_score` (from `reinforcement_count`), `importance_score`
+2. - [x] Make each feature function total and bounded: define explicit behaviour for missing/null inputs (default value, never `None` propagating into the sum)
+3. - [x] Implement `retrieve/ranking.py:score_candidate()` applying exactly `0.4*semantic + 0.2*recency + 0.2*frequency + 0.2*importance`, with the weights declared as named constants in one place
+4. - [x] Implement `retrieve/ranking.py:rank()` — scores all candidates, sorts descending, applies a deterministic tiebreaker (e.g. `memory_id`), and returns the top-k
+5. - [x] Add `RANKING_TOP_K` and the weight constants to `retrieve/config.py`, and assert at import time that the weights sum to 1.0
+6. - [x] Implement `context/tokens.py` — a `count_tokens(text)` helper wrapping the chosen tokenizer, with the model name sourced from `LLM_MODEL`
+7. - [x] Implement `context/composer.py:compose_profile_block()` — takes ranked candidates plus a `TOKEN_BUDGET`, renders each memory into a formatted line, and accumulates until the budget would be exceeded
+8. - [x] Implement the drop policy explicitly: when over budget, remove the **lowest-scored** memory and recompute — never truncate the rendered string by raw position, and never drop a higher-ranked memory while a lower-ranked one survives
+9. - [x] Account for the block's fixed overhead (header text, delimiters) inside the budget, not on top of it
+10. - [x] Handle the degenerate case where even a single memory exceeds the budget: return an empty block (or the header only) rather than emitting an over-budget block
+11. - [x] Add `TOKEN_BUDGET` and the block template to `context/config.py`
+12. - [x] Expose `context/composer.py:compose()` as the single entry point M5's response graph will call, returning both the rendered block and the list of memory ids actually included (for later audit logging in M7)
+13. - [x] Write `tests/unit/fixtures/ranking_fixtures.py` with candidates whose four signals are hand-set so the expected ranking order is computable by hand
+14. - [x] Add debug logging of the per-candidate score breakdown behind a flag, so ranking decisions are inspectable when tuning
 
 ### Test cases
 
-- [ ] `test_ranking_order_matches_weighted_formula` (unit, `tests/unit/test_ranking_and_composer.py`) — uses the fixture with known per-signal scores; asserts the returned order exactly equals the hand-computed weighted order
-- [ ] `test_score_matches_hand_computed_value` (unit) — asserts `score_candidate()` on a single fixture returns the exact expected float within tolerance, proving the 0.4/0.2/0.2/0.2 weighting
-- [ ] `test_weights_sum_to_one` (unit) — asserts the declared weight constants sum to 1.0
-- [ ] `test_composer_respects_token_budget` (unit) — composes an over-budget fixture; asserts the rendered block's token count is `<= TOKEN_BUDGET`
-- [ ] `test_composer_drops_lowest_ranked_first` (unit) — uses an over-budget fixture; asserts the dropped memory is the lowest-ranked one
-- [ ] `test_composer_never_drops_higher_while_lower_survives` (unit) — asserts for every dropped memory, no memory with a strictly lower score is present in the output
-- [ ] `test_composer_does_not_truncate_by_position` (unit) — asserts no memory appears in the output in a partially-rendered/truncated form; every included memory is complete
-- [ ] `test_top_k_selection` (unit, additional) — asserts `rank()` returns exactly `RANKING_TOP_K` items when more candidates are available
-- [ ] `test_ranking_tiebreaker_is_deterministic` (unit, additional) — ranks identical-scoring candidates twice; asserts identical order both times
-- [ ] `test_composer_empty_candidates_returns_empty_block` (unit, additional, empty-input case) — asserts an empty candidate list yields an empty block and no exception
-- [ ] `test_single_oversized_memory_yields_empty_block` (unit, additional) — a lone memory larger than the whole budget; asserts an empty/header-only block rather than an over-budget one
-- [ ] `test_missing_signal_values_do_not_break_scoring` (unit, additional) — candidate with null `importance` / `last_accessed_at`; asserts a finite score is produced
+- [x] `test_ranking_order_matches_weighted_formula` (unit, `tests/unit/test_ranking_and_composer.py`) — uses the fixture with known per-signal scores; asserts the returned order exactly equals the hand-computed weighted order
+- [x] `test_score_matches_hand_computed_value` (unit) — asserts `score_candidate()` on a single fixture returns the exact expected float within tolerance, proving the 0.4/0.2/0.2/0.2 weighting
+- [x] `test_weights_sum_to_one` (unit) — asserts the declared weight constants sum to 1.0
+- [x] `test_composer_respects_token_budget` (unit) — composes an over-budget fixture; asserts the rendered block's token count is `<= TOKEN_BUDGET`
+- [x] `test_composer_drops_lowest_ranked_first` (unit) — uses an over-budget fixture; asserts the dropped memory is the lowest-ranked one
+- [x] `test_composer_never_drops_higher_while_lower_survives` (unit) — asserts for every dropped memory, no memory with a strictly lower score is present in the output
+- [x] `test_composer_does_not_truncate_by_position` (unit) — asserts no memory appears in the output in a partially-rendered/truncated form; every included memory is complete
+- [x] `test_top_k_selection` (unit, additional) — asserts `rank()` returns exactly `RANKING_TOP_K` items when more candidates are available
+- [x] `test_ranking_tiebreaker_is_deterministic` (unit, additional) — ranks identical-scoring candidates twice; asserts identical order both times
+- [x] `test_composer_empty_candidates_returns_empty_block` (unit, additional, empty-input case) — asserts an empty candidate list yields an empty block and no exception
+- [x] `test_single_oversized_memory_yields_empty_block` (unit, additional) — a lone memory larger than the whole budget; asserts an empty/header-only block rather than an over-budget one
+- [x] `test_missing_signal_values_do_not_break_scoring` (unit, additional) — candidate with null `importance` / `last_accessed_at`; asserts a finite score is produced
 
 ### Definition of Done — how to verify this milestone yourself
 

@@ -181,6 +181,28 @@ async def get_pool(dsn: str | None = None, *, min_size: int = 1, max_size: int =
             max_size=max_size,
             open=False,
             kwargs={"row_factory": dict_row},
+            # Validate a connection before handing it out. Without this the pool
+            # will happily lend a socket the server has already dropped, and the
+            # caller dies mid-statement with:
+            #
+            #   OperationalError: sending query failed: could not receive data
+            #   from server: Software caused connection abort (10053)
+            #
+            # Observed in production on a capture write — the memory was
+            # extracted, scrubbed and embedded, then lost at the final INSERT.
+            # An idle pooled connection can die for reasons entirely outside the
+            # app (server restart, NAT/firewall idle reaping, laptop sleep), and
+            # a background worker holding a pool across quiet periods is exactly
+            # the shape that hits it.
+            #
+            # check_connection issues a cheap round-trip and transparently
+            # discards a dead connection, so the cost is one no-op query per
+            # checkout against silently losing writes.
+            check=AsyncConnectionPool.check_connection,
+            # Bound how long a caller waits for a connection rather than hanging.
+            timeout=30.0,
+            # Recycle connections periodically so none sits idle indefinitely.
+            max_idle=300.0,
         )
         try:
             await pool.open(wait=True, timeout=15.0)

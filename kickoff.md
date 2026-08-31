@@ -30,8 +30,8 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M1 | Docker infra, core tables (HNSW+GIN+RLS), `/health`, LiteLLM wrapper | W1 | ✅ | independent agent — 12/12 DoD, 13/13 tests |
 | M2 | Capture graph: extract → PII → evaluate → embed → dedup → write | W2 | ✅ | independent agent — 7/7 DoD, 12/12 tests, lock proven by control experiment |
 | M3 | Hybrid retrieval (pgvector ∥ tsvector) + golden-set eval harness | W2 | ✅ | independent agent — **failed once**, reworked, passed on re-verification |
-| M2.5 | *(inserted)* Thin chat UI — first visible demo | W3 | 🔨 | — |
-| M4 | Weighted ranking + token-bounded context composer | W3 | 🔨 | — |
+| M2.5 | *(inserted)* Thin chat UI — first visible demo | W3 | 🔴 | **verification FAILED** — live region omits the reply; fixing |
+| M4 | Weighted ranking + token-bounded context composer | W3 | ✅ | independent agent — 7/7 DoD, 12/12 tests; 4 defects being closed |
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ⬜ | — |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ⬜ | — |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ⬜ | — |
