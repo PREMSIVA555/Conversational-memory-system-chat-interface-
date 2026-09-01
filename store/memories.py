@@ -29,6 +29,15 @@ The same mechanism gives intra-turn dedup for free: all of a turn's candidates
 are persisted inside one transaction, so a second candidate that restates the
 first sees it already inserted.
 
+AUDIT (M7 step 3) ------------------------------------------------------------
+`persist_candidates()` is also the *only* place the capture path writes a
+`write` audit row, and it does so on the same connection, inside the same
+transaction and under the same advisory lock as the insert/reinforce it
+describes. Do not add a second emission in `capture/write.py` -- that node is
+one call frame further out, outside this transaction, and hooking it too would
+produce two audit rows per memory. See `store/audit.py` on the guard that also
+catches this at runtime.
+
 An advisory lock is used rather than a unique constraint on purpose: duplicates
 here are *semantic* (cosine similarity over embeddings), not lexical, so there
 is no column tuple a UNIQUE index could cover. It also needs no migration --
@@ -40,6 +49,7 @@ from __future__ import annotations
 from typing import Any, Iterable, Optional, Sequence
 
 from capture import config as capture_config
+from store.audit import WRITE, write_audit
 from store.db import session
 
 # ---------------------------------------------------------------------------
@@ -282,6 +292,21 @@ async def persist_candidates(
 
             if match is not None:
                 await reinforce(str(match["id"]), conn=conn)
+                # M7 step 3. Inside the same transaction and the same advisory
+                # lock as the reinforcement itself, so the row and its audit
+                # entry commit or roll back together.
+                await write_audit(
+                    conn,
+                    subject_id=subject_id,
+                    actor_id=actor_id,
+                    action=WRITE,
+                    memory_id=str(match["id"]),
+                    metadata={
+                        "outcome": "reinforce",
+                        "similarity": float(match["similarity"]),
+                        "source": getattr(candidate, "source", None),
+                    },
+                )
                 results.append(
                     {
                         "text": text,
@@ -302,6 +327,23 @@ async def persist_candidates(
                     getattr(candidate, "importance", None),
                     getattr(candidate, "confidence", None),
                     conn=conn,
+                )
+                # M7 step 3, same transaction as the INSERT above. Note the
+                # ordering matters for more than atomicity: `audit_log.memory_id`
+                # has a foreign key to `memories(id)`, so the audit row can only
+                # be written after the memory row exists.
+                await write_audit(
+                    conn,
+                    subject_id=subject_id,
+                    actor_id=actor_id,
+                    action=WRITE,
+                    memory_id=memory_id,
+                    metadata={
+                        "outcome": "insert",
+                        "source": getattr(candidate, "source", None),
+                        "importance": getattr(candidate, "importance", None),
+                        "confidence": getattr(candidate, "confidence", None),
+                    },
                 )
                 results.append(
                     {

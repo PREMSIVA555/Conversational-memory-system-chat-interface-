@@ -20,6 +20,7 @@ import pytest
 from capture import config as capture_config
 from capture import extract as extract_module
 from capture import worker as worker_module
+from graphs import response_graph as response_graph_module
 from graphs.capture_graph import run_capture
 from graphs.capture_state import Candidate
 from llm import config as llm_config
@@ -133,7 +134,44 @@ async def test_capture_does_not_block_response(
     async def instant_reply(messages, **kwargs):
         return "Understood."
 
+    async def instant_stream(messages, **kwargs):
+        """Streaming stub. Must exist or this test silently measures the provider.
+
+        M5 moved the chat reply path from `llm_config.complete()` to
+        `llm_config.stream()`. Stubbing only `complete` left this test making a
+        REAL completion call: the 1.0s latency budget was then measuring Groq's
+        round-trip (plus any rate-limit backoff) rather than whether capture
+        blocks the response, and the test failed for a reason unrelated to what
+        it asserts.
+
+        Both are stubbed because the two response shapes take different routes —
+        `stream=False` still goes through `complete`.
+        """
+        for piece in ("Under", "stood", "."):
+            yield piece
+
     monkeypatch.setattr(llm_config, "complete", instant_reply)
+    monkeypatch.setattr(llm_config, "stream", instant_stream)
+
+    # Retrieval must be stubbed too, for the same reason as the reply.
+    #
+    # M5 put memory retrieval on the chat path AHEAD of the first token, and the
+    # semantic path embeds the query. Embedding is a live Voyage call: ~0.3s
+    # inside the 3-requests-per-minute quota, but 12-64s once that window is
+    # spent, at which point it is cut off by RETRIEVAL_TIMEOUT_MS (6s). Either
+    # way it dwarfs the 1.0s budget, so without this stub the test measures the
+    # embedding provider and fails for a reason that has nothing to do with
+    # whether capture blocks the response.
+    #
+    # Stubbed at `graphs.response_graph`'s own seam rather than deeper, so the
+    # retrieval node, ranking and composition all still run for real -- only the
+    # network hop is removed.
+    async def no_retrieval(*args, **kwargs):
+        raise response_graph_module.RetrievalUnavailable(
+            "error", "stubbed out for latency isolation"
+        )
+
+    monkeypatch.setattr(response_graph_module, "guarded_hybrid_search", no_retrieval)
 
     started_capture = asyncio.Event()
     finished_capture = asyncio.Event()

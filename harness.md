@@ -745,6 +745,48 @@ had the same signature: the reply succeeded, the user saw nothing wrong, and the
 vanished. For a memory system that is the worst failure mode there is, and neither was caught
 by a test — both were found by running the thing for real.
 
+### D16 — W6 held back: file-disjoint is not the same as conflict-free
+
+I launched M6 and M8 alongside the still-running M7, then stopped both about a minute in
+(neither had written a file — both were still reading). The user asked whether they would
+impact other agents. They would, and the reason is worth recording because it breaks the rule
+that has governed every wave so far.
+
+**File ownership was genuinely disjoint.** M6 owns `frontend/`; M8 owns `jobs/`,
+`graphs/{decay,reflection}_graph.py`, migration `0007`, `tests/distributed/`, the v2 evals;
+M7 owns `store/audit.py`, migration `0006`, `api/{memories,governance}.py`,
+`tests/acceptance/`. Not one shared path. By the criterion I used for W2 and W3, this was a
+legal parallel wave.
+
+**It was still unsafe, for two reasons neither of which is a file:**
+
+1. **M8's decay claim query is deliberately cross-subject.** Plan step M8.2 is
+   `SELECT id FROM memories WHERE <decay eligible> ... FOR UPDATE SKIP LOCKED` — it does not
+   filter by `subject_id`, because a nightly decay job is supposed to sweep the whole table.
+   Every other suite here isolates itself with a per-test uuid subject, and that convention
+   is exactly what M8's job is designed to ignore. Running it beside M7's acceptance tests —
+   which assert *exact* memory states and audit-row counts — means M8's three worker
+   subprocesses would be mutating `weight`, `archived_at` and `decay_claimed_at` on the very
+   rows M7 is asserting about. The failures would be nondeterministic and would land on M7,
+   which is the hardest kind to diagnose.
+2. **The Voyage quota is a shared, indivisible resource.** Three agents embedding at once
+   against a **3-requests-per-minute** ceiling does not slow each of them to a third — it
+   pushes all three into 12–64s backoff windows and makes every timing-sensitive test flaky
+   at once. M8's reflection embeds summaries, M7's `PATCH` re-embeds, M6's e2e drives chat
+   turns.
+
+A third, smaller reason: M6's e2e tests hit `/memories/me`, `DELETE` and `PATCH` — endpoints
+M7 was actively editing. Building an e2e suite against a moving contract wastes the work.
+
+**Revised rule for the rest of this build:** two agents may run in parallel only when they are
+disjoint in *files*, in *database rows*, **and** in *contended external quota*. File ownership
+was necessary but never sufficient; it just happened to be sufficient for W2 and W3, where
+both agents were subject-scoped and only one was embedding heavily.
+
+M6 and M8 are held until M7 lands. They are genuinely disjoint from each other — `frontend/`
+versus `jobs/`, no shared rows, and M6's quota use is a few chat turns — so they will run as a
+genuine parallel pair afterwards, which is what the original W6 plan intended.
+
 ### D9 — Rate limits are now the dominant constraint, not correctness
 Both W2 agents have been killed twice by session rate limits mid-task. Both times I surveyed
 the on-disk state first and **resumed** rather than cold-restarting, so each agent kept its

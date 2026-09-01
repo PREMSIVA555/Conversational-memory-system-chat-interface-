@@ -215,9 +215,25 @@ async def get_pool(dsn: str | None = None, *, min_size: int = 1, max_size: int =
 
 
 async def close_pools() -> None:
+    """Close and forget every pool, **and** its creation lock.
+
+    Clearing ``_pool_locks`` is not tidy-up — it is required for correctness.
+    An ``asyncio.Lock`` binds to a loop the first time it is *contended*, and
+    pytest-asyncio builds a fresh loop per test. Leaving a bound lock in the
+    registry means the next test that contends on the same DSN dies with
+    ``RuntimeError: <asyncio.locks.Lock object ...> is bound to a different
+    event loop`` — the same object address, one loop too late.
+
+    It stayed latent while only one caller opened a pool per test. M7's
+    read-audit adds a second pooled session per turn, which raised contention
+    enough to make it show up as a 1-in-3 flake in the capture worker-pool test
+    while passing in isolation. That intermittency is the signature: the bug is
+    in the shared registry, not in the test it lands on.
+    """
     for dsn, pool in list(_pools.items()):
         await pool.close()
         _pools.pop(dsn, None)
+    _pool_locks.clear()
 
 
 # ---------------------------------------------------------------------------

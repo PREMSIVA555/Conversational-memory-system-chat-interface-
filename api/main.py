@@ -19,6 +19,8 @@ from fastapi import FastAPI, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 from api.chat import router as chat_router
+from api.governance import router as governance_router
+from api.memories import router as memories_router
 from capture.metrics import configure_logging
 from llm.config import resolve_completion_model, resolve_embedding_model
 from store.db import (
@@ -51,6 +53,14 @@ app = FastAPI(
 )
 
 app.include_router(chat_router)  # M2: POST /chat
+
+# M7. Governance first: `/memories/export` is a literal path and must be
+# registered before anything that could match it as a path parameter. Nothing in
+# `memories_router` currently does (there is no `GET /memories/{id}`), so this is
+# insurance against a later addition silently swallowing the export route rather
+# than a fix for a live bug.
+app.include_router(governance_router)  # M7: GET /memories/export
+app.include_router(memories_router)  # M7: GET /memories/me, DELETE + PATCH /memories/{id}
 
 # ---------------------------------------------------------------------------
 # metrics

@@ -142,6 +142,19 @@ class MemoryStore:
     # -- writes / cleanup --------------------------------------------------
 
     async def purge(self, subjects: Iterable[str] | None = None) -> int:
+        """Delete this test's rows from `memories`, `audit_log` and `feedback`.
+
+        The audit/feedback cleanup is not optional. Since M7, every capture
+        write and every retrieval emits `audit_log` rows, so a purge that only
+        touched `memories` left orphans behind — 34 rows across 21 subjects were
+        found accumulating before this was fixed. That matters beyond untidiness:
+        M7's `test_exactly_one_audit_row_per_*` tests count rows, and a slowly
+        filling table is exactly the sort of shared state that makes an
+        unrelated test fail later.
+
+        `audit_log` is append-only for the *app* role; this runs on the admin
+        connection, which is the deliberate carve-out for test cleanup.
+        """
         targets = list(subjects if subjects is not None else self.subjects)
         if not targets:
             return 0
@@ -149,7 +162,12 @@ class MemoryStore:
             cursor = await conn.execute(
                 "DELETE FROM memories WHERE subject_id = ANY(%s::uuid[])", (targets,)
             )
-            return cursor.rowcount or 0
+            deleted = cursor.rowcount or 0
+            for table in ("audit_log", "feedback"):
+                await conn.execute(
+                    f"DELETE FROM {table} WHERE subject_id = ANY(%s::uuid[])", (targets,)
+                )
+            return deleted
 
     async def truncate_memories(self) -> None:
         """Whole-table wipe. Nothing uses this by default -- see module docstring."""

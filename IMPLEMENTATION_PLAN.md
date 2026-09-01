@@ -406,57 +406,59 @@ M7 makes the system accountable and deletable: an append-only audit row on every
 
 ### Prerequisites checklist
 
-- [ ] M5 is signed off (retrieval is on the live path and must now honour the delete filter)
-- [ ] `audit_log` table exists from M1 with RLS enabled
-- [ ] `memories.deleted_at` column exists
-- [ ] Every existing write/read path is enumerated so audit hooks cover all of them
+- [x] M5 is signed off (retrieval is on the live path and must now honour the delete filter)
+- [x] `audit_log` table exists from M1 with RLS enabled
+- [x] `memories.deleted_at` column exists
+- [x] Every existing write/read path is enumerated so audit hooks cover all of them
 
 ### Implementation steps
 
-1. - [ ] Implement `store/audit.py:write_audit()` — inserts one `audit_log` row (`subject_id`, `actor_id`, `memory_id`, `action` ∈ {`write`,`read`,`delete`,`update`,`export`}, `metadata`, `created_at`)
-2. - [ ] Enforce append-only at the database level in a new migration `store/migrations/0006_audit_append_only.sql`: revoke UPDATE and DELETE on `audit_log` for the app role (and/or add a trigger that raises on update/delete)
-3. - [ ] Hook `write_audit()` into the M2 capture write path so every memory insert and every reinforcement emits exactly one audit row
-4. - [ ] Hook `write_audit()` into the M5 retrieval path so a retrieval that surfaces memories emits read audit rows for the memories actually included in the composed block (use the `memory_ids` returned by M4's composer)
-5. - [ ] Implement `DELETE /memories/{id}` in `api/memories.py` — sets `deleted_at = now()` (never a hard delete), returns 404 for a nonexistent or already-deleted id, and writes one delete audit row
-6. - [ ] Implement `GET /memories/me` — the curated view: returns non-deleted memories for the caller's `subject_id`, with pagination, ordered by recency
-7. - [ ] Implement `PATCH /memories/{id}` (used by M6's inline edit) — updates content, re-embeds via `llm/config.py`, and writes an update audit row
-8. - [ ] Add the soft-delete filter (`deleted_at IS NULL`) to **both** retrieval paths in `retrieve/semantic.py` and `retrieve/keyword.py`, and to the curated view query
-9. - [ ] Implement `GET /memories/export` (GDPR) in `api/governance.py` — returns a full JSON dump: all `memories` rows **including soft-deleted ones with their `deleted_at` present**, all `audit_log` rows, and all `feedback` rows for the subject
-10. - [ ] Make the export a strict superset of the curated view and mark deleted entries explicitly in the payload (e.g. a `deleted: true` field alongside `deleted_at`)
-11. - [ ] Write one audit row for the export action itself, with the row counts in `metadata`
-12. - [ ] Add auth/ownership checks on every endpoint: a caller may only act on their own `subject_id`; combine the API-level check with the M1 RLS GUCs as defense in depth
-13. - [ ] Add a `store/audit.py` guard against double-writing: audit emission happens in exactly one place per action, inside the same transaction as the action itself
-14. - [ ] Add Prometheus counters per audit action type
-15. - [ ] Update `frontend/lib/api.ts` (M6) to hit the now-real endpoints and remove the governance mock module
+1. - [x] Implement `store/audit.py:write_audit()` — inserts one `audit_log` row (`subject_id`, `actor_id`, `memory_id`, `action` ∈ {`write`,`read`,`delete`,`update`,`export`}, `metadata`, `created_at`)
+2. - [x] Enforce append-only at the database level in a new migration `store/migrations/0006_audit_append_only.sql`: revoke UPDATE and DELETE on `audit_log` for the app role (and/or add a trigger that raises on update/delete)
+3. - [x] Hook `write_audit()` into the M2 capture write path so every memory insert and every reinforcement emits exactly one audit row
+4. - [x] Hook `write_audit()` into the M5 retrieval path so a retrieval that surfaces memories emits read audit rows for the memories actually included in the composed block (use the `memory_ids` returned by M4's composer)
+5. - [x] Implement `DELETE /memories/{id}` in `api/memories.py` — sets `deleted_at = now()` (never a hard delete), returns 404 for a nonexistent or already-deleted id, and writes one delete audit row
+6. - [x] Implement `GET /memories/me` — the curated view: returns non-deleted memories for the caller's `subject_id`, with pagination, ordered by recency
+7. - [x] Implement `PATCH /memories/{id}` (used by M6's inline edit) — updates content, re-embeds via `llm/config.py`, and writes an update audit row
+8. - [x] Add the soft-delete filter (`deleted_at IS NULL`) to **both** retrieval paths in `retrieve/semantic.py` and `retrieve/keyword.py`, and to the curated view query
+9. - [x] Implement `GET /memories/export` (GDPR) in `api/governance.py` — returns a full JSON dump: all `memories` rows **including soft-deleted ones with their `deleted_at` present**, all `audit_log` rows, and all `feedback` rows for the subject
+10. - [x] Make the export a strict superset of the curated view and mark deleted entries explicitly in the payload (e.g. a `deleted: true` field alongside `deleted_at`)
+11. - [x] Write one audit row for the export action itself, with the row counts in `metadata`
+12. - [x] Add auth/ownership checks on every endpoint: a caller may only act on their own `subject_id`; combine the API-level check with the M1 RLS GUCs as defense in depth
+13. - [x] Add a `store/audit.py` guard against double-writing: audit emission happens in exactly one place per action, inside the same transaction as the action itself
+14. - [x] Add Prometheus counters per audit action type
+15. - [ ] Update `frontend/lib/api.ts` (M6) to hit the now-real endpoints and remove the governance mock module  
+    _Not done — out of scope for M7. The frontend is M6's territory, and M2.5 shipped **no** `frontend/mocks/governance.ts`, so there is nothing to remove. The backend endpoints this step would wire to are live (steps 5-11)._
 
 ### Test cases
 
-- [ ] `test_deleted_memory_never_resurfaces_in_retrieval` (acceptance, `tests/acceptance/test_governance_and_gdpr.py`) — writes a memory, retrieves it successfully, deletes it, then re-runs the exact query and several paraphrases plus an exact keyword match; asserts it is absent from every one (adversarial-style check)
-- [ ] `test_memories_me_excludes_deleted_row` (acceptance) — deletes a memory; asserts `GET /memories/me` does not contain it
-- [ ] `test_gdpr_export_is_superset_of_curated_view` (acceptance) — asserts every id in `GET /memories/me` also appears in the export, and the export contains strictly more ids
-- [ ] `test_gdpr_export_includes_soft_deleted_with_deletion_marked` (acceptance) — asserts the deleted memory appears in the export with its `deleted_at` populated and its deletion flagged
-- [ ] `test_exactly_one_audit_row_per_write` (acceptance) — performs one memory write; asserts exactly one `audit_log` row with `action='write'` exists for it — not zero, not duplicated
-- [ ] `test_exactly_one_audit_row_per_read` (acceptance) — performs one retrieval surfacing one memory; asserts exactly one `action='read'` audit row for it
-- [ ] `test_exactly_one_audit_row_per_delete` (acceptance) — performs one delete; asserts exactly one `action='delete'` audit row
-- [ ] `test_audit_log_is_append_only` (acceptance, additional) — attempts an UPDATE and a DELETE against `audit_log` as the app role; asserts both are rejected
-- [ ] `test_delete_is_soft_not_hard` (acceptance, additional) — after delete, asserts the row still physically exists in `memories` with a non-null `deleted_at`
-- [ ] `test_delete_nonexistent_memory_returns_404` (acceptance, additional, empty-input case) — asserts a random uuid returns 404 and writes no audit row
-- [ ] `test_cannot_delete_another_subjects_memory` (acceptance, additional, auth-boundary) — subject B attempts to delete subject A's memory; asserts 403/404 and A's row is untouched
-- [ ] `test_export_scoped_to_caller_subject_only` (acceptance, additional, auth-boundary) — with two subjects seeded; asserts the export contains none of the other subject's rows
-- [ ] `test_patch_reembeds_and_audits` (acceptance, additional) — edits a memory; asserts the embedding changed and exactly one `action='update'` audit row was written
-- [ ] `test_concurrent_deletes_write_single_audit_row` (acceptance, additional, concurrency) — two concurrent deletes of the same id; asserts one succeeds and exactly one delete audit row exists
+- [x] `test_deleted_memory_never_resurfaces_in_retrieval` (acceptance, `tests/acceptance/test_governance_and_gdpr.py`) — writes a memory, retrieves it successfully, deletes it, then re-runs the exact query and several paraphrases plus an exact keyword match; asserts it is absent from every one (adversarial-style check)
+- [x] `test_memories_me_excludes_deleted_row` (acceptance) — deletes a memory; asserts `GET /memories/me` does not contain it
+- [x] `test_gdpr_export_is_superset_of_curated_view` (acceptance) — asserts every id in `GET /memories/me` also appears in the export, and the export contains strictly more ids
+- [x] `test_gdpr_export_includes_soft_deleted_with_deletion_marked` (acceptance) — asserts the deleted memory appears in the export with its `deleted_at` populated and its deletion flagged
+- [x] `test_exactly_one_audit_row_per_write` (acceptance) — performs one memory write; asserts exactly one `audit_log` row with `action='write'` exists for it — not zero, not duplicated
+- [x] `test_exactly_one_audit_row_per_read` (acceptance) — performs one retrieval surfacing one memory; asserts exactly one `action='read'` audit row for it
+- [x] `test_exactly_one_audit_row_per_delete` (acceptance) — performs one delete; asserts exactly one `action='delete'` audit row
+- [x] `test_audit_log_is_append_only` (acceptance, additional) — attempts an UPDATE and a DELETE against `audit_log` as the app role; asserts both are rejected
+- [x] `test_delete_is_soft_not_hard` (acceptance, additional) — after delete, asserts the row still physically exists in `memories` with a non-null `deleted_at`
+- [x] `test_delete_nonexistent_memory_returns_404` (acceptance, additional, empty-input case) — asserts a random uuid returns 404 and writes no audit row
+- [x] `test_cannot_delete_another_subjects_memory` (acceptance, additional, auth-boundary) — subject B attempts to delete subject A's memory; asserts 403/404 and A's row is untouched
+- [x] `test_export_scoped_to_caller_subject_only` (acceptance, additional, auth-boundary) — with two subjects seeded; asserts the export contains none of the other subject's rows
+- [x] `test_patch_reembeds_and_audits` (acceptance, additional) — edits a memory; asserts the embedding changed and exactly one `action='update'` audit row was written
+- [x] `test_concurrent_deletes_write_single_audit_row` (acceptance, additional, concurrency) — two concurrent deletes of the same id; asserts one succeeds and exactly one delete audit row exists
 
 ### Definition of Done — how to verify this milestone yourself
 
-- [ ] Run `pytest tests/acceptance/test_governance_and_gdpr.py` → exits 0, all tests pass
-- [ ] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k test_deleted_memory_never_resurfaces_in_retrieval -v` → passes, confirming a deleted memory never resurfaces in retrieval afterward
-- [ ] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k test_memories_me_excludes_deleted_row -v` → passes, confirming `GET /memories/me` excludes the deleted row
-- [ ] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k "gdpr_export" -v` → passes, confirming the export is a superset dump distinct from the curated view and includes soft-deleted rows with deletion marked
-- [ ] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k "exactly_one_audit_row" -v` → all three (write/read/delete) pass, confirming one audit row per action — not zero, not duplicated
-- [ ] Manually: `curl -s localhost:8000/memories/me | jq 'length'` and `curl -s localhost:8000/memories/export | jq '.memories | length'` → the export count is strictly larger after you have deleted at least one memory
-- [ ] Manually: `psql "$DATABASE_URL" -c "select action, count(*) from audit_log group by action"` → counts match the actions you performed, with no duplicates
-- [ ] Manually: `psql "$DATABASE_URL" -c "delete from audit_log where true"` as the app role → the statement is rejected, proving append-only
-- [ ] Confirm M6's memory panel now hits the real endpoints and `frontend/mocks/governance.ts` no longer exists
+- [x] Run `pytest tests/acceptance/test_governance_and_gdpr.py` → exits 0, all tests pass
+- [x] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k test_deleted_memory_never_resurfaces_in_retrieval -v` → passes, confirming a deleted memory never resurfaces in retrieval afterward
+- [x] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k test_memories_me_excludes_deleted_row -v` → passes, confirming `GET /memories/me` excludes the deleted row
+- [x] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k "gdpr_export" -v` → passes, confirming the export is a superset dump distinct from the curated view and includes soft-deleted rows with deletion marked
+- [x] Run `pytest tests/acceptance/test_governance_and_gdpr.py -k "exactly_one_audit_row" -v` → all three (write/read/delete) pass, confirming one audit row per action — not zero, not duplicated
+- [x] Manually: `curl -s localhost:8000/memories/me | jq 'length'` and `curl -s localhost:8000/memories/export | jq '.memories | length'` → the export count is strictly larger after you have deleted at least one memory
+- [x] Manually: `psql "$DATABASE_URL" -c "select action, count(*) from audit_log group by action"` → counts match the actions you performed, with no duplicates
+- [x] Manually: `psql "$DATABASE_URL" -c "delete from audit_log where true"` as the app role → the statement is rejected, proving append-only
+- [ ] Confirm M6's memory panel now hits the real endpoints and `frontend/mocks/governance.ts` no longer exists  
+  _Not verifiable in M7 — M6 (the memory panel) is not built yet, and `frontend/mocks/governance.ts` never existed._
 
 **Milestone signed off by user on:** _____________
 
