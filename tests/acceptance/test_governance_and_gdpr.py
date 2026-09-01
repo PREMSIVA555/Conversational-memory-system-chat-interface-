@@ -359,37 +359,138 @@ async def test_exactly_one_audit_row_per_write(gov_store, subject_a):
     assert [r["metadata"]["outcome"] for r in rows] == ["insert", "reinforce"]
 
 
+@pytest.mark.timeout(120)
+async def test_insert_and_reinforce_in_one_batch_audit_separately(gov_store, subject_a):
+    """Two governed actions on one row in ONE transaction earn two audit rows.
+
+    A 15th test, beyond the plan's fourteen, closing a real under-count the
+    double-write guard caused. `persist_candidates` can insert a memory for
+    candidate A and then, for candidate B in the same batch, dedup onto that very
+    row and reinforce it — intra-turn dedup working exactly as M2 designed it.
+    Both are governed actions and each is owed a row.
+
+    Keying the guard on `(action, memory_id)` collapsed them into one, and
+    `test_exactly_one_audit_row_per_write` could not see it because it makes its
+    two `persist_candidates` calls in *separate* transactions, where the guard
+    never engages. This test forces both into a single batch, which is the only
+    place the bug lives.
+
+    The two candidates share one embedding vector, so B's similarity to A is 1.0
+    and the dedup decision under the advisory lock is deterministic rather than
+    dependent on how close two real sentences happen to embed.
+    """
+    from store.memories import persist_candidates
+
+    shared = synthetic_embedding("one-batch-insert-then-reinforce")
+    results = await persist_candidates(
+        subject_a,
+        subject_a,
+        [
+            _candidate("I am allergic to shellfish.", embedding=shared),
+            _candidate("I have a shellfish allergy.", embedding=shared),
+        ],
+    )
+
+    assert [r["action"] for r in results] == ["insert", "reinforce"], (
+        f"the batch did not produce an insert followed by a reinforce: {results}"
+    )
+    memory_id = results[0]["memory_id"]
+    assert results[1]["memory_id"] == memory_id, "the reinforce hit a different row"
+
+    rows = await gov_store.audit_rows(subject_a, action="write", memory_id=memory_id)
+    assert len(rows) == 2, (
+        f"two governed actions on {memory_id} produced {len(rows)} audit row(s); "
+        "the trail under-reports what happened"
+    )
+    assert [r["metadata"].get("outcome") for r in rows] == ["insert", "reinforce"]
+    assert await gov_store.audit_counts(subject_a) == {"write": 2}
+
+
 @pytest.mark.timeout(300)
-async def test_exactly_one_audit_row_per_read(gov_store, subject_a):
-    """One retrieval surfacing one memory -> exactly one `read` audit row.
+async def test_exactly_one_audit_row_per_read(gov_store, subject_a, monkeypatch):
+    """One retrieval -> exactly one `read` row per memory that reached the prompt.
 
     Drives `graphs.response_graph.retrieval_node` directly: that is the node the
     hook lives in, and it runs the real guarded retrieval, the real ranker and
-    the real composer. Only the LLM call downstream of it is skipped, and the
-    read hook fires before any token exists, so nothing relevant is stubbed.
+    the real composer. Only the LLM call downstream is skipped, and the read hook
+    fires before any token exists, so nothing relevant is stubbed.
 
-    The subject is seeded with exactly one memory, so "the memories actually
-    included in the composed block" is unambiguous.
+    WHY FOUR MEMORIES AND A SQUEEZED TOKEN BUDGET
+    ---------------------------------------------
+    The obvious version of this test seeds ONE memory. It passes, and it proves
+    almost nothing: with one memory, "what retrieval returned" and "what the
+    composer included" are the same list, so the test cannot tell the correct
+    hook from one that audits `result.candidates` — every candidate retrieved,
+    including the ones the composer dropped and the model never saw. Auditing a
+    memory as *read* when it never reached the prompt is a false entry in a
+    governance trail.
+
+    So: four memories, and `CONTEXT_TOKEN_BUDGET` squeezed until the composer has
+    room for only some of them. The two lists then genuinely diverge, and the
+    assertions below pin the audit rows to the composed set specifically. Under
+    the `result.candidates` mutation this test fails — which is the property that
+    makes it worth writing.
     """
     from graphs.response_graph import retrieval_node
     from graphs.response_state import new_state
 
     await real_vectors(ALL_TEXTS)
-    memory_id = await gov_store.seed_memory(subject_a, TARGET_CONTENT)
+
+    # Deliberately verbose, so a small budget cannot fit them all.
+    seeded = [
+        await gov_store.seed_memory(subject_a, content)
+        for content in (
+            "I am severely allergic to shellfish, especially shrimp, crab and lobster.",
+            "I am mildly allergic to penicillin and carry an antihistamine with me.",
+            "I avoid peanuts entirely because they give me a rash and a sore throat.",
+            "I cannot eat soft cheese or drink unpasteurised milk without feeling ill.",
+        )
+    ]
+
+    # Read at call time by `context/config.py`, so setenv is enough — no reload.
+    monkeypatch.setenv("CONTEXT_TOKEN_BUDGET", "45")
+
+    # What retrieval FOUND, before the composer gets to choose. `guarded_hybrid_search`
+    # writes no audit rows of its own -- only `retrieval_node` does -- so this
+    # probe cannot contaminate the counts asserted below.
+    retrieved = await _hybrid_ids(subject_a, EXACT_QUERY)
+    assert len(retrieved) >= 2, (
+        f"retrieval only found {len(retrieved)} of the 4 seeded memories; the "
+        "divergence this test depends on would not exist"
+    )
 
     state = new_state(subject_a, subject_a, [{"role": "user", "content": EXACT_QUERY}], emit=None)
     updates = await retrieval_node(state)
 
     assert updates["degraded"] is False, updates.get("degraded_reason")
-    assert updates["memory_ids"] == [memory_id], (
-        "the retrieval did not surface exactly the seeded memory; the audit "
-        "assertion below would be measuring something else"
+    included = list(updates["memory_ids"])
+
+    # The point of the whole setup: the composer kept strictly fewer than
+    # retrieval returned. Without this the test degrades into the vacuous
+    # one-memory version.
+    assert 0 < len(included) < len(retrieved), (
+        f"composer included {len(included)} of {len(retrieved)} retrieved memories; "
+        "the budget squeeze did not force a drop, so this test cannot distinguish "
+        "auditing the composed block from auditing every candidate"
     )
+    dropped = set(retrieved) - set(included)
+    assert dropped
 
     rows = await gov_store.audit_rows(subject_a, action="read")
-    assert len(rows) == 1, f"expected exactly one read audit row, got {len(rows)}"
-    assert str(rows[0]["memory_id"]) == memory_id
-    assert await gov_store.audit_counts(subject_a) == {"read": 1}
+    audited = [str(r["memory_id"]) for r in rows]
+
+    # Exactly one row per included memory — not zero, not duplicated.
+    assert sorted(audited) == sorted(included), (
+        f"read audit rows {sorted(audited)} do not match the composed block "
+        f"{sorted(included)}"
+    )
+    for memory_id in dropped:
+        assert memory_id not in audited, (
+            f"memory {memory_id} was dropped by the composer and never reached the "
+            "prompt, but was audited as read"
+        )
+    assert await gov_store.audit_counts(subject_a) == {"read": len(included)}
+    assert set(seeded) >= set(retrieved)
 
 
 @pytest.mark.timeout(120)

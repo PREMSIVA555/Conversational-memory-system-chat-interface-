@@ -306,6 +306,13 @@ async def persist_candidates(
                         "similarity": float(match["similarity"]),
                         "source": getattr(candidate, "source", None),
                     },
+                    # This candidate may be reinforcing a row that an EARLIER
+                    # candidate in this same batch just inserted (or reinforced)
+                    # -- that is the whole point of intra-turn dedup. Each is a
+                    # separate governed action and earns its own audit row; the
+                    # guard would otherwise collapse them and under-report the
+                    # trail. See store/audit.py on why the key is still recorded.
+                    allow_repeat=True,
                 )
                 results.append(
                     {
@@ -344,6 +351,11 @@ async def persist_candidates(
                         "importance": getattr(candidate, "importance", None),
                         "confidence": getattr(candidate, "confidence", None),
                     },
+                    # An insert always targets a brand-new id, so this cannot
+                    # collide today. Flagged anyway for symmetry with the
+                    # reinforce branch: both are per-candidate actions in a loop,
+                    # and the reason they are exempt is the loop, not the outcome.
+                    allow_repeat=True,
                 )
                 results.append(
                     {

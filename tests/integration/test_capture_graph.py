@@ -163,9 +163,13 @@ async def test_capture_does_not_block_response(
     # embedding provider and fails for a reason that has nothing to do with
     # whether capture blocks the response.
     #
-    # Stubbed at `graphs.response_graph`'s own seam rather than deeper, so the
-    # retrieval node, ranking and composition all still run for real -- only the
-    # network hop is removed.
+    # NOTE ON COVERAGE, so nobody reads more into this than it gives: raising
+    # `RetrievalUnavailable` sends the retrieval node down its DEGRADED branch,
+    # so `compose()` and `record_read_audit()` do not run in this test at all.
+    # That is fine for what is being measured -- whether capture blocks the
+    # reply -- but this test says nothing about ranking, composition or read
+    # auditing. Those are covered by `tests/integration/test_response_graph.py`
+    # and `tests/acceptance/`.
     async def no_retrieval(*args, **kwargs):
         raise response_graph_module.RetrievalUnavailable(
             "error", "stubbed out for latency isolation"

@@ -35,6 +35,25 @@ from `txid_current()`, so the guard is scoped exactly as tightly as the
 transaction whose atomicity it is protecting, and a pooled connection reused by
 a later transaction starts clean.
 
+A REPEAT IS NOT ALWAYS A DUPLICATE — `allow_repeat`
+---------------------------------------------------
+`(action, memory_id)` alone is too blunt, and keying on it unconditionally
+caused a real under-count. `persist_candidates()` can perform *two genuine
+governed actions on the same row inside one transaction*: candidate A inserts a
+memory, and candidate B — a restatement of A — dedups onto that same row and
+reinforces it. Two actions, and the guard silently collapsed them into one audit
+row, so the trail under-reported what happened.
+
+Nothing inside this function can tell that case apart from an accidental double
+hook: both look like "the same action on the same memory, twice, in one
+transaction". So the caller states its intent. `allow_repeat=True` means "I know
+this is a further, distinct action on the same row" and skips the suppression.
+
+Crucially it still *records* the key. A stray second emission from somewhere
+else — the exact `capture/write.py` double-hook this guard exists to catch —
+does not pass the flag, finds the key already present, and is still suppressed.
+So the protection survives while the legitimate repeat gets its row.
+
 Note what the guard does NOT do, on purpose: it does not deduplicate across
 transactions. Two concurrent deletes of the same memory are two transactions,
 and the reason only one audit row results is that only one of them successfully
@@ -194,6 +213,7 @@ async def write_audit(
     action: str,
     memory_id: str | None = None,
     metadata: dict[str, Any] | None = None,
+    allow_repeat: bool = False,
 ) -> Optional[str]:
     """Insert one `audit_log` row on `conn`. Returns its id, or None if suppressed.
 
@@ -206,6 +226,11 @@ async def write_audit(
     A `None` return means the same `(action, memory_id)` was already logged in
     this transaction and the duplicate was dropped. It is never an error path
     for the caller — see the module docstring.
+
+    Pass `allow_repeat=True` when this really is a further distinct action on a
+    row already logged in this transaction — the insert-then-reinforce case in
+    `persist_candidates()`. The key is still recorded, so an unflagged emission
+    from another call site is still caught.
     """
     if action not in ACTIONS:
         raise UnknownAuditAction(
@@ -216,7 +241,7 @@ async def write_audit(
     txid = await _transaction_key(conn)
     if txid is not None:
         seen = _seen(conn, txid)
-        if key in seen:
+        if key in seen and not allow_repeat:
             AUDIT_DUPLICATES.labels(action=action).inc()
             logger.warning(
                 "audit: suppressed duplicate %s row for memory_id=%s in txid=%s "

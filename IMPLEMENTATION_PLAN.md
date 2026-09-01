@@ -416,7 +416,9 @@ M7 makes the system accountable and deletable: an append-only audit row on every
 1. - [x] Implement `store/audit.py:write_audit()` — inserts one `audit_log` row (`subject_id`, `actor_id`, `memory_id`, `action` ∈ {`write`,`read`,`delete`,`update`,`export`}, `metadata`, `created_at`)
 2. - [x] Enforce append-only at the database level in a new migration `store/migrations/0006_audit_append_only.sql`: revoke UPDATE and DELETE on `audit_log` for the app role (and/or add a trigger that raises on update/delete)
 3. - [x] Hook `write_audit()` into the M2 capture write path so every memory insert and every reinforcement emits exactly one audit row
-4. - [x] Hook `write_audit()` into the M5 retrieval path so a retrieval that surfaces memories emits read audit rows for the memories actually included in the composed block (use the `memory_ids` returned by M4's composer)
+4. - [x] Hook `write_audit()` into the M5 retrieval path so a retrieval that surfaces memories emits read audit rows for the memories actually included in the composed block (use the `memory_ids` returned by M4's composer)  
+    _Uses `composed.memory_ids`, not `result.candidates`: candidates the composer drops for budget never reach the prompt and are not audited as read._  
+    _**Known gap, deliberate:** `GET /memories/me` and `GET /memories/export` disclose memories without emitting `read` rows. Step 4 scopes the hook to the retrieval path, and the export logs its own `export` row with counts — but reading one's own memories through the curated view is currently unaudited. Flagged for M6/M8 to decide rather than silently extended here._
 5. - [x] Implement `DELETE /memories/{id}` in `api/memories.py` — sets `deleted_at = now()` (never a hard delete), returns 404 for a nonexistent or already-deleted id, and writes one delete audit row
 6. - [x] Implement `GET /memories/me` — the curated view: returns non-deleted memories for the caller's `subject_id`, with pagination, ordered by recency
 7. - [x] Implement `PATCH /memories/{id}` (used by M6's inline edit) — updates content, re-embeds via `llm/config.py`, and writes an update audit row
@@ -425,7 +427,10 @@ M7 makes the system accountable and deletable: an append-only audit row on every
 10. - [x] Make the export a strict superset of the curated view and mark deleted entries explicitly in the payload (e.g. a `deleted: true` field alongside `deleted_at`)
 11. - [x] Write one audit row for the export action itself, with the row counts in `metadata`
 12. - [x] Add auth/ownership checks on every endpoint: a caller may only act on their own `subject_id`; combine the API-level check with the M1 RLS GUCs as defense in depth
-13. - [x] Add a `store/audit.py` guard against double-writing: audit emission happens in exactly one place per action, inside the same transaction as the action itself
+13. - [x] Add a `store/audit.py` guard against double-writing: audit emission happens in exactly one place per action, inside the same transaction as the action itself  
+    _Satisfied for `write`, `delete`, `update` and `export` — each emits from one call site on the caller's connection, inside the action's own transaction._  
+    _**Accepted deviation for `read`:** no transaction survives composition (the semantic and keyword paths each open and close their own, and which memories were included is only known after `compose()`), so `record_read_audit()` opens one transaction of its own covering all of that retrieval's rows. It also never raises — a failed read-audit is logged at ERROR and the reply continues, because `graphs/response_graph.py` guarantees no memory subsystem failure can withhold an answer. The cost is that a read-audit row can be lost silently on DB failure. Deliberate; documented in `store/audit.py`._  
+    _The guard is keyed on `(action, memory_id)` per transaction, with an explicit `allow_repeat` opt-out for `persist_candidates`, where one batch can legitimately insert a row and then reinforce that same row (two governed actions, two rows)._
 14. - [x] Add Prometheus counters per audit action type
 15. - [ ] Update `frontend/lib/api.ts` (M6) to hit the now-real endpoints and remove the governance mock module  
     _Not done — out of scope for M7. The frontend is M6's territory, and M2.5 shipped **no** `frontend/mocks/governance.ts`, so there is nothing to remove. The backend endpoints this step would wire to are live (steps 5-11)._

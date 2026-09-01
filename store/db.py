@@ -229,11 +229,22 @@ async def close_pools() -> None:
     enough to make it show up as a 1-in-3 flake in the capture worker-pool test
     while passing in isolation. That intermittency is the signature: the bug is
     in the shared registry, not in the test it lands on.
+
+    The clear runs in a ``finally`` on purpose. ``pool.close()`` raises
+    ``RuntimeError: Event loop is closed`` in exactly the scenario this function
+    exists to clean up after — and ``tests/conftest.py`` swallows that
+    exception, so a clear placed after the loop would never run and the bug
+    would silently return. The one code path the fix is for is also the one most
+    likely to raise.
     """
-    for dsn, pool in list(_pools.items()):
-        await pool.close()
-        _pools.pop(dsn, None)
-    _pool_locks.clear()
+    try:
+        for dsn, pool in list(_pools.items()):
+            try:
+                await pool.close()
+            finally:
+                _pools.pop(dsn, None)
+    finally:
+        _pool_locks.clear()
 
 
 # ---------------------------------------------------------------------------

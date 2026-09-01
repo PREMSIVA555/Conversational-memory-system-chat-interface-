@@ -35,6 +35,28 @@ Layer 3 also changes the *status code*, not just the outcome: under RLS another
 subject's row is invisible, so the honest answer is 404 (we cannot confirm it
 exists), and 403 is reachable only when the check runs somewhere RLS is not
 filtering. Both are acceptable answers to "you may not touch this".
+
+WHAT IS AUDITED HERE, AND WHAT IS NOT
+-------------------------------------
+`DELETE` and `PATCH` each write exactly one audit row, in the transaction that
+performs the change.
+
+`GET /memories/me` writes **none**, and that is a deliberate gap rather than an
+oversight. Plan step 4 scopes read auditing to the retrieval path — memories
+that reach the *model's* prompt — and this endpoint discloses memories to the
+subject themselves, who is the one the trail exists to protect. The argument for
+auditing it anyway is real (it is still a disclosure, and a future multi-actor
+model would make "who listed whose memories" worth knowing); the argument
+against is that a curated-view read is self-service and auditing it would emit a
+row per memory per page-load, swamping the trail with the least interesting
+event in it.
+
+`GET /memories/export` is treated differently and does log — one `export` row
+carrying the row counts — because an export is a bulk extraction of everything
+held, which is exactly the event a GDPR trail should record.
+
+Recorded here rather than silently: if M6 or M8 decides the curated view should
+audit, the hook belongs in `list_my_memories` and nowhere else.
 """
 
 from __future__ import annotations
