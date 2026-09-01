@@ -286,54 +286,54 @@ M5 puts memory on the live chat path safely: a streaming response graph whose re
 
 ### Prerequisites checklist
 
-- [ ] M4 is signed off; `context/composer.py:compose()` is callable
-- [ ] Redis from M1's compose stack is reachable at `REDIS_URL`
-- [ ] `llm/config.py` supports streaming completions
-- [ ] The chat endpoint exists and can stream a response body
+- [x] M4 is signed off; `context/composer.py:compose()` is callable
+- [x] Redis from M1's compose stack is reachable at `REDIS_URL`
+- [x] `llm/config.py` supports streaming completions — `llm.config.stream()` yields text deltas beside `complete()`, resolving the model from the environment on every call and applying the same `MIN_MAX_TOKENS` floor, timeout and 429 backoff. `graphs/response_graph.py:stream_tokens()` is a one-line delegation to it.
+- [x] The chat endpoint exists and can stream a response body
 
 ### Implementation steps
 
-1. - [ ] Implement `retrieve/breaker.py` — a hand-rolled circuit breaker class with three states (`closed`, `open`, `half_open`) and a Redis-backed state record (state, consecutive failure count, opened-at timestamp) under a single namespaced key, so all replicas read the same state
-2. - [ ] Implement the state transitions explicitly: `closed` → `open` after `N` consecutive failures; `open` → `half_open` once `COOLDOWN_SECONDS` have elapsed since `opened_at`; `half_open` → `closed` on a successful probe; `half_open` → `open` on a failed probe
-3. - [ ] Make the half-open probe single-flight using a short-TTL Redis lock, so many replicas do not all probe at once
-4. - [ ] Make every Redis mutation atomic (Lua script or `WATCH`/pipeline) so concurrent replicas cannot corrupt the counter
-5. - [ ] Implement `retrieve/guarded.py` — wraps `retrieve/hybrid.py` with `asyncio.wait_for(..., RETRIEVAL_TIMEOUT_MS)`, records success/failure into the breaker, and raises a typed `RetrievalUnavailable` on open circuit or timeout
-6. - [ ] Add breaker config to `retrieve/config.py`: `BREAKER_FAILURE_THRESHOLD`, `BREAKER_COOLDOWN_SECONDS`, `RETRIEVAL_TIMEOUT_MS`, `BREAKER_REDIS_KEY`
-7. - [ ] Define the response graph state in `graphs/response_state.py`: `subject_id`, `actor_id`, `messages`, `memory_block`, `memory_ids`, `degraded` flag
-8. - [ ] Implement the retrieval node in `graphs/response_graph.py` — calls `retrieve/guarded.py`, then `rank()`, then `compose()`; on `RetrievalUnavailable` it sets `memory_block=""` and `degraded=True` instead of raising
-9. - [ ] Implement the response node — builds the final prompt (memory block + conversation) and calls `llm/config.py` in streaming mode, yielding token chunks
-10. - [ ] Wire the graph with a conditional edge so a degraded retrieval falls **straight through** to the response node; there must be no path where an open circuit prevents a reply
-11. - [ ] Update the chat endpoint in `api/` to stream the response graph's output (SSE or chunked), ensuring retrieval + composition complete before the first token is emitted and only the final answer streams
-12. - [ ] Include a non-streamed response header or leading metadata event exposing `degraded` and the included `memory_ids`, so the UI (M6) and audit log (M7) can see what context was used
-13. - [ ] Add Prometheus metrics: breaker state gauge, retrieval timeout counter, degraded-response counter
-14. - [ ] Add `tests/reliability/conftest.py` fixtures: a flushable Redis fixture, a retrieval stub whose failure mode is controllable, and a helper that instantiates a **second** breaker instance simulating a separate replica
-15. - [ ] Add a clock-injection seam to the breaker (inject `now()`) so cooldown expiry can be tested without real sleeps
+1. - [x] Implement `retrieve/breaker.py` — a hand-rolled circuit breaker class with three states (`closed`, `open`, `half_open`) and a Redis-backed state record (state, consecutive failure count, opened-at timestamp) under a single namespaced key, so all replicas read the same state
+2. - [x] Implement the state transitions explicitly: `closed` → `open` after `N` consecutive failures; `open` → `half_open` once `COOLDOWN_SECONDS` have elapsed since `opened_at`; `half_open` → `closed` on a successful probe; `half_open` → `open` on a failed probe
+3. - [x] Make the half-open probe single-flight using a short-TTL Redis lock, so many replicas do not all probe at once
+4. - [x] Make every Redis mutation atomic (Lua script or `WATCH`/pipeline) so concurrent replicas cannot corrupt the counter
+5. - [x] Implement `retrieve/guarded.py` — wraps `retrieve/hybrid.py` with `asyncio.wait_for(..., RETRIEVAL_TIMEOUT_MS)`, records success/failure into the breaker, and raises a typed `RetrievalUnavailable` on open circuit or timeout
+6. - [x] Add breaker config to `retrieve/config.py`: `BREAKER_FAILURE_THRESHOLD`, `BREAKER_COOLDOWN_SECONDS`, `RETRIEVAL_TIMEOUT_MS`, `BREAKER_REDIS_KEY`
+7. - [x] Define the response graph state in `graphs/response_state.py`: `subject_id`, `actor_id`, `messages`, `memory_block`, `memory_ids`, `degraded` flag
+8. - [x] Implement the retrieval node in `graphs/response_graph.py` — calls `retrieve/guarded.py`, then `rank()`, then `compose()`; on `RetrievalUnavailable` it sets `memory_block=""` and `degraded=True` instead of raising
+9. - [x] Implement the response node — builds the final prompt (memory block + conversation) and calls `llm/config.py` in streaming mode, yielding token chunks
+10. - [x] Wire the graph with a conditional edge so a degraded retrieval falls **straight through** to the response node; there must be no path where an open circuit prevents a reply
+11. - [x] Update the chat endpoint in `api/` to stream the response graph's output (SSE or chunked), ensuring retrieval + composition complete before the first token is emitted and only the final answer streams
+12. - [x] Include a non-streamed response header or leading metadata event exposing `degraded` and the included `memory_ids`, so the UI (M6) and audit log (M7) can see what context was used
+13. - [x] Add Prometheus metrics: breaker state gauge, retrieval timeout counter, degraded-response counter
+14. - [x] Add `tests/reliability/conftest.py` fixtures: a flushable Redis fixture, a retrieval stub whose failure mode is controllable, and a helper that instantiates a **second** breaker instance simulating a separate replica
+15. - [x] Add a clock-injection seam to the breaker (inject `now()`) so cooldown expiry can be tested without real sleeps
 
 ### Test cases
 
-- [ ] `test_breaker_opens_after_n_consecutive_failures` (reliability, `tests/reliability/test_circuit_breaker_fallback.py`) — forces exactly `N` consecutive retrieval failures; asserts the breaker state reads `open`
-- [ ] `test_breaker_open_state_visible_to_second_replica` (reliability) — trips the breaker via instance A, then reads state via a separately constructed instance B sharing the same Redis; asserts B observes `open`, proving state is shared and not process-local
-- [ ] `test_chat_returns_200_with_reply_while_circuit_open` (reliability) — with the breaker forced open, posts a chat message; asserts HTTP 200, a non-empty reply body, and no memory context in the prompt
-- [ ] `test_half_open_probe_after_cooldown_recloses_on_success` (reliability) — opens the breaker, advances the injected clock past the cooldown, runs one successful probe; asserts the state returns to `closed`
-- [ ] `test_half_open_probe_failure_reopens_breaker` (reliability, additional) — same setup but the probe fails; asserts the state returns to `open` and the cooldown restarts
-- [ ] `test_retrieval_timeout_counts_as_failure` (reliability, additional) — stubs retrieval to hang past `RETRIEVAL_TIMEOUT_MS`; asserts the call raises `RetrievalUnavailable` and the failure counter incremented
-- [ ] `test_success_resets_consecutive_failure_count` (reliability, additional) — `N-1` failures then a success then more failures; asserts the breaker does not open early
-- [ ] `test_degraded_flag_surfaced_in_response_metadata` (reliability, additional) — with the circuit open, asserts the response metadata reports `degraded=true` and an empty `memory_ids`
-- [ ] `test_response_streams_token_chunks` (integration, `tests/integration/test_response_graph.py`, additional) — asserts the endpoint yields more than one chunk over time rather than a single body
-- [ ] `test_retrieval_completes_before_first_token` (integration, additional) — asserts the memory block is fully composed before the first streamed chunk is emitted
-- [ ] `test_concurrent_half_open_probes_single_flight` (reliability, additional, concurrency) — two replicas enter half-open simultaneously; asserts only one probe executes
-- [ ] `test_redis_unavailable_fails_open_not_closed` (reliability, additional) — with Redis unreachable, asserts the chat endpoint still returns 200 with a reply (breaker failure must never block the user)
+- [x] `test_breaker_opens_after_n_consecutive_failures` (reliability, `tests/reliability/test_circuit_breaker_fallback.py`) — forces exactly `N` consecutive retrieval failures; asserts the breaker state reads `open`
+- [x] `test_breaker_open_state_visible_to_second_replica` (reliability) — trips the breaker via instance A, then reads state via a separately constructed instance B sharing the same Redis; asserts B observes `open`, proving state is shared and not process-local
+- [x] `test_chat_returns_200_with_reply_while_circuit_open` (reliability) — with the breaker forced open, posts a chat message; asserts HTTP 200, a non-empty reply body, and no memory context in the prompt
+- [x] `test_half_open_probe_after_cooldown_recloses_on_success` (reliability) — opens the breaker, advances the injected clock past the cooldown, runs one successful probe; asserts the state returns to `closed`
+- [x] `test_half_open_probe_failure_reopens_breaker` (reliability, additional) — same setup but the probe fails; asserts the state returns to `open` and the cooldown restarts
+- [x] `test_retrieval_timeout_counts_as_failure` (reliability, additional) — stubs retrieval to hang past `RETRIEVAL_TIMEOUT_MS`; asserts the call raises `RetrievalUnavailable` and the failure counter incremented
+- [x] `test_success_resets_consecutive_failure_count` (reliability, additional) — `N-1` failures then a success then more failures; asserts the breaker does not open early
+- [x] `test_degraded_flag_surfaced_in_response_metadata` (reliability, additional) — with the circuit open, asserts the response metadata reports `degraded=true` and an empty `memory_ids`
+- [x] `test_response_streams_token_chunks` (integration, `tests/integration/test_response_graph.py`, additional) — asserts the endpoint yields more than one chunk over time rather than a single body
+- [x] `test_retrieval_completes_before_first_token` (integration, additional) — asserts the memory block is fully composed before the first streamed chunk is emitted
+- [x] `test_concurrent_half_open_probes_single_flight` (reliability, additional, concurrency) — two replicas enter half-open simultaneously; asserts only one probe executes
+- [x] `test_redis_unavailable_fails_open_not_closed` (reliability, additional) — with Redis unreachable, asserts the chat endpoint still returns 200 with a reply (breaker failure must never block the user)
 
 ### Definition of Done — how to verify this milestone yourself
 
-- [ ] Run `pytest tests/reliability/test_circuit_breaker_fallback.py` → exits 0, all tests pass
-- [ ] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_breaker_opens_after_n_consecutive_failures -v` → passes, confirming N consecutive failures open the breaker
-- [ ] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_breaker_open_state_visible_to_second_replica -v` → passes, confirming a second simulated process observes the open state via Redis rather than only the process that tripped it
-- [ ] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_chat_returns_200_with_reply_while_circuit_open -v` → passes, confirming the chat endpoint still returns 200 with a reply and no memory context while open
-- [ ] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_half_open_probe_after_cooldown_recloses_on_success -v` → passes, confirming a half-open probe after the cooldown recloses the breaker on success
-- [ ] Manually inspect the breaker key: `docker compose -f infra/docker-compose.yml exec redis redis-cli GET <BREAKER_REDIS_KEY>` after running the failure test → the state value is visible in Redis, not held only in Python memory
-- [ ] Send a real chat message with Postgres stopped (`docker compose -f infra/docker-compose.yml stop postgres`) → the reply still returns; restart postgres afterwards
-- [ ] Run `pytest tests/reliability/ tests/integration/test_response_graph.py -v` → all pass, 0 failures
+- [x] Run `pytest tests/reliability/test_circuit_breaker_fallback.py` → exits 0, all tests pass
+- [x] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_breaker_opens_after_n_consecutive_failures -v` → passes, confirming N consecutive failures open the breaker
+- [x] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_breaker_open_state_visible_to_second_replica -v` → passes, confirming a second simulated process observes the open state via Redis rather than only the process that tripped it
+- [x] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_chat_returns_200_with_reply_while_circuit_open -v` → passes, confirming the chat endpoint still returns 200 with a reply and no memory context while open
+- [x] Run `pytest tests/reliability/test_circuit_breaker_fallback.py -k test_half_open_probe_after_cooldown_recloses_on_success -v` → passes, confirming a half-open probe after the cooldown recloses the breaker on success
+- [x] Manually inspect the breaker key: `docker compose -f infra/docker-compose.yml exec redis redis-cli GET <BREAKER_REDIS_KEY>` after running the failure test → the state value is visible in Redis, not held only in Python memory
+- [x] Send a real chat message with Postgres stopped (`docker compose -f infra/docker-compose.yml stop postgres`) → the reply still returns; restart postgres afterwards
+- [x] Run `pytest tests/reliability/ tests/integration/test_response_graph.py -v` → all pass, 0 failures
 
 **Milestone signed off by user on:** _____________
 

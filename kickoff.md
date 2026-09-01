@@ -30,10 +30,10 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M1 | Docker infra, core tables (HNSW+GIN+RLS), `/health`, LiteLLM wrapper | W1 | ✅ | independent agent — 12/12 DoD, 13/13 tests |
 | M2 | Capture graph: extract → PII → evaluate → embed → dedup → write | W2 | ✅ | independent agent — 7/7 DoD, 12/12 tests, lock proven by control experiment |
 | M3 | Hybrid retrieval (pgvector ∥ tsvector) + golden-set eval harness | W2 | ✅ | independent agent — **failed once**, reworked, passed on re-verification |
-| M2.5 | *(inserted)* Thin chat UI — first visible demo | W3 | 🔴 | **verification FAILED** — live region omits the reply; fixing |
-| M4 | Weighted ranking + token-bounded context composer | W3 | ✅ | independent agent — 7/7 DoD, 12/12 tests; 4 defects being closed |
-| M5 | Streaming response graph + Redis circuit breaker | W4 | ⬜ | — |
-| M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ⬜ | — |
+| M2.5 | *(inserted)* Thin chat UI — first visible demo | W3 | ✅ | **failed once** (reply outside the aria-live region), fixed, re-checked |
+| M4 | Weighted ranking + token-bounded context composer | W3 | ✅ | independent agent — 7/7 DoD, 12/12 tests; 4 defects closed |
+| M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
+| M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | 🔨 | — |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ⬜ | — |
 | M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | ⬜ | — |
 
@@ -154,11 +154,32 @@ change it knowingly than find your verification command quietly rewritten.
       transcript, LiteLLM was observed dumping request headers — including the key in
       plaintext — into a failing traceback during M2. Anywhere those logs were written or
       copied has the key in clear text. Rotate the Groq key too, on the transcript grounds.
-- [ ] **Consider adding a payment method to the Voyage account.** The key is throttled to
-      **3 requests/minute** ("no payment method on file"). This is now the single largest
-      drag on the build: the M2 suite takes 6–14 minutes almost entirely in rate-limit
-      backoff, and M8's expanded evals will be worse. Correctness is unaffected — the retry
-      layer turns 429s into slow successes — but iteration speed is roughly quota-bound.
+- [ ] **Add a payment method to the Voyage account — this is now the highest-impact fix
+      available, and it is no longer just about speed.**
+
+      The key is throttled to **3 requests/minute** ("no payment method on file"). Measured
+      single-query embedding latency on the live path:
+
+      | query | latency |
+      | --- | --- |
+      | "what do you know about my family?" | **12.51s** |
+      | "what am I allergic to?" | 0.30s |
+      | "tell me about my hobbies" | 0.36s |
+      | "what is my commute like?" | **63.75s** |
+
+      Within-quota calls take ~0.3s. Once the three-per-minute window is spent, the retry
+      layer backs off and a single embed takes 12–64s. **`PATH_TIMEOUT_MS` is 5000ms**, so
+      the semantic path times out and the turn is served without memory. A live chat request
+      just now returned `x-memory-degraded: true`, `reason: timeout`.
+
+      Capture embeds too, so a normal conversation exhausts the window quickly and the
+      **retrieval path degrades most of the time**. Nothing is broken — M5's breaker is doing
+      precisely its job, which is why the reply still returns fast — but the demo will show
+      "answering without memory" far more often than it shows memory working.
+
+      Do **not** fix this by raising `RETRIEVAL_TIMEOUT_MS`: that trades a fast degraded
+      reply for a slow one and makes the chat feel broken. The quota is the actual
+      constraint.
 - [ ] Decide whether to stop the native PostgreSQL 18 / Memurai services and reclaim the
       standard ports, or keep the 55432 / 56379 mapping.
 - [ ] Consider amending the plan's `pg_policies` DoD line to use `coalesce(qual, with_check)`.

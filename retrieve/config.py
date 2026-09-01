@@ -31,6 +31,12 @@ DEFAULTS = {
     # Per-path wall-clock budget. The semantic path includes a live embedding
     # API round-trip, so this cannot be as tight as a pure-SQL budget would be.
     "PATH_TIMEOUT_MS": "5000",
+    # --- M5 circuit breaker (plan step 6) ---------------------------------
+    # See the block comment further down for why each number is what it is.
+    "BREAKER_FAILURE_THRESHOLD": "3",
+    "BREAKER_COOLDOWN_SECONDS": "30",
+    "RETRIEVAL_TIMEOUT_MS": "6000",
+    "BREAKER_REDIS_KEY": "memsys:breaker:retrieval",
 }
 
 
@@ -68,12 +74,73 @@ def path_timeout_seconds() -> float:
     return path_timeout_ms() / 1000.0
 
 
+# ---------------------------------------------------------------------------
+# M5 circuit breaker (plan step 6)
+# ---------------------------------------------------------------------------
+#
+# BREAKER_FAILURE_THRESHOLD = 3
+#   Consecutive failures that take the circuit from `closed` to `open`. One
+#   failure is noise — a single dropped socket, one slow embedding call. Three
+#   in a row, with no success between them, is a pattern. Higher would make the
+#   breaker slow to protect the reply path; lower would trip on transients and
+#   blind the assistant to its own memory for no reason.
+#
+# BREAKER_COOLDOWN_SECONDS = 30
+#   How long `open` lasts before one probe is allowed through (`half_open`).
+#   Long enough that a restarting Postgres or a rate-limit window has a real
+#   chance to clear, short enough that a user in a live conversation gets their
+#   memory back within a turn or two rather than after the session is over.
+#
+# RETRIEVAL_TIMEOUT_MS = 6000
+#   The breaker's own wall-clock budget for one whole retrieval call. It sits
+#   OUTSIDE `hybrid_search`, which already gives each path PATH_TIMEOUT_MS
+#   (5000) individually. The two paths run concurrently, so a fully-timed-out
+#   hybrid search returns at ~5000ms; 6000 leaves headroom for the merge and
+#   for pool checkout without ever firing before the inner timeouts have had
+#   their chance. Set below PATH_TIMEOUT_MS and this timeout would pre-empt the
+#   per-path isolation M3 built, converting a half-degraded (still useful)
+#   result into a total failure and tripping the breaker on it.
+#
+# BREAKER_REDIS_KEY = "memsys:breaker:retrieval"
+#   ONE namespaced key holding the entire state record as a JSON string, so
+#   every replica reads and writes the same record and a human can inspect it
+#   with a plain `redis-cli GET`. The single-flight probe lock lives at
+#   `<key>:probe` — see `retrieve/breaker.py`.
+
+def breaker_failure_threshold() -> int:
+    """Consecutive failures that open the circuit."""
+    return max(1, int(_env("BREAKER_FAILURE_THRESHOLD")))
+
+
+def breaker_cooldown_seconds() -> float:
+    """Seconds an open circuit waits before allowing one half-open probe."""
+    return float(_env("BREAKER_COOLDOWN_SECONDS"))
+
+
+def retrieval_timeout_ms() -> int:
+    """Wall-clock budget for one guarded retrieval call."""
+    return int(_env("RETRIEVAL_TIMEOUT_MS"))
+
+
+def retrieval_timeout_seconds() -> float:
+    return retrieval_timeout_ms() / 1000.0
+
+
+def breaker_redis_key() -> str:
+    """The single key holding the shared breaker state record."""
+    return _env("BREAKER_REDIS_KEY")
+
+
 # Module-level aliases, so `from retrieve.config import SEMANTIC_TOP_K` reads
 # naturally in call sites that do not need late binding.
 SEMANTIC_TOP_K = semantic_top_k
 KEYWORD_TOP_K = keyword_top_k
 PATH_TIMEOUT_MS = path_timeout_ms
 RANKING_TOP_K = ranking_top_k
+BREAKER_FAILURE_THRESHOLD = breaker_failure_threshold
+BREAKER_COOLDOWN_SECONDS = breaker_cooldown_seconds
+RETRIEVAL_TIMEOUT_MS = retrieval_timeout_ms
+BREAKER_REDIS_KEY = breaker_redis_key
 
 # ---------------------------------------------------------------------------
 # score normalization (plan step 6)

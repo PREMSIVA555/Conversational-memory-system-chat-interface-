@@ -50,7 +50,7 @@ import os
 import random
 import re
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Iterable, Sequence, TypeVar
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterable, Sequence, TypeVar
 
 _ENV_PATH = Path(__file__).resolve().parent.parent / "infra" / ".env"
 _env_loaded = False
@@ -285,6 +285,69 @@ async def complete(
     )
     content = response.choices[0].message.content
     return content or ""
+
+
+async def stream(
+    messages: Sequence[dict[str, Any]] | str,
+    *,
+    model: str | None = None,
+    max_tokens: int | None = None,
+    temperature: float = 0.2,
+    timeout: float | None = None,
+    num_retries: int | None = None,
+    rate_limit_attempts_override: int | None = None,
+    **kw: Any,
+) -> AsyncIterator[str]:
+    """Stream one chat completion, yielding text deltas as they arrive.
+
+    The streaming sibling of :func:`complete`, added for M5's response graph.
+    Everything that makes this module the single seam applies here too — the
+    model is resolved from the environment on every call, the gpt-oss
+    ``MIN_MAX_TOKENS`` floor is enforced, and 429s go through the same backoff.
+
+    Empty deltas are skipped, so a caller can treat every yielded string as
+    real output. Note gpt-oss spends its budget on reasoning *before* emitting
+    content, so the first delta can lag noticeably — that is the trap in the
+    module docstring, not a stalled stream.
+
+    The rate-limit retry wraps only the **establishment** of the stream, not
+    the iteration. Once tokens are flowing a 429 cannot occur, and re-running
+    the operation mid-iteration would replay tokens the caller already saw.
+    """
+    load_env()
+    if isinstance(messages, str):
+        messages = [{"role": "user", "content": messages}]
+
+    resolved_model = model or resolve_completion_model()
+    budget = max_tokens if max_tokens is not None else default_max_tokens()
+    budget = max(MIN_MAX_TOKENS, int(budget))
+
+    litellm = _litellm()
+
+    async def _open():
+        return await litellm.acompletion(
+            model=resolved_model,
+            messages=list(messages),
+            max_tokens=budget,
+            temperature=temperature,
+            timeout=timeout if timeout is not None else request_timeout(),
+            num_retries=num_retries if num_retries is not None else max_retries(),
+            stream=True,
+            **kw,
+        )
+
+    response = await _with_rate_limit_retry(
+        _open, attempts=rate_limit_attempts_override, what=f"stream ({resolved_model})"
+    )
+
+    async for chunk in response:
+        choices = getattr(chunk, "choices", None)
+        if not choices:
+            continue
+        delta = getattr(choices[0], "delta", None)
+        piece = getattr(delta, "content", None) if delta is not None else None
+        if piece:
+            yield piece
 
 
 async def embed(
