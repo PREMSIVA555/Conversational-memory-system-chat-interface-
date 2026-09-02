@@ -263,6 +263,33 @@ SUMMARY_SYSTEM_PROMPT = (
 )
 
 
+#: Token budget for one summary completion.
+#:
+#: NOT the global `LLM_MAX_TOKENS` (1024). `llm/config.py`'s MAX_TOKENS TRAP
+#: explains why: gpt-oss spends its budget on internal reasoning BEFORE emitting
+#: content, so too small a budget returns an empty string rather than an error.
+#: Measured on a real failing run of this job:
+#:
+#:     finish_reason=length  content=''  completion_tokens=1024  reasoning=1022
+#:
+#: 1022 of 1024 tokens went to reasoning and two were left for the answer. This
+#: prompt is harder than a chat turn - it asks the model to find a shared theme
+#: across up to eight memories and refuse to invent one - so it needs headroom
+#: the global default does not give it.
+SUMMARY_MAX_TOKENS = 3072
+
+
+class ReflectionProducedNothing(RuntimeError):
+    """Raised when a run selected a cluster and wrote no summary for it.
+
+    Deliberately an exception rather than a return value: `jobs/run.py` turns
+    any raised exception into a non-zero exit and a machine-readable stats file,
+    which is the behaviour a scheduler can actually act on. Returning a record
+    with `summaries_written == 0` exits 0 and is indistinguishable from a quiet
+    night with nothing to consolidate.
+    """
+
+
 async def summarize_cluster(cluster: Cluster, *, max_tokens: int | None = None) -> str:
     """One completion. Returns the summary sentence (never None, may be empty).
 
@@ -279,7 +306,7 @@ async def summarize_cluster(cluster: Cluster, *, max_tokens: int | None = None) 
             {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
             {"role": "user", "content": f"Source memories:\n{body}"},
         ],
-        max_tokens=max_tokens,
+        max_tokens=max_tokens if max_tokens is not None else SUMMARY_MAX_TOKENS,
     )
     return (text or "").strip()
 
@@ -446,6 +473,12 @@ async def run_reflection_worker(
         subjects=len(targets),
     )
 
+    # Subjects where a cluster WAS found and no summary was written. Distinct
+    # from "no cluster": having nothing to consolidate is success, while finding
+    # eight related memories and producing nothing is a failure the job has to
+    # be able to report. See `barren` handling below.
+    barren: list[str] = []
+
     try:
         for subject, actor in targets:
             state = await run_reflection(subject_id=subject, actor_id=actor)
@@ -453,6 +486,8 @@ async def run_reflection_worker(
                 record.count_summary()
                 record.sources_consolidated += len(state.get("consolidated") or [])
                 record.add_processed([state["summary_id"]])
+            elif state.get("cluster_ids"):
+                barren.append(f"{subject}:{state.get('skipped') or 'unknown'}")
             log_event(
                 "reflection.subject.complete",
                 run_id=run,
@@ -468,6 +503,19 @@ async def run_reflection_worker(
         record.finish(outcome="error")
         record.log()
         raise
+
+    if barren:
+        # A nightly cron whose failure mode is "exit 0, do nothing" is
+        # unobservable: nobody reads a log line that says success. The job found
+        # work, failed to do it, and must say so in the one channel a scheduler
+        # actually checks.
+        record.error = (
+            f"found a cluster but wrote no summary for {len(barren)} subject(s): "
+            + ", ".join(barren)
+        )
+        record.finish(outcome="barren")
+        record.log()
+        raise ReflectionProducedNothing(record.error)
 
     record.finish(outcome="ok")
     record.log()

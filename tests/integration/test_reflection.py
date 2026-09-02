@@ -43,7 +43,16 @@ import uuid
 import pytest
 
 from graphs.reflection_graph import run_reflection
-from jobs.reflection import REFLECTION_SOURCE, select_cluster
+from jobs.reflection import (
+    REFLECTION_SOURCE,
+    SUMMARY_MAX_TOKENS,
+    Cluster,
+    ClusterMember,
+    ReflectionProducedNothing,
+    run_reflection_worker,
+    select_cluster,
+    summarize_cluster,
+)
 from llm import config as llm_config
 from store.db import admin_session, session
 
@@ -468,3 +477,133 @@ async def test_reflection_ignores_soft_deleted_sources(
     erased = next(r for r in rows if str(r["id"]) == erased_id)
     assert erased["deleted_at"] is not None
     assert erased["consolidated_at"] is None
+
+
+# ---------------------------------------------------------------------------
+# the silent-no-op guard  (added after cold verification of M8 failed DoD 9)
+# ---------------------------------------------------------------------------
+#
+# A cold verifier ran `python -m jobs.run --job reflection` nine times and got a
+# written summary twice. The other seven runs printed
+# `{"skipped": "empty_summary" | "no_cluster", "summaries_written": 0}` and
+# exited **0**. Two separate defects were hiding in that one symptom, and these
+# tests pin them apart:
+#
+#   1. the completion really was coming back empty, because gpt-oss spends its
+#      budget on reasoning before emitting content and the global 1024-token
+#      default left 2 tokens for the answer (measured: finish_reason=length,
+#      completion_tokens=1024, reasoning_tokens=1022). Fixed by giving this
+#      prompt its own budget, `SUMMARY_MAX_TOKENS`.
+#
+#   2. even with the budget fixed, a run that finds a cluster and writes nothing
+#      exited 0 — indistinguishable, to a scheduler, from a quiet night with
+#      nothing to consolidate. That is the failure mode that matters: nobody
+#      reads a nightly log line that says success.
+#
+# Test 2 is the one that must never be deleted. Fixing the token budget makes
+# the empty completion rare; it cannot make it impossible, because the model is
+# free to return an empty string for reasons outside this repo's control.
+
+
+async def test_barren_run_raises_instead_of_exiting_zero(
+    seeded_cluster, stub_embed, monkeypatch
+):
+    """A run that finds a cluster and writes no summary must FAIL, loudly.
+
+    Forces the exact observed condition — a completion that returns "" — and
+    asserts the worker raises rather than returning a clean record. Returning
+    `summaries_written == 0` with outcome "ok" is what made the original defect
+    invisible for a whole milestone.
+    """
+    async def _empty(*_args, **_kwargs):
+        return ""
+
+    monkeypatch.setattr(llm_config, "complete", _empty)
+
+    with pytest.raises(ReflectionProducedNothing) as excinfo:
+        await run_reflection_worker(
+            subject_id=seeded_cluster["subject_id"],
+            actor_id=seeded_cluster["subject_id"],
+        )
+
+    message = str(excinfo.value)
+    assert "found a cluster but wrote no summary" in message
+    assert seeded_cluster["subject_id"] in message, (
+        "the error must name the subject, or an operator cannot act on it"
+    )
+    assert "empty_summary" in message, (
+        "the error must carry WHY nothing was written, not just that nothing was"
+    )
+
+
+async def test_having_nothing_to_consolidate_is_success_not_failure(
+    reflection_subject, stub_embed, monkeypatch
+):
+    """The other side of the guard: an empty corpus must still exit 0.
+
+    Without this, the fix for the silent no-op would turn every quiet night into
+    a red build — a cron that alarms when there is genuinely nothing to do gets
+    muted, and a muted alarm is worse than the silence it replaced.
+    """
+    async def _unused(*_args, **_kwargs):
+        raise AssertionError("no completion should be attempted with no cluster")
+
+    monkeypatch.setattr(llm_config, "complete", _unused)
+
+    record = await run_reflection_worker(
+        subject_id=reflection_subject,
+        actor_id=reflection_subject,
+    )
+
+    assert record.summaries_written == 0
+    assert record.error is None, (
+        f"an empty corpus is not an error, got {record.error!r}"
+    )
+
+
+async def test_summary_call_asks_for_more_tokens_than_the_global_default():
+    """The summary prompt must not run on the global chat budget.
+
+    Pins the root cause rather than the symptom. `llm/config.py`'s MAX_TOKENS
+    TRAP documents that too small a budget yields an empty string rather than an
+    error, and this prompt — find a shared theme across up to eight memories,
+    and refuse to invent one if there isn't one — reasons far harder than a chat
+    turn. If someone later "simplifies" this back to the default, the empty
+    summaries return and they look like a flaky model.
+    """
+    assert SUMMARY_MAX_TOKENS > llm_config.default_max_tokens(), (
+        f"the summary budget ({SUMMARY_MAX_TOKENS}) must exceed the global "
+        f"default ({llm_config.default_max_tokens()}) — see the measured "
+        f"1022-of-1024 reasoning-token exhaustion in jobs/reflection.py"
+    )
+    assert SUMMARY_MAX_TOKENS >= 2048
+
+
+async def test_summarize_cluster_passes_the_budget_through(monkeypatch):
+    """The budget is actually sent to the provider, not merely defined.
+
+    A constant nobody passes is decoration. This asserts the call carries it,
+    and that an explicit override still wins.
+    """
+    seen: list[int | None] = []
+
+    async def _spy(_messages, **kwargs):
+        seen.append(kwargs.get("max_tokens"))
+        return "a summary sentence"
+
+    monkeypatch.setattr(llm_config, "complete", _spy)
+
+    cluster = Cluster(
+        subject_id="s",
+        seed_id="seed",
+        members=tuple(
+            ClusterMember(str(i), text, 0.0)
+            for i, text in enumerate(["one thing", "another thing", "a third thing"])
+        ),
+    )
+
+    await summarize_cluster(cluster)
+    assert seen == [SUMMARY_MAX_TOKENS]
+
+    await summarize_cluster(cluster, max_tokens=777)
+    assert seen == [SUMMARY_MAX_TOKENS, 777], "an explicit budget must still win"
