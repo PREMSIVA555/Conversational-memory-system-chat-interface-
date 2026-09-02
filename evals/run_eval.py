@@ -17,8 +17,17 @@ Exit codes:
        golden set's whole value is that those two probes discriminate between
        the paths, so a run where they stopped doing so must not report success
        — otherwise CI goes green on a retriever that has lost a path.
+    3  the suite is intact but retrieval REGRESSED against its baseline. Kept
+       apart from 2 deliberately: a broken suite is repaired by fixing the
+       fixture, a regression must never be, and one shared non-zero code would
+       let a regression be "fixed" by editing the golden set.
 
-A bad score still exits 0. Only a broken run (1) or a broken suite (2) fails.
+A bad score on a suite with NO baseline still exits 0. A suite that has one
+(see `DEFAULT_BASELINES`) is gated by default; `--no-baseline` opts out. The
+gate defaults to ON because the Definition of Done's own command passes no
+`--baseline` yet requires the delta and pass/fail to be printed — with the gate
+opt-in, the documented command printed no gate at all and the committed result
+recorded `"gate": {"baseline": null, "passed": null}`.
 
 WHICH METRIC TO ACTUALLY READ
 -----------------------------
@@ -108,6 +117,39 @@ CORPORA = {
 #: retrieval. It stays in the JSON payload for compatibility; it is not a gate.
 GATE_METRICS = ("macro_recall", "mrr", "mean_precision_at_r")
 
+#: suite -> the results file it is gated against BY DEFAULT.
+#:
+#: This exists because the Definition of Done's command is
+#: `python evals/run_eval.py --suite golden_set_v2`, with no `--baseline`, and
+#: that same line requires the runner to print "the explicit delta and pass/fail
+#: against the baseline". With the gate opt-in those two halves contradicted
+#: each other: the documented command printed no gate at all, and the committed
+#: `golden_set_v2.json` recorded `"gate": {"baseline": null, "passed": null}` -
+#: the milestone's own artifact proving the gate had never run.
+#:
+#: So a suite that HAS a baseline is gated unless you opt out with
+#: `--no-baseline`. A gate you have to remember to switch on is not a gate.
+DEFAULT_BASELINES = {
+    "golden_set_v2": "golden_set_v1.json",
+}
+
+
+def resolve_baseline(suite: str, explicit: Path | None, disabled: bool) -> Path | None:
+    """Pick the baseline for this run. Explicit beats default; --no-baseline wins."""
+    if disabled:
+        return None
+    if explicit is not None:
+        return explicit
+    name = DEFAULT_BASELINES.get(suite)
+    if name is None:
+        return None
+    path = ROOT / "evals" / "results" / name
+    # A missing default baseline is not an error: the very first v1 run has to
+    # be able to produce one. An explicitly named missing file IS an error, and
+    # `load_baseline` raises for it.
+    return path if path.exists() else None
+
+
 #: The tier whose queries the gate is computed over. v2 carries every v1 query
 #: unchanged, so the honest no-regression comparison is v1's queries against
 #: v1's baseline - run over v2's LARGER corpus, which is a harder condition than
@@ -168,6 +210,16 @@ EXIT_REGRESSION = 3
 #: is arithmetically identical to the baseline can differ in the last bit. The
 #: gate must not fail on 1e-16; it must fail on a real drop.
 GATE_TOLERANCE = 1e-9
+
+
+def _relative_to_root(path: Path | None) -> str | None:
+    """Render a path relative to the repo root when it lives inside it."""
+    if path is None:
+        return None
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
 
 
 def load_baseline(path: Path) -> dict:
@@ -563,7 +615,10 @@ async def run(
         "aggregate": agg,
         "aggregate_by_tier": by_tier,
         "gate": {
-            "baseline": str(baseline_path) if baseline_path else None,
+            # Repo-relative: an absolute path here is machine-specific noise in
+            # a committed artifact, and makes two runs on two machines differ
+            # in a field that says nothing about retrieval.
+            "baseline": _relative_to_root(baseline_path),
             "tier": GATE_TIER,
             "metrics": list(GATE_METRICS),
             "passed": gate_passed if baseline_path else None,
@@ -611,14 +666,21 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help="a previous run's JSON; gate this run's v1 queries against it and "
-             "exit 3 if recall/MRR/P@R regressed",
+             "exit 3 if recall/MRR/P@R regressed. Defaults per suite, see "
+             "DEFAULT_BASELINES",
+    )
+    parser.add_argument(
+        "--no-baseline",
+        action="store_true",
+        help="skip the regression gate even when the suite has a default baseline",
     )
     args = parser.parse_args(argv)
+    baseline = resolve_baseline(args.suite, args.baseline, args.no_baseline)
 
     async def _run() -> int:
         try:
             return await run(
-                args.suite, args.top_k, not args.no_seed, args.out, args.baseline
+                args.suite, args.top_k, not args.no_seed, args.out, baseline
             )
         finally:
             await close_pools()

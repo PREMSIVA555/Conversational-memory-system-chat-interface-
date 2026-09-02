@@ -1,6 +1,6 @@
 {
   "suite": "golden_set_v2",
-  "generated_at": "2026-09-02T16:01:51.612624+00:00",
+  "generated_at": "2026-09-02T17:10:23.312557+00:00",
   "top_k": 5,
   "subject_id": "93e6200f-ff8f-5502-98fb-a4643a815412",
   "corpus_size": 63,
@@ -52,15 +52,37 @@
     }
   },
   "gate": {
-    "baseline": null,
+    "baseline": "evals/results/golden_set_v1.json",
     "tier": "v1_holdout",
     "metrics": [
       "macro_recall",
       "mrr",
       "mean_precision_at_r"
     ],
-    "passed": null,
-    "rows": []
+    "passed": true,
+    "rows": [
+      {
+        "metric": "macro_recall",
+        "baseline": 1.0,
+        "current": 1.0,
+        "delta": 0.0,
+        "status": "ok"
+      },
+      {
+        "metric": "mrr",
+        "baseline": 1.0,
+        "current": 1.0,
+        "delta": 0.0,
+        "status": "ok"
+      },
+      {
+        "metric": "mean_precision_at_r",
+        "baseline": 1.0,
+        "current": 1.0,
+        "delta": 0.0,
+        "status": "ok"
+      }
+    ]
   },
   "per_path_totals": {
     "semantic_only": 88,
@@ -123,7 +145,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 81.38,
+      "elapsed_ms": 82.57,
       "separation": {
         "corpus_size": 62,
         "target_id": "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
@@ -184,7 +206,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 56.72,
+      "elapsed_ms": 47.91,
       "separation": {
         "corpus_size": 62,
         "target_id": "22284a05-c5bf-590c-afba-149d19c20f7e",
@@ -246,7 +268,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 53.99,
+      "elapsed_ms": 48.14,
       "separation": null
     },
     {
@@ -299,7 +321,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 61.91,
+      "elapsed_ms": 55.09,
       "separation": null
     },
     {
@@ -352,7 +374,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 63.91,
+      "elapsed_ms": 52.65,
       "separation": null
     },
     {
@@ -405,7 +427,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 56.72,
+      "elapsed_ms": 47.38,
       "separation": null
     },
     {
@@ -456,7 +478,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 59.52,
+      "elapsed_ms": 47.76,
       "separation": null
     },
     {
@@ -507,7 +529,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 56.93,
+      "elapsed_ms": 48.18,
       "separation": null
     },
     {
@@ -564,7 +586,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 59.72,
+      "elapsed_ms": 47.77,
       "separation": null
     },
     {
@@ -615,7 +637,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 53.49,
+      "elapsed_ms": 47.82,
       "separation": null
     },
     {
@@ -666,7 +688,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.53,
+      "elapsed_ms": 47.7,
       "separation": null
     },
     {
@@ -717,7 +739,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 64.08,
+      "elapsed_ms": 51.97,
       "separation": null
     },
     {
@@ -770,7 +792,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 64.17,
+      "elapsed_ms": 47.24,
       "separation": null
     },
     {
@@ -821,7 +843,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 66.89,
+      "elapsed_ms": 52.32,
       "separation": null
     },
     {
@@ -872,7 +894,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 65.25,
+      "elapsed_ms": 47.76,
       "separation": null
     },
     {
@@ -925,7 +947,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 65.82,
+      "elapsed_ms": 47.6,
       "separation": null
     },
     {
@@ -976,7 +998,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 57.24,
+      "elapsed_ms": 52.2,
       "separation": null
     },
     {
@@ -1038,7 +1060,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 60.17,
+      "elapsed_ms": 47.84,
       "separation": null
     },
     {
@@ -1098,7 +1120,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 61.33,
+      "elapsed_ms": 52.16,
       "separation": null
     }
   ]
