@@ -691,7 +691,15 @@ async def seed(
     actor_id = actor_id or subject_id
     contents = [m.content for m in memories]
     vectors = await embeddings_for(contents, use_cache=use_cache)
-    pruned = prune_cache(contents) if use_cache else 0
+    # Prune against the UNION of every corpus, not the one being seeded.
+    #
+    # `all_corpus_texts()` was written for exactly this and was never called -
+    # `prune_cache(contents)` evicted the other suite's vectors on every run.
+    # Measured: seeding v1 took the cache from 63 entries to 44, dropping all 19
+    # v2-only rows, so the next v2 run re-embedded them. On a 3-request-per-
+    # minute key that is a minute of backoff per alternation between suites, and
+    # it is silent - the run just takes longer.
+    pruned = prune_cache(all_corpus_texts()) if use_cache else 0
 
     async with session(subject_id, actor_id) as conn:
         cur = await conn.execute(
