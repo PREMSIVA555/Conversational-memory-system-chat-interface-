@@ -477,58 +477,58 @@ M8 makes the memory store self-maintaining: a nightly decay graph that ages weig
 
 ### Prerequisites checklist
 
-- [ ] M7 is signed off
-- [ ] `evals/results/golden_set_v1.json` from M3 exists and holds the baseline precision/recall
-- [ ] `memories` rows carry meaningful `weight`, `reinforcement_count`, and `last_accessed_at` values
-- [ ] `apscheduler` is installed
-- [ ] Postgres supports `FOR UPDATE SKIP LOCKED` (it does on pg16 from M1)
+- [x] M7 is signed off
+- [x] `evals/results/golden_set_v1.json` from M3 exists and holds the baseline precision/recall
+- [x] `memories` rows carry meaningful `weight`, `reinforcement_count`, and `last_accessed_at` values
+- [x] `apscheduler` is installed
+- [x] Postgres supports `FOR UPDATE SKIP LOCKED` (it does on pg16 from M1)
 
 ### Implementation steps
 
-1. - [ ] Add `store/migrations/0007_decay_columns.sql` — an `archived_at timestamptz null` column, a `decay_claimed_at` / `decay_run_id` pair for claim bookkeeping, and an index supporting the claim query
-2. - [ ] Implement `jobs/claims.py:claim_batch()` — `SELECT id FROM memories WHERE <decay eligible> ORDER BY last_accessed_at LIMIT :n FOR UPDATE SKIP LOCKED`, marking the claimed rows with the current `decay_run_id` inside the same transaction
-3. - [ ] Implement `jobs/decay.py:decay_weight()` — the pure decay function (e.g. exponential decay on time since `last_accessed_at`, floored, damped by `reinforcement_count`), unit-testable in isolation
-4. - [ ] Implement `jobs/decay.py:archive_row()` — sets `archived_at` once weight falls below `ARCHIVE_THRESHOLD`; archiving must not resurrect or un-delete soft-deleted rows
-5. - [ ] Build `graphs/decay_graph.py` as a LangGraph graph: claim → compute new weights → apply updates → archive below threshold → record run stats
-6. - [ ] Make the decay worker loop until `claim_batch()` returns empty, so multiple worker processes drain the table cooperatively rather than one process scanning the whole table
-7. - [ ] Implement `jobs/reflection.py` nodes: select a cluster of related raw memories for a subject, summarize them via `llm/config.py`, write the summary as a new memory with `source='reflection'`, and link/mark the source rows as consolidated
-8. - [ ] Build `graphs/reflection_graph.py` wiring those nodes, reusing M2's PII filter and embed nodes so summaries are scrubbed and embedded like any other memory
-9. - [ ] Ensure reflection writes emit audit rows via M7's `write_audit()` and respect the soft-delete filter when selecting source memories
-10. - [ ] Implement `jobs/scheduler.py` — APScheduler with two cron jobs (nightly decay, less-frequent reflection), a job store that survives restarts, `max_instances=1` per job, and misfire grace handling
-11. - [ ] Add a CLI entry point `python -m jobs.run --job decay|reflection` so a job can be run on demand and so the distributed test can spawn real worker processes
-12. - [ ] Add run-level observability: a `jobs/metrics.py` with rows claimed, rows decayed, rows archived, summaries written, and job duration
-13. - [ ] Expand `evals/golden_set.jsonl` into `golden_set_v2` — add queries covering decayed/archived memories, reflection summaries, and the deleted-never-resurfaces case, keeping every `v1` case intact so the comparison is apples-to-apples
-14. - [ ] Extend `evals/run_eval.py` with `--baseline evals/results/golden_set_v1.json`, printing the delta and **exiting non-zero if precision or recall regressed below the baseline**
-15. - [ ] Write the v2 aggregate to `evals/results/golden_set_v2.json`
-16. - [ ] Add `tests/distributed/conftest.py` — a fixture table seeded with a known row count and a helper that spawns N real worker subprocesses against the shared database
+1. - [x] Add `store/migrations/0007_decay_columns.sql` — an `archived_at timestamptz null` column, a `decay_claimed_at` / `decay_run_id` pair for claim bookkeeping, and an index supporting the claim query
+2. - [x] Implement `jobs/claims.py:claim_batch()` — `SELECT id FROM memories WHERE <decay eligible> ORDER BY last_accessed_at LIMIT :n FOR UPDATE SKIP LOCKED`, marking the claimed rows with the current `decay_run_id` inside the same transaction
+3. - [x] Implement `jobs/decay.py:decay_weight()` — the pure decay function (e.g. exponential decay on time since `last_accessed_at`, floored, damped by `reinforcement_count`), unit-testable in isolation
+4. - [x] Implement `jobs/decay.py:archive_row()` — sets `archived_at` once weight falls below `ARCHIVE_THRESHOLD`; archiving must not resurrect or un-delete soft-deleted rows
+5. - [x] Build `graphs/decay_graph.py` as a LangGraph graph: claim → compute new weights → apply updates → archive below threshold → record run stats
+6. - [x] Make the decay worker loop until `claim_batch()` returns empty, so multiple worker processes drain the table cooperatively rather than one process scanning the whole table
+7. - [x] Implement `jobs/reflection.py` nodes: select a cluster of related raw memories for a subject, summarize them via `llm/config.py`, write the summary as a new memory with `source='reflection'`, and link/mark the source rows as consolidated
+8. - [x] Build `graphs/reflection_graph.py` wiring those nodes, reusing M2's PII filter and embed nodes so summaries are scrubbed and embedded like any other memory
+9. - [x] Ensure reflection writes emit audit rows via M7's `write_audit()` and respect the soft-delete filter when selecting source memories
+10. - [x] Implement `jobs/scheduler.py` — APScheduler with two cron jobs (nightly decay, less-frequent reflection), a job store that survives restarts, `max_instances=1` per job, and misfire grace handling
+11. - [x] Add a CLI entry point `python -m jobs.run --job decay|reflection` so a job can be run on demand and so the distributed test can spawn real worker processes
+12. - [x] Add run-level observability: a `jobs/metrics.py` with rows claimed, rows decayed, rows archived, summaries written, and job duration
+13. - [x] Expand `evals/golden_set.jsonl` into `golden_set_v2` — add queries covering decayed/archived memories, reflection summaries, and the deleted-never-resurfaces case, keeping every `v1` case intact so the comparison is apples-to-apples
+14. - [x] Extend `evals/run_eval.py` with `--baseline evals/results/golden_set_v1.json`, printing the delta and **exiting non-zero if precision or recall regressed below the baseline**
+15. - [x] Write the v2 aggregate to `evals/results/golden_set_v2.json`
+16. - [x] Add `tests/distributed/conftest.py` — a fixture table seeded with a known row count and a helper that spawns N real worker subprocesses against the shared database
 
 ### Test cases
 
-- [ ] `test_decay_claims_no_double_process` (distributed, `tests/distributed/test_decay_claims_no_double_process.py`) — runs **3 concurrent decay-worker processes** against a shared fixture table; asserts every row was processed exactly once and no row was processed twice
-- [ ] `test_all_rows_processed_exactly_once_total` (distributed) — asserts the union of the three workers' processed-id sets equals the full fixture set, so `SKIP LOCKED` skipped nothing permanently
-- [ ] `test_claim_batch_uses_skip_locked` (integration, additional) — holds a lock on a row in one transaction; asserts `claim_batch()` in another transaction returns other rows immediately instead of blocking
-- [ ] `test_decay_weight_function_is_monotonic` (unit, `tests/unit/test_decay.py`, additional) — asserts weight decreases as elapsed time grows and never goes below the floor
-- [ ] `test_reinforced_memory_decays_slower` (unit, additional) — two rows, same age, different `reinforcement_count`; asserts the reinforced one retains more weight
-- [ ] `test_row_archived_below_threshold` (integration, additional) — a row decayed under `ARCHIVE_THRESHOLD`; asserts `archived_at` is set
-- [ ] `test_decay_does_not_undelete_soft_deleted_rows` (integration, additional) — asserts a soft-deleted row's `deleted_at` is untouched by a decay run
-- [ ] `test_reflection_writes_summary_memory` (integration, `tests/integration/test_reflection.py`, additional) — seeds a cluster of related memories, runs the reflection graph; asserts a new memory with `source='reflection'` exists and its content references the cluster's theme
-- [ ] `test_reflection_summary_is_pii_filtered_and_embedded` (integration, additional) — asserts a summary drawn from PII-bearing sources stores redacted content and a non-null embedding
-- [ ] `test_reflection_emits_audit_rows` (integration, additional) — asserts the summary write produced an `audit_log` row
-- [ ] `test_scheduler_registers_both_cron_jobs` (unit, additional) — asserts APScheduler has exactly the decay and reflection jobs registered with `max_instances=1`
-- [ ] `test_eval_v2_meets_or_exceeds_v1_baseline` (integration, `tests/integration/test_eval_harness.py`) — runs the v2 suite and compares to `evals/results/golden_set_v1.json`; asserts precision and recall are each **at or above** the M3 baseline
-- [ ] `test_eval_exits_nonzero_on_regression` (unit, additional) — feeds a synthetic below-baseline result to the comparison logic; asserts a non-zero exit is produced
+- [x] `test_decay_claims_no_double_process` (distributed, `tests/distributed/test_decay_claims_no_double_process.py`) — runs **3 concurrent decay-worker processes** against a shared fixture table; asserts every row was processed exactly once and no row was processed twice
+- [x] `test_all_rows_processed_exactly_once_total` (distributed) — asserts the union of the three workers' processed-id sets equals the full fixture set, so `SKIP LOCKED` skipped nothing permanently
+- [x] `test_claim_batch_uses_skip_locked` (integration, additional) — holds a lock on a row in one transaction; asserts `claim_batch()` in another transaction returns other rows immediately instead of blocking
+- [x] `test_decay_weight_function_is_monotonic` (unit, `tests/unit/test_decay.py`, additional) — asserts weight decreases as elapsed time grows and never goes below the floor
+- [x] `test_reinforced_memory_decays_slower` (unit, additional) — two rows, same age, different `reinforcement_count`; asserts the reinforced one retains more weight
+- [x] `test_row_archived_below_threshold` (integration, additional) — a row decayed under `ARCHIVE_THRESHOLD`; asserts `archived_at` is set
+- [x] `test_decay_does_not_undelete_soft_deleted_rows` (integration, additional) — asserts a soft-deleted row's `deleted_at` is untouched by a decay run
+- [x] `test_reflection_writes_summary_memory` (integration, `tests/integration/test_reflection.py`, additional) — seeds a cluster of related memories, runs the reflection graph; asserts a new memory with `source='reflection'` exists and its content references the cluster's theme
+- [x] `test_reflection_summary_is_pii_filtered_and_embedded` (integration, additional) — asserts a summary drawn from PII-bearing sources stores redacted content and a non-null embedding
+- [x] `test_reflection_emits_audit_rows` (integration, additional) — asserts the summary write produced an `audit_log` row
+- [x] `test_scheduler_registers_both_cron_jobs` (unit, additional) — asserts APScheduler has exactly the decay and reflection jobs registered with `max_instances=1`
+- [x] `test_eval_v2_meets_or_exceeds_v1_baseline` (integration, `tests/integration/test_eval_harness.py`) — runs the v2 suite and compares to `evals/results/golden_set_v1.json`; asserts precision and recall are each **at or above** the M3 baseline
+- [x] `test_eval_exits_nonzero_on_regression` (unit, additional) — feeds a synthetic below-baseline result to the comparison logic; asserts a non-zero exit is produced
 
 ### Definition of Done — how to verify this milestone yourself
 
-- [ ] Run `pytest tests/distributed/test_decay_claims_no_double_process.py` → exits 0, passes
-- [ ] From that test's output, confirm **3 concurrent decay-worker processes** actually ran against the shared fixture table (check the worker/pid log lines)
-- [ ] From that test's assertions, confirm **no row was processed twice**
-- [ ] Run `python evals/run_eval.py --suite golden_set_v2` → exits 0 (`echo $?` → `0`)
-- [ ] From that run's stdout, read the reported precision and recall for `golden_set_v2`
-- [ ] Compare those numbers against `evals/results/golden_set_v1.json` → v2 precision and recall are each **at or above** the M3 baseline, not merely "some number"; the runner prints the explicit delta and pass/fail against the baseline
-- [ ] Run the full demo command as given: `pytest tests/distributed/test_decay_claims_no_double_process.py && python evals/run_eval.py --suite golden_set_v2` → the whole chain exits 0
-- [ ] Manually: `python -m jobs.run --job decay` on a seeded DB → weights visibly decrease (`psql "$DATABASE_URL" -c "select id, weight, archived_at from memories order by weight limit 10"`)
-- [ ] Manually: `python -m jobs.run --job reflection` → a new row with `source='reflection'` appears in `memories`
-- [ ] Run `pytest tests/ -v` → the entire suite across M1–M8 passes, 0 failures
+- [x] Run `pytest tests/distributed/test_decay_claims_no_double_process.py` → exits 0, passes
+- [x] From that test's output, confirm **3 concurrent decay-worker processes** actually ran against the shared fixture table (check the worker/pid log lines)
+- [x] From that test's assertions, confirm **no row was processed twice**
+- [x] Run `python evals/run_eval.py --suite golden_set_v2` → exits 0 (`echo $?` → `0`)
+- [x] From that run's stdout, read the reported precision and recall for `golden_set_v2`
+- [x] Compare those numbers against `evals/results/golden_set_v1.json` → v2 precision and recall are each **at or above** the M3 baseline, not merely "some number"; the runner prints the explicit delta and pass/fail against the baseline
+- [x] Run the full demo command as given: `pytest tests/distributed/test_decay_claims_no_double_process.py && python evals/run_eval.py --suite golden_set_v2` → the whole chain exits 0
+- [x] Manually: `python -m jobs.run --job decay` on a seeded DB → weights visibly decrease (`psql "$DATABASE_URL" -c "select id, weight, archived_at from memories order by weight limit 10"`)
+- [x] Manually: `python -m jobs.run --job reflection` → a new row with `source='reflection'` appears in `memories`
+- [x] Run `pytest tests/ -v` → the entire suite across M1–M8 passes, 0 failures
 
 **Milestone signed off by user on:** _____________

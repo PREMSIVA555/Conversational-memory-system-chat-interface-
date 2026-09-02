@@ -35,10 +35,40 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ⬜ | — |
-| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | ⬜ | — |
+| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | **orchestrator-built — needs a cold verifier** (see below) |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
 and M7 runs before M6 so the memory panel wires real endpoints instead of mocks.*
+
+### Why M8 is `📋` and not `✅`
+
+M8 was built in two halves by two different hands, and only one of them has ever been
+graded by someone who did not write it.
+
+The **decay and reflection half** (plan steps 1–12, 16) came from a builder agent whose
+session ended before it ticked a box or logged anything — the work was found sitting
+untracked in the working tree. The **evals half** (steps 13–15 and the two gate tests) was
+written by the orchestrating session itself, because the remaining work was small and
+tightly specified and a fresh builder would have paid full cold-start cost to re-derive
+context that was already loaded.
+
+That trade is defensible for the *building*. It is not defensible for the *grading*: the
+rule this project runs on is that an agent grading its own homework rationalizes a partial
+pass, and for the evals half I am now that agent. Everything below was re-run and is
+reported honestly, but **`✅` requires a cold verifier and M8 has not had one.**
+
+What a verifier should be told to distrust first:
+
+1. **The 270/15/15 worker split.** `pytest tests/distributed/` passes and three real pids
+   genuinely run, but `SKIP LOCKED` guarantees no fairness. The same green would appear if
+   two of the three workers had barely participated. Read the per-worker counts.
+2. **The gate is a tripwire, not a discriminator, by design.** It compares v1's nine
+   held-out queries against a baseline where recall = MRR = P@R are all exactly 1.0, so it
+   can only ever catch a regression. That is deliberate (harness.md records why a
+   `v2_blended >= v1` gate would have been incoherent), but it means a *passing gate is
+   weak evidence* — the strong evidence is the `v2_new` tier being unsaturated.
+3. **The reflection job exits 0 having written nothing.** See the open item below. The DoD
+   line passes, but it passed on a retry.
 
 ---
 
@@ -76,6 +106,13 @@ rationalize a partial pass. The verifier is told to trust nothing it did not run
 cp infra/.env.example infra/.env      # then paste your GROQ_API_KEY and VOYAGE_API_KEY
 bash scripts/dev_up.sh                # compose up + migrations
 bash scripts/demo_m1.sh               # exits 0 when the foundation is sound
+
+# M8: the maintenance jobs and the regression gate
+pytest tests/distributed/test_decay_claims_no_double_process.py   # 3 real worker processes
+python evals/run_eval.py --suite golden_set_v2 \
+       --baseline evals/results/golden_set_v1.json                # exit 3 = retrieval regressed
+python -m jobs.run --job decay                                    # weights visibly drop
+python -m jobs.run --job reflection                               # writes one summary memory
 ```
 
 Start the API with **`python -m api.main`**, not `uvicorn api.main:app` — see the port and
@@ -149,6 +186,36 @@ change it knowingly than find your verification command quietly rewritten.
 ---
 
 ## Open items
+
+- [ ] **The reflection job exits 0 when it writes nothing, and it did so three times in a
+      row.** `python -m jobs.run --job reflection` returned
+      `{"skipped": "empty_summary", "summaries_written": 0}` with exit status **0** on three
+      consecutive runs, then wrote a perfectly good summary on the fourth. The cluster was
+      the same eight rows every time; the completion simply came back empty, and
+      `graphs/reflection_graph.py:147` treats an empty completion as a reason to skip rather
+      than to retry.
+
+      Nothing here is *wrong* — the DoD line "a new row with `source='reflection'` appears"
+      does pass, and the row that eventually landed is correct: embedded, PII-filtered,
+      8 sources marked `consolidated_at`, 1 `write` + 8 `update` audit rows. But a nightly
+      scheduled job whose failure mode is "succeed silently, do nothing" is the same shape
+      as the two silent-write-loss bugs already recorded in harness.md (D15, and the
+      `stream:false` 500). On a cron there is no one watching the exit code.
+
+      Two candidate fixes, neither applied: retry an empty completion once inside
+      `summarize_node`, or make `summaries_written == 0` with a non-empty cluster a non-zero
+      exit. The second is probably right — the job should be able to say "I found work and
+      failed to do it", which it currently cannot.
+
+- [ ] **`pytest tests/` could not collect at all until this session.**
+      `tests/unit/test_decay.py` and `tests/integration/test_decay.py` share a basename, and
+      under pytest's default `prepend` import mode that aborts collection of the whole tree
+      with `import file mismatch`. Fixed by adding `--import-mode=importlib` to `addopts`.
+
+      Worth noting as a process point rather than a bug: M8's own final DoD line is
+      `pytest tests/ -v`, so this had been broken since the moment those two files were
+      written, and only surfaced when someone ran that line. Every suite passed
+      individually the whole time.
 
 - [ ] **Rotate the Voyage key now, not at project end.** Beyond having been pasted into a chat
       transcript, LiteLLM was observed dumping request headers — including the key in
