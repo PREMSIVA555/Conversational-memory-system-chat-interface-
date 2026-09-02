@@ -31,6 +31,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -574,17 +575,118 @@ VALUES
 """
 
 
+# ---------------------------------------------------------------------------
+# lifecycle overrides
+# ---------------------------------------------------------------------------
+#
+# `_INSERT` writes a uniformly fresh, live row: weight at its default,
+# `last_accessed_at` at now(), nothing archived and nothing deleted. A corpus
+# like that cannot express the three questions plan step M8.13 asks for -
+# "queries covering decayed/archived memories, reflection summaries, and the
+# deleted-never-resurfaces case" - because none of those states exist in it.
+#
+# So `seed(lifecycle=...)` reaches back over the rows it just inserted and puts
+# four of them into the states a running system would have produced: one
+# archived by the decay job, one decayed to the floor, one soft-deleted by a
+# user erasure, one a consolidation. See `LIFECYCLE_V2`.
+#
+# WHY THIS IS AN UPDATE AND NOT MORE INSERT COLUMNS: the states are supposed to
+# be the *outcome* of M7's erasure path and M8's decay job, so writing them as
+# a second step keeps `_INSERT` describing only what capture produces, and
+# keeps the fixture honest about the fact that these are things done TO a row
+# after it was written.
+
+#: The only columns a lifecycle override may write.
+_LIFECYCLE_COLUMNS = frozenset(
+    {
+        "archived_at",
+        "deleted_at",
+        "decay_claimed_at",
+        "decay_run_id",
+        "weight",
+        "last_accessed_at",
+        "reinforcement_count",
+    }
+)
+
+#: A lifecycle value is either a number, which is bound as a query parameter,
+#: or one of a closed vocabulary of timestamp expressions, which cannot be
+#: parameterised because `interval` needs a literal.
+#:
+#: Interpolating these strings would be safe today - they are module constants,
+#: not input - but this is a fixture file that people edit, and a regex is a
+#: cheaper guard than the assumption that nobody ever puts a variable here.
+_LIFECYCLE_SQL = re.compile(
+    r"^(now\(\)|null|now\(\) - interval '\d{1,6} (days|hours|minutes)')$"
+)
+
+
+async def _apply_lifecycle(
+    conn,
+    *,
+    subject_id: str,
+    lifecycle: dict[str, dict[str, Any]],
+    by_slug: dict[str, SeedMemory],
+) -> int:
+    """Apply post-insert column overrides. Returns the number of rows changed."""
+    changed = 0
+    for slug, overrides in lifecycle.items():
+        mem = by_slug.get(slug)
+        if mem is None:
+            raise KeyError(
+                f"lifecycle names slug {slug!r}, which is not in the corpus being "
+                f"seeded - the override would have silently done nothing"
+            )
+        assignments: list[str] = []
+        params: dict[str, Any] = {"id": mem.id, "subject_id": subject_id}
+        for column, value in overrides.items():
+            if column not in _LIFECYCLE_COLUMNS:
+                raise ValueError(
+                    f"{slug}: {column!r} is not an overridable lifecycle column; "
+                    f"allowed: {', '.join(sorted(_LIFECYCLE_COLUMNS))}"
+                )
+            if isinstance(value, bool):
+                raise ValueError(f"{slug}.{column}: bool is not a lifecycle value")
+            if isinstance(value, (int, float)):
+                assignments.append(f"{column} = %({column})s")
+                params[column] = value
+            elif isinstance(value, str) and _LIFECYCLE_SQL.match(value):
+                assignments.append(f"{column} = {value}")
+            else:
+                raise ValueError(
+                    f"{slug}.{column}: {value!r} is neither a number nor an allowed "
+                    f"timestamp expression (now(), null, \"now() - interval 'N days'\")"
+                )
+        cur = await conn.execute(
+            f"UPDATE memories SET {', '.join(assignments)} "
+            f"WHERE id = %(id)s::uuid AND subject_id = %(subject_id)s::uuid",
+            params,
+        )
+        if cur.rowcount != 1:
+            raise RuntimeError(
+                f"lifecycle override for {slug!r} matched {cur.rowcount} rows, expected 1"
+            )
+        changed += cur.rowcount
+    return changed
+
+
 async def seed(
     *,
     subject_id: str = GOLDEN_SET_SUBJECT_ID,
     actor_id: str | None = None,
     memories: tuple[SeedMemory, ...] = MEMORIES,
+    lifecycle: dict[str, dict[str, Any]] | None = None,
     use_cache: bool = True,
 ) -> dict[str, Any]:
     """Reset and reseed the eval corpus. Returns a small summary dict.
 
     Runs inside one `store.db.session()` transaction with the RLS GUCs set, so
     the DELETE and the INSERTs are atomic and both pass the row-level policies.
+
+    `lifecycle` maps a slug to post-insert column overrides - archived, decayed,
+    soft-deleted - so a suite can ask about states that capture never writes.
+    It is applied inside the same transaction, so a corpus is never visible in
+    a half-aged state. See `_apply_lifecycle` and `LIFECYCLE_V2`.
     """
     actor_id = actor_id or subject_id
     contents = [m.content for m in memories]
@@ -611,11 +713,21 @@ async def seed(
                 },
             )
 
+        aged = 0
+        if lifecycle:
+            aged = await _apply_lifecycle(
+                conn,
+                subject_id=subject_id,
+                lifecycle=lifecycle,
+                by_slug={m.slug: m for m in memories},
+            )
+
     return {
         "subject_id": subject_id,
         "actor_id": actor_id,
         "deleted": deleted,
         "inserted": len(memories),
+        "lifecycle_applied": aged,
         "cache_pruned": pruned,
         "embedding_model": resolve_embedding_model(),
     }

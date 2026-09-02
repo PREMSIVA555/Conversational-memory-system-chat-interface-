@@ -153,3 +153,223 @@ def test_baseline_file_written_with_real_numbers(eval_run):
     assert {"keyword_only", "semantic_only", "both"} <= expectations, (
         f"the golden set must carry all three path expectations, has {expectations}"
     )
+
+
+# ===========================================================================
+# M8 — golden_set_v2 and the regression gate
+# ===========================================================================
+
+RESULTS_V2 = ROOT / "evals" / "results" / "golden_set_v2.json"
+BASELINE_V1 = ROOT / "evals" / "results" / "golden_set_v1.json"
+
+
+def _run_eval(*args: str, env_extra: dict | None = None, timeout: int = 900):
+    return subprocess.run(
+        [sys.executable, "evals/run_eval.py", *args],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(ROOT),
+            "PYTHONIOENCODING": "utf-8",
+            **(env_extra or {}),
+        },
+    )
+
+
+def _baseline_corpus_size() -> int:
+    return json.loads(BASELINE_V1.read_text(encoding="utf-8"))["corpus_size"]
+
+
+@pytest.fixture(scope="module")
+def eval_run_v2() -> subprocess.CompletedProcess:
+    """The v2 suite gated against v1 — the Definition of Done's own command."""
+    return _run_eval("--suite", "golden_set_v2", "--baseline", str(BASELINE_V1))
+
+
+def test_eval_v2_meets_or_exceeds_v1_baseline(eval_run_v2):
+    """The plan's M8 gate, implemented per harness.md's binding guidance.
+
+    The comparison is v1's NINE QUERIES, held out inside v2, against v1's own
+    baseline — not v2's blended aggregate. Two reasons, both recorded in
+    harness.md before this was written:
+
+    1. The v1 baseline is saturated: recall, MRR and P@R are all exactly 1.0.
+       A `v2_blended >= v1` gate therefore demands perfection on the expanded
+       suite, so any query hard enough to be worth adding would fail it. The
+       plan asks M8 to expand the golden set AND meet-or-exceed the baseline;
+       read literally, those two instructions are in direct conflict.
+    2. Running the same nine queries against v2's 63-row corpus (v1 had 44) is
+       itself a strictly harder condition, so this is a genuine no-regression
+       test rather than a re-run of a suite already known to pass.
+
+    v2's own new queries are deliberately NOT gated here — on their first run
+    they have no baseline to regress against. They are asserted to be
+    non-trivial by `test_v2_new_queries_are_not_saturated` instead.
+    """
+    assert eval_run_v2.returncode == 0, (
+        f"v2 run exited {eval_run_v2.returncode}, expected 0\n"
+        f"--- stdout ---\n{eval_run_v2.stdout[-4000:]}\n"
+        f"--- stderr ---\n{eval_run_v2.stderr[-2000:]}"
+    )
+    assert "GATE PASS" in eval_run_v2.stdout
+    assert "GATE FAIL" not in eval_run_v2.stdout
+
+    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    baseline = json.loads(BASELINE_V1.read_text(encoding="utf-8"))["aggregate"]
+    held_out = payload["aggregate_by_tier"]["v1_holdout"]
+
+    assert held_out["queries"] == baseline["queries"], (
+        "the held-out tier no longer has the same number of queries as the "
+        "baseline — the two sides of the gate are not comparable"
+    )
+    for metric in ("macro_recall", "mrr", "mean_precision_at_r"):
+        assert held_out[metric] >= baseline[metric] - 1e-9, (
+            f"{metric} regressed: {held_out[metric]} < {baseline[metric]}"
+        )
+
+    # The corpus really did grow — otherwise "a harder condition" is a claim
+    # rather than a fact, and the gate is just v1 re-run under a new name.
+    assert payload["corpus_size"] > _baseline_corpus_size(), (
+        "v2 did not seed a larger corpus than v1; the gate proves nothing"
+    )
+
+
+def test_v2_new_queries_are_not_saturated(eval_run_v2):
+    """v2's new queries must be able to FAIL, or they measure nothing.
+
+    The point of expanding the golden set was to escape v1's ceiling, where
+    recall = MRR = P@R = 1.0 unanimously and every metric could only regress.
+    If the new tier also scores a clean sweep, the suite got bigger without
+    getting harder, and the next milestone inherits the same blind baseline
+    this one was supposed to remove.
+    """
+    assert eval_run_v2.returncode == 0, eval_run_v2.stderr
+    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    new = payload["aggregate_by_tier"]["v2_new"]
+
+    assert new["queries"] >= 8, "v2 added too few queries to characterise anything"
+    assert new["mean_precision_at_r"] < 1.0 or new["mrr"] < 1.0, (
+        "every new v2 query scored perfectly, so the suite is bigger but not "
+        f"harder: {new}. Add near-miss distractors or multi-answer queries."
+    )
+    # ...but not so hard that it is simply broken. A tier scoring near zero
+    # means the labels are wrong, not that retrieval is bad.
+    assert new["macro_recall"] > 0.5, f"v2 new-query recall implausibly low: {new}"
+
+
+def test_v2_covers_the_lifecycle_states_the_plan_names(eval_run_v2):
+    """Decayed, archived, reflection and soft-deleted rows are all exercised.
+
+    Plan step M8.13 asks for "queries covering decayed/archived memories,
+    reflection summaries, and the deleted-never-resurfaces case". This asserts
+    the suite contains all four rather than trusting the labels — a query
+    tagged `archived` against a row nobody archived is exactly the vacuous pass
+    this milestone exists to prevent.
+    """
+    assert eval_run_v2.returncode == 0, eval_run_v2.stderr
+    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    states = {q.get("lifecycle_state") for q in payload["queries"]}
+    for required in ("archived", "decayed", "reflection", "soft-deleted"):
+        assert required in states, f"no v2 query exercises a {required} row"
+
+    # The archived and decayed rows must still be RETRIEVABLE. Archiving is not
+    # erasure: retrieval filters on `deleted_at IS NULL` and nothing else. If
+    # anyone later adds an `archived_at IS NULL` filter, this is the tripwire.
+    for state in ("archived", "decayed"):
+        row = next(q for q in payload["queries"] if q.get("lifecycle_state") == state)
+        assert row["recall"] == 1.0, (
+            f"the {state} row was not retrieved — has a {state}-aware filter been "
+            f"added to the retrieval path? query {row['query_id']}"
+        )
+
+
+def test_soft_deleted_memory_never_resurfaces(eval_run_v2):
+    """The erased row must not come back, and the check must be non-vacuous.
+
+    `forbidden_memory_ids` is scored over the whole returned ranking rather
+    than the top-k slice: a deleted row at rank 9 has still been resurfaced, it
+    just got lucky about where the cutoff happened to fall.
+    """
+    assert eval_run_v2.returncode == 0, eval_run_v2.stderr
+    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    assert payload["forbidden_respected"] is True, payload["forbidden_failures"]
+
+    guarded = [q for q in payload["queries"] if q.get("forbidden_slugs")]
+    assert guarded, "no query declares forbidden_memory_ids — the check is vacuous"
+    for q in guarded:
+        assert q["forbidden_resurfaced"] == [], q
+
+    # Non-vacuity, which is the part that actually matters: the query has to
+    # retrieve the deleted row's NEIGHBOURS. A query returning nothing at all
+    # would also "not resurface" it, and would prove nothing about erasure.
+    assert any(q["recall"] > 0 for q in guarded), (
+        "the forbidden-id queries retrieved none of their expected rows, so the "
+        "absence of the deleted row is indistinguishable from a dead retriever"
+    )
+
+
+def test_v2_corpus_does_not_break_the_keyword_only_probe(eval_run_v2):
+    """v2's new rows must not contain the lexeme gs-002 depends on.
+
+    gs-002 is the suite's only keyword-only probe and it rests on a stemming
+    collision: 'origin' and 'original' both stem to `origin`, so `content_tsv`
+    matches the `tiles` row and — verified corpus-wide — nothing else. One
+    careless "originally" among the new rows would quietly make the probe
+    ambiguous, and the failure would look like a retrieval regression.
+
+    `seed_memories.py` names this test in a comment as the thing that enforces
+    the rule rather than trusting the comment. It now exists.
+    """
+    assert eval_run_v2.returncode == 0, eval_run_v2.stderr
+    from evals.fixtures.seed_memories import V2_EXTRA
+
+    offenders = [
+        m.slug
+        for m in V2_EXTRA
+        if any(
+            w.lower().startswith("origin")
+            for w in re.findall(r"[A-Za-z]+", m.content)
+        )
+    ]
+    assert not offenders, (
+        f"v2 rows {offenders} contain a word stemming to 'origin', which makes "
+        f"gs-002's keyword-only probe ambiguous"
+    )
+
+    # And the probe still behaved as labelled in the actual v2 run.
+    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    gs002 = next(q for q in payload["queries"] if q["query_id"] == "gs-002")
+    assert gs002["path_expectation_met"], gs002
+    assert gs002["target_found_via"] == ["keyword"], gs002
+
+
+def test_runner_exits_three_on_a_regressed_baseline(tmp_path):
+    """The gate's verdict must reach the process exit code.
+
+    The unit tests prove the comparison logic; this proves the WIRING, which is
+    the part that silently rots. It fabricates a baseline nobody can meet —
+    every gated metric at 2.0 — so the run is guaranteed to regress without
+    needing a broken retriever, and asserts exit 3 specifically: 1 (broken run)
+    and 2 (broken suite) also mean failure, and they mean different things.
+    """
+    impossible = tmp_path / "impossible.json"
+    impossible.write_text(
+        json.dumps(
+            {"aggregate": {"macro_recall": 2.0, "mrr": 2.0, "mean_precision_at_r": 2.0}}
+        ),
+        encoding="utf-8",
+    )
+    result = _run_eval(
+        "--suite", "golden_set_v2",
+        "--no-seed",
+        "--baseline", str(impossible),
+        "--out", str(tmp_path / "regressed.json"),
+    )
+    assert result.returncode == 3, (
+        f"regressed run exited {result.returncode}, expected 3\n{result.stdout[-3000:]}"
+    )
+    assert "GATE FAIL" in result.stdout
+    assert "REGRESSED" in result.stdout

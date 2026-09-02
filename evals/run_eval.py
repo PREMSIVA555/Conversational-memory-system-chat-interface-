@@ -71,6 +71,10 @@ from evals.fixtures.seed_memories import (  # noqa: E402
     GOLDEN_SET_ACTOR_ID,
     GOLDEN_SET_SUBJECT_ID,
     BY_ID,
+    BY_ID_ALL,
+    LIFECYCLE_V2,
+    MEMORIES,
+    V2_MEMORIES,
     seed,
 )
 from retrieve import config as retrieve_config  # noqa: E402
@@ -79,9 +83,38 @@ from retrieve.semantic import prune_persistent_cache, warm_query_cache  # noqa: 
 from retrieve.types import KEYWORD, SEMANTIC, RetrievalQuery  # noqa: E402
 
 SUITES = {
-    # suite name -> jsonl file. M8 adds "golden_set_v2": "golden_set_v2.jsonl".
+    # suite name -> jsonl file
     "golden_set_v1": "golden_set.jsonl",
+    "golden_set_v2": "golden_set_v2.jsonl",
 }
+
+#: suite name -> (corpus, lifecycle overrides). A suite has to seed its OWN
+#: corpus: v2's queries ask about an archived row, a decayed row, a reflection
+#: summary and a soft-deleted row, none of which exist in v1's 44 rows, and all
+#: four of which are states applied AFTER insert. Seeding v1's corpus for a v2
+#: run would leave those four queries silently measuring absent rows.
+CORPORA = {
+    "golden_set_v1": (MEMORIES, None),
+    "golden_set_v2": (V2_MEMORIES, LIFECYCLE_V2),
+}
+
+#: The metrics M8's regression gate reads, in the order they are reported.
+#:
+#: `macro_precision` is deliberately ABSENT. It reduces to mean(|expected|)/k
+#: whenever recall is 1.0 and the retriever returns a full k, so it reports the
+#: golden set's label counts rather than the ranking - which makes it gameable
+#: in both directions: adding single-answer queries fails it with a perfect
+#: retriever, and labelling more documents per query passes it without touching
+#: retrieval. It stays in the JSON payload for compatibility; it is not a gate.
+GATE_METRICS = ("macro_recall", "mrr", "mean_precision_at_r")
+
+#: The tier whose queries the gate is computed over. v2 carries every v1 query
+#: unchanged, so the honest no-regression comparison is v1's queries against
+#: v1's baseline - run over v2's LARGER corpus, which is a harder condition than
+#: v1 itself faced. v2's own new queries are reported as characterization: they
+#: have no baseline to regress against on their first run, and gating on them
+#: would punish M8 for the harder queries the plan asks it to add.
+GATE_TIER = "v1_holdout"
 
 DEFAULT_TOP_K = 5
 
@@ -117,13 +150,110 @@ def load_suite(path: Path) -> list[dict]:
 
 
 def _slug(memory_id: str) -> str:
-    mem = BY_ID.get(memory_id)
+    # BY_ID_ALL, not BY_ID: a v2 run retrieves v2-only rows, and labelling them
+    # by a uuid prefix would make the near-miss distractors unreadable in the
+    # output - which is the one place you actually diagnose a ranking.
+    mem = BY_ID_ALL.get(memory_id)
     return mem.slug if mem else memory_id[:8]
 
 
-async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> int:
+# ---------------------------------------------------------------------------
+# the regression gate (plan step M8.14)
+# ---------------------------------------------------------------------------
+
+#: Exit code for "the suite ran, but it regressed against the baseline".
+EXIT_REGRESSION = 3
+
+#: Floating-point slack. Metrics are aggregated as sums of floats, so a run that
+#: is arithmetically identical to the baseline can differ in the last bit. The
+#: gate must not fail on 1e-16; it must fail on a real drop.
+GATE_TOLERANCE = 1e-9
+
+
+def load_baseline(path: Path) -> dict:
+    """Read a previous run's JSON payload. Raises if it is not one."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(
+            f"baseline {path} does not exist - run the v1 suite first: "
+            f"python evals/run_eval.py --suite golden_set_v1"
+        ) from exc
+    if "aggregate" not in payload:
+        raise ValueError(f"{path} is not an eval result payload (no 'aggregate' key)")
+    return payload
+
+
+def compare_to_baseline(
+    current: dict,
+    baseline: dict,
+    *,
+    metrics_to_gate: tuple[str, ...] = GATE_METRICS,
+    tolerance: float = GATE_TOLERANCE,
+) -> tuple[bool, list[dict]]:
+    """Compare two aggregates. Returns (passed, one row per gated metric).
+
+    Pure and DB-free on purpose: `test_eval_exits_nonzero_on_regression` feeds
+    it a synthetic below-baseline aggregate, and a gate that needed a live
+    retriever to test would only ever be exercised on the happy path.
+
+    A metric missing from `current` is a FAILURE, not a skip. The alternative -
+    treating absence as "nothing to compare" - means a renamed metric key turns
+    the gate off silently, which is the exact failure mode a gate exists to
+    prevent.
+    """
+    rows: list[dict] = []
+    passed = True
+    for name in metrics_to_gate:
+        base_value = baseline.get(name)
+        cur_value = current.get(name)
+        if base_value is None:
+            rows.append({"metric": name, "baseline": None, "current": cur_value,
+                         "delta": None, "status": "no_baseline"})
+            continue
+        if cur_value is None:
+            rows.append({"metric": name, "baseline": base_value, "current": None,
+                         "delta": None, "status": "MISSING"})
+            passed = False
+            continue
+        delta = cur_value - base_value
+        regressed = delta < -tolerance
+        if regressed:
+            passed = False
+        rows.append({
+            "metric": name,
+            "baseline": base_value,
+            "current": cur_value,
+            "delta": delta,
+            "status": "REGRESSED" if regressed else "ok",
+        })
+    return passed, rows
+
+
+def format_gate(rows: list[dict], *, tier: str, baseline_path: Path) -> str:
+    """Render the gate table. Always prints the explicit delta (DoD line 6)."""
+    lines = [
+        f"REGRESSION GATE - {tier!r} queries vs {baseline_path.name}",
+        f"    {'metric':<22}{'baseline':>12}{'current':>12}{'delta':>12}   status",
+    ]
+    for r in rows:
+        base = "-" if r["baseline"] is None else f"{r['baseline']:.4f}"
+        cur = "-" if r["current"] is None else f"{r['current']:.4f}"
+        delta = "-" if r["delta"] is None else f"{r['delta']:+.4f}"
+        lines.append(f"    {r['metric']:<22}{base:>12}{cur:>12}{delta:>12}   {r['status']}")
+    return chr(10).join(lines)
+
+
+async def run(
+    suite: str,
+    top_k: int,
+    do_seed: bool,
+    out_path: Path | None,
+    baseline_path: Path | None = None,
+) -> int:
     suite_path = resolve_suite(suite)
     records = load_suite(suite_path)
+    corpus, lifecycle = CORPORA.get(suite, (MEMORIES, None))
 
     print("=" * 78)
     # Plain ASCII: this line lands on a Windows console whose default code page
@@ -133,11 +263,17 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
     print("=" * 78)
 
     if do_seed:
-        summary = await seed()
+        summary = await seed(memories=corpus, lifecycle=lifecycle)
         print(
             f"seeded: {summary['inserted']} memories "
             f"(replaced {summary['deleted']}), embedding model {summary['embedding_model']}"
         )
+        if summary.get("lifecycle_applied"):
+            states = ", ".join(f"{k}={'/'.join(v)}" for k, v in (lifecycle or {}).items())
+            print(
+                f"lifecycle: {summary['lifecycle_applied']} row(s) aged after insert "
+                f"[{states}]"
+            )
     else:
         print("seeding skipped (--no-seed)")
 
@@ -162,6 +298,8 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
     per_query_rows: list[dict] = []
     totals = {"semantic_only": 0, "keyword_only": 0, "both": 0}
     expectation_failures: list[str] = []
+    forbidden_failures: list[str] = []
+    tier_of: dict[str, str] = {}
 
     started = time.perf_counter()
     for record in records:
@@ -178,6 +316,7 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
             query_id, ranked, record["expected_memory_ids"], k=top_k
         )
         scores.append(score)
+        tier_of[query_id] = record.get("tier", "v1_holdout")
 
         # ---- per-path breakdown (plan step 13) --------------------------
         kept = result.candidates[:top_k]
@@ -187,6 +326,19 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
         totals["both"] += len(both)
         totals["semantic_only"] += len(sem_only)
         totals["keyword_only"] += len(kw_only)
+
+        # ---- forbidden ids: the deleted-never-resurfaces constraint -----
+        # Scored over the WHOLE returned ranking, not the top-k slice. A
+        # soft-deleted row that comes back at rank 9 has still been resurfaced;
+        # it just got lucky about where the cutoff fell.
+        forbidden = set(record.get("forbidden_memory_ids", []))
+        resurfaced = [m for m in ranked if m in forbidden]
+        if resurfaced:
+            forbidden_failures.append(
+                f"{query_id}: {[_slug(m) for m in resurfaced]} must never be "
+                f"retrieved (soft-deleted) but came back at rank(s) "
+                f"{[ranked.index(m) + 1 for m in resurfaced]}"
+            )
 
         expectation = record.get("path_expectation", "any")
         contributed = set().union(*(c.paths for c in kept)) if kept else set()
@@ -208,7 +360,12 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
                 f"{sorted(hit_paths) or 'nothing'}"
             )
 
-        print(f"[{query_id}] {record['query']!r}")
+        tier_tag = record.get("tier", "v1_holdout")
+        state = record.get("lifecycle_state")
+        print(
+            f"[{query_id}] {record['query']!r}"
+            f"   ({tier_tag}{'' if not state else ', ' + state + ' row'})"
+        )
         print(f"    expectation : {expectation}{'' if ok else '   <-- NOT MET'}")
         print(f"    expected    : {[_slug(m) for m in record['expected_memory_ids']]}")
         print(f"    retrieved@{top_k} : {[_slug(m) for m in score.retrieved]}")
@@ -258,6 +415,10 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
                 "retrieved_slugs": [_slug(m) for m in score.retrieved],
                 "path_expectation": expectation,
                 "path_expectation_met": ok,
+                "tier": record.get("tier", "v1_holdout"),
+                "lifecycle_state": record.get("lifecycle_state"),
+                "forbidden_slugs": record.get("forbidden_slugs", []),
+                "forbidden_resurfaced": [_slug(m) for m in resurfaced],
                 "target_found_via": sorted(hit_paths),
                 "path_counts": result.path_counts,
                 "contributed_paths": sorted(contributed),
@@ -269,6 +430,16 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
 
     elapsed = time.perf_counter() - started
     agg = metrics.aggregate(scores)
+
+    # Split by tier. The gate reads the v1 subset; the new queries are reported
+    # beside it as characterization. Reporting only the blended aggregate would
+    # hide exactly what this suite was built to show - v2's new queries are
+    # harder, so a blended number falls even when nothing regressed.
+    by_tier = {
+        tier: metrics.aggregate([sc for sc in scores if tier_of[sc.query_id] == tier])
+        for tier in sorted({t for t in tier_of.values()})
+        if any(tier_of[sc.query_id] == tier for sc in scores)
+    }
 
     print("-" * 78)
     print("PER-PATH BREAKDOWN (candidates inside top-k, summed over all queries)")
@@ -316,6 +487,57 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
         )
     print(f"    wall time      : {elapsed:.2f}s")
     print("-" * 78)
+
+    if len(by_tier) > 1:
+        print("BY TIER")
+        for tier, tagg in by_tier.items():
+            role = "GATED against baseline" if tier == GATE_TIER else "characterization only"
+            print(
+                f"    {tier:<12} n={tagg['queries']:<3} "
+                f"recall={tagg['macro_recall']:.4f}  mrr={tagg['mrr']:.4f}  "
+                f"P@R={tagg['mean_precision_at_r']:.4f}   [{role}]"
+            )
+        print("-" * 78)
+
+    # ---- the regression gate (plan step M8.14) --------------------------
+    gate_rows: list[dict] = []
+    gate_passed = True
+    if baseline_path is not None:
+        baseline = load_baseline(baseline_path)
+        base_agg = baseline["aggregate"]
+        # Compare like with like: the baseline was computed over v1's nine
+        # queries, so the current side must be those same nine, not the blend.
+        current_agg = by_tier.get(GATE_TIER, agg)
+        gate_passed, gate_rows = compare_to_baseline(current_agg, base_agg)
+        print(format_gate(gate_rows, tier=GATE_TIER, baseline_path=baseline_path))
+        if gate_passed:
+            gated_n = by_tier.get(GATE_TIER, agg)["queries"]
+            print(
+                f"\n    GATE PASS - the {gated_n} held-out v1 queries hold their "
+                f"baseline against a corpus of {len(corpus)} rows"
+                f"\n    (the baseline was measured over "
+                f"{baseline.get('corpus_size', '?')})."
+            )
+        else:
+            print(
+                "\n    GATE FAIL - retrieval regressed on the held-out v1 queries."
+                "\n    These are the SAME nine queries the baseline was measured on, so"
+                "\n    this is a real drop in retrieval quality, not an artefact of new"
+                "\n    labels."
+            )
+        print("-" * 78)
+
+    if forbidden_failures:
+        print("FORBIDDEN MEMORIES RESURFACED:")
+        for line in forbidden_failures:
+            print(f"    - {line}")
+        print(
+            "\n    A soft-deleted memory was returned by retrieval. This is the single"
+            "\n    worst failure this suite can report: the user asked for erasure and"
+            "\n    the system kept answering with the erased row. It exits non-zero as a"
+            "\n    broken suite, not as a low score."
+        )
+        print("-" * 78)
     if expectation_failures:
         print("PATH EXPECTATIONS NOT MET:")
         for line in expectation_failures:
@@ -337,11 +559,21 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "top_k": top_k,
         "subject_id": GOLDEN_SET_SUBJECT_ID,
-        "corpus_size": len(BY_ID),
+        "corpus_size": len(corpus),
         "aggregate": agg,
+        "aggregate_by_tier": by_tier,
+        "gate": {
+            "baseline": str(baseline_path) if baseline_path else None,
+            "tier": GATE_TIER,
+            "metrics": list(GATE_METRICS),
+            "passed": gate_passed if baseline_path else None,
+            "rows": gate_rows,
+        },
         "per_path_totals": totals,
         "path_expectations_met": not expectation_failures,
         "path_expectation_failures": expectation_failures,
+        "forbidden_respected": not forbidden_failures,
+        "forbidden_failures": forbidden_failures,
         "queries": per_query_rows,
     }
 
@@ -350,11 +582,22 @@ async def run(suite: str, top_k: int, do_seed: bool, out_path: Path | None) -> i
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(f"wrote baseline -> {out}")
 
-    # Exit codes are a contract: 0 = suite ran and every query behaved as
-    # labelled, 2 = suite ran but a path expectation broke, 1 = the run itself
-    # errored (raised in main()). A bad *score* is a finding and still exits 0;
-    # a suite whose probes stopped discriminating is a failure.
-    return 2 if expectation_failures else 0
+    # Exit codes are a contract:
+    #   0 = suite ran, every query behaved as labelled, nothing regressed
+    #   1 = the run itself errored (raised in main())
+    #   2 = a path expectation broke, or a soft-deleted row resurfaced - either
+    #       way the suite stopped measuring what it claims to measure
+    #   3 = the suite is intact but retrieval REGRESSED against the baseline
+    #
+    # 2 and 3 are kept apart deliberately. A broken suite and a genuine quality
+    # drop need different responses - the first is fixed by repairing the
+    # fixture, the second must never be fixed that way - and a single non-zero
+    # code would let someone "fix" a regression by editing the golden set.
+    if expectation_failures or forbidden_failures:
+        return 2
+    if not gate_passed:
+        return EXIT_REGRESSION
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -363,11 +606,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--top-k", type=int, default=DEFAULT_TOP_K, help="cutoff for precision/recall")
     parser.add_argument("--no-seed", action="store_true", help="skip reseeding the fixture corpus")
     parser.add_argument("--out", type=Path, default=None, help="override the results path")
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=None,
+        help="a previous run's JSON; gate this run's v1 queries against it and "
+             "exit 3 if recall/MRR/P@R regressed",
+    )
     args = parser.parse_args(argv)
 
     async def _run() -> int:
         try:
-            return await run(args.suite, args.top_k, not args.no_seed, args.out)
+            return await run(
+                args.suite, args.top_k, not args.no_seed, args.out, args.baseline
+            )
         finally:
             await close_pools()
 

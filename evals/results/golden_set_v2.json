@@ -1,0 +1,1105 @@
+{
+  "suite": "golden_set_v2",
+  "generated_at": "2026-09-02T16:01:51.612624+00:00",
+  "top_k": 5,
+  "subject_id": "93e6200f-ff8f-5502-98fb-a4643a815412",
+  "corpus_size": 63,
+  "aggregate": {
+    "queries": 19,
+    "macro_precision": 0.284211,
+    "macro_recall": 0.976316,
+    "macro_f1": 0.4099,
+    "micro_precision": 0.284211,
+    "micro_recall": 0.931034,
+    "micro_f1": 0.435484,
+    "mrr": 0.973684,
+    "mean_precision_at_r": 0.963158,
+    "precision": 0.284211,
+    "recall": 0.976316,
+    "f1": 0.4099,
+    "mean_expected_size": 1.526316
+  },
+  "aggregate_by_tier": {
+    "v1_holdout": {
+      "queries": 9,
+      "macro_precision": 0.266667,
+      "macro_recall": 1.0,
+      "macro_f1": 0.406085,
+      "micro_precision": 0.266667,
+      "micro_recall": 1.0,
+      "micro_f1": 0.421053,
+      "mrr": 1.0,
+      "mean_precision_at_r": 1.0,
+      "precision": 0.266667,
+      "recall": 1.0,
+      "f1": 0.406085,
+      "mean_expected_size": 1.333333
+    },
+    "v2_new": {
+      "queries": 10,
+      "macro_precision": 0.3,
+      "macro_recall": 0.955,
+      "macro_f1": 0.413333,
+      "micro_precision": 0.3,
+      "micro_recall": 0.882353,
+      "micro_f1": 0.447761,
+      "mrr": 0.95,
+      "mean_precision_at_r": 0.93,
+      "precision": 0.3,
+      "recall": 0.955,
+      "f1": 0.413333,
+      "mean_expected_size": 1.7
+    }
+  },
+  "gate": {
+    "baseline": null,
+    "tier": "v1_holdout",
+    "metrics": [
+      "macro_recall",
+      "mrr",
+      "mean_precision_at_r"
+    ],
+    "passed": null,
+    "rows": []
+  },
+  "per_path_totals": {
+    "semantic_only": 88,
+    "keyword_only": 1,
+    "both": 6
+  },
+  "path_expectations_met": true,
+  "path_expectation_failures": [],
+  "forbidden_respected": true,
+  "forbidden_failures": [],
+  "queries": [
+    {
+      "query_id": "gs-001",
+      "retrieved": [
+        "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef",
+        "1a4bd77d-64d7-56de-8f65-80a4eb98f8c8",
+        "cc26e768-d0ad-5fdc-b241-b13c74ba571f",
+        "b8cb1ced-289c-5aac-bef5-6e7fb001c798"
+      ],
+      "expected": [
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef",
+        "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2"
+      ],
+      "hits": [
+        "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef"
+      ],
+      "precision": 0.4,
+      "recall": 1.0,
+      "f1": 0.571429,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Which foods upset my stomach?",
+      "expected_slugs": [
+        "lactose",
+        "onions"
+      ],
+      "retrieved_slugs": [
+        "onions",
+        "lactose",
+        "catallergy",
+        "coffee",
+        "veg"
+      ],
+      "path_expectation": "semantic_only",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 81.38,
+      "separation": {
+        "corpus_size": 62,
+        "target_id": "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
+        "target_rank": 1,
+        "target_distance": 0.358505,
+        "boundary_rank": 5,
+        "boundary_distance": 0.626404,
+        "margin": -0.267899,
+        "outside_top_k": false
+      }
+    },
+    {
+      "query_id": "gs-002",
+      "retrieved": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e",
+        "dd80ad30-709a-5909-ad07-c31736bf028a",
+        "cc99ed39-5fc9-540e-93cd-81c67d621a0f",
+        "b8cb1ced-289c-5aac-bef5-6e7fb001c798",
+        "7fe2067e-b021-5cbb-b7fa-b40d6962a714"
+      ],
+      "expected": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e"
+      ],
+      "hits": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "origin",
+      "expected_slugs": [
+        "tiles"
+      ],
+      "retrieved_slugs": [
+        "tiles",
+        "sister",
+        "lightpollution",
+        "veg",
+        "perseids"
+      ],
+      "path_expectation": "keyword_only",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "keyword"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 56.72,
+      "separation": {
+        "corpus_size": 62,
+        "target_id": "22284a05-c5bf-590c-afba-149d19c20f7e",
+        "target_rank": 48,
+        "target_distance": 0.875589,
+        "boundary_rank": 5,
+        "boundary_distance": 0.73927,
+        "margin": 0.136319,
+        "outside_top_k": true
+      }
+    },
+    {
+      "query_id": "gs-003",
+      "retrieved": [
+        "d00a6470-1470-5e91-abe9-670c7e454315",
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef",
+        "1bd83389-5e65-547e-ab0a-54128aef5b27"
+      ],
+      "expected": [
+        "d00a6470-1470-5e91-abe9-670c7e454315"
+      ],
+      "hits": [
+        "d00a6470-1470-5e91-abe9-670c7e454315"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Bristol half marathon",
+      "expected_slugs": [
+        "bristol"
+      ],
+      "retrieved_slugs": [
+        "bristol",
+        "physio",
+        "commute",
+        "lactose",
+        "shoes"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 53.99,
+      "separation": null
+    },
+    {
+      "query_id": "gs-004",
+      "retrieved": [
+        "1bd83389-5e65-547e-ab0a-54128aef5b27",
+        "d00a6470-1470-5e91-abe9-670c7e454315",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb",
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef"
+      ],
+      "expected": [
+        "1bd83389-5e65-547e-ab0a-54128aef5b27"
+      ],
+      "hits": [
+        "1bd83389-5e65-547e-ab0a-54128aef5b27"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Saucony running shoes",
+      "expected_slugs": [
+        "shoes"
+      ],
+      "retrieved_slugs": [
+        "shoes",
+        "bristol",
+        "commute",
+        "physio",
+        "lactose"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 61.91,
+      "separation": null
+    },
+    {
+      "query_id": "gs-005",
+      "retrieved": [
+        "fa070cef-0115-5aef-a864-93cf7b449201",
+        "468094b4-1765-507d-ad5c-7c5e2d7daaee",
+        "942d9b49-0ef7-51d7-aa56-439e1d828ae0",
+        "fdc706d3-fb09-5481-8899-b0285fbc383f",
+        "e9095d02-b2e3-54db-9e93-ea28c6708392"
+      ],
+      "expected": [
+        "fa070cef-0115-5aef-a864-93cf7b449201"
+      ],
+      "hits": [
+        "fa070cef-0115-5aef-a864-93cf7b449201"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "fingerstyle guitar",
+      "expected_slugs": [
+        "guitar"
+      ],
+      "retrieved_slugs": [
+        "guitar",
+        "strings",
+        "chords",
+        "lessons",
+        "openmic"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 63.91,
+      "separation": null
+    },
+    {
+      "query_id": "gs-006",
+      "retrieved": [
+        "dfcf6044-f841-5094-addd-20e4ee35b230",
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a",
+        "a82310fe-e4ea-5322-811e-b348cecbcb98",
+        "485bba0a-88c0-530a-80d6-df49349b9e1c",
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5"
+      ],
+      "expected": [
+        "dfcf6044-f841-5094-addd-20e4ee35b230"
+      ],
+      "hits": [
+        "dfcf6044-f841-5094-addd-20e4ee35b230"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "compliance report due",
+      "expected_slugs": [
+        "deadline"
+      ],
+      "retrieved_slugs": [
+        "deadline",
+        "manager",
+        "dentist",
+        "wifi",
+        "greenhouse"
+      ],
+      "path_expectation": "both",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 56.72,
+      "separation": null
+    },
+    {
+      "query_id": "gs-007",
+      "retrieved": [
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f",
+        "d00a6470-1470-5e91-abe9-670c7e454315",
+        "cc26e768-d0ad-5fdc-b241-b13c74ba571f",
+        "1bd83389-5e65-547e-ab0a-54128aef5b27",
+        "e1f86b5d-f95d-52b8-9913-955a730e0cef"
+      ],
+      "expected": [
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f"
+      ],
+      "hits": [
+        "5d5fce75-9376-5112-bd8f-d3637ad6141f"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "How do I prepare before long runs?",
+      "expected_slugs": [
+        "physio"
+      ],
+      "retrieved_slugs": [
+        "physio",
+        "bristol",
+        "coffee",
+        "shoes",
+        "lactose"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 59.52,
+      "separation": null
+    },
+    {
+      "query_id": "gs-008",
+      "retrieved": [
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a",
+        "dfcf6044-f841-5094-addd-20e4ee35b230",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb",
+        "cc26e768-d0ad-5fdc-b241-b13c74ba571f",
+        "e9095d02-b2e3-54db-9e93-ea28c6708392"
+      ],
+      "expected": [
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a"
+      ],
+      "hits": [
+        "43dc0ac5-0f75-5de3-9a2e-fabb23baa39a"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Who should I send written status updates to?",
+      "expected_slugs": [
+        "manager"
+      ],
+      "retrieved_slugs": [
+        "manager",
+        "deadline",
+        "commute",
+        "coffee",
+        "openmic"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 56.93,
+      "separation": null
+    },
+    {
+      "query_id": "gs-009",
+      "retrieved": [
+        "1ca20969-985f-51dc-b654-24253017f571",
+        "c13c27e9-e592-50ef-9313-8cf7ef089b69",
+        "7ceede21-3a5e-591b-8540-9cc3409605a3",
+        "455de1a9-329d-5637-94cb-fc89a968bfa6",
+        "f117b75a-a870-51b6-90a4-ad75627352b6"
+      ],
+      "expected": [
+        "c13c27e9-e592-50ef-9313-8cf7ef089b69",
+        "1ca20969-985f-51dc-b654-24253017f571",
+        "7ceede21-3a5e-591b-8540-9cc3409605a3"
+      ],
+      "hits": [
+        "1ca20969-985f-51dc-b654-24253017f571",
+        "c13c27e9-e592-50ef-9313-8cf7ef089b69",
+        "7ceede21-3a5e-591b-8540-9cc3409605a3"
+      ],
+      "precision": 0.6,
+      "recall": 1.0,
+      "f1": 0.75,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Polish family history",
+      "expected_slugs": [
+        "halina",
+        "surname",
+        "godmother"
+      ],
+      "retrieved_slugs": [
+        "surname",
+        "halina",
+        "godmother",
+        "uncle",
+        "cousin"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v1_holdout",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 59.72,
+      "separation": null
+    },
+    {
+      "query_id": "v2-001",
+      "retrieved": [
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c",
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "52a99631-07ac-5a39-8a80-e915ec247888"
+      ],
+      "expected": [
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c"
+      ],
+      "hits": [
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Which lens do I use for portraits?",
+      "expected_slugs": [
+        "lens85"
+      ],
+      "retrieved_slugs": [
+        "lens85",
+        "lens35",
+        "tripod",
+        "lenscap",
+        "compactcam"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 53.49,
+      "separation": null
+    },
+    {
+      "query_id": "v2-002",
+      "retrieved": [
+        "7fe2067e-b021-5cbb-b7fa-b40d6962a714",
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3",
+        "cc99ed39-5fc9-540e-93cd-81c67d621a0f",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "a82310fe-e4ea-5322-811e-b348cecbcb98"
+      ],
+      "expected": [
+        "7fe2067e-b021-5cbb-b7fa-b40d6962a714"
+      ],
+      "hits": [
+        "7fe2067e-b021-5cbb-b7fa-b40d6962a714"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "When can I see shooting stars?",
+      "expected_slugs": [
+        "perseids"
+      ],
+      "retrieved_slugs": [
+        "perseids",
+        "astroclub",
+        "lightpollution",
+        "tripod",
+        "dentist"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 51.53,
+      "separation": null
+    },
+    {
+      "query_id": "v2-003",
+      "retrieved": [
+        "52a99631-07ac-5a39-8a80-e915ec247888",
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c",
+        "2830eebb-5ca5-5216-a8c4-94e48b572404"
+      ],
+      "expected": [
+        "52a99631-07ac-5a39-8a80-e915ec247888"
+      ],
+      "hits": [
+        "52a99631-07ac-5a39-8a80-e915ec247888"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Which camera comes with me when I go away for a fortnight?",
+      "expected_slugs": [
+        "compactcam"
+      ],
+      "retrieved_slugs": [
+        "compactcam",
+        "lens35",
+        "tripod",
+        "lens85",
+        "shedtools"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 64.08,
+      "separation": null
+    },
+    {
+      "query_id": "v2-004",
+      "retrieved": [
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3",
+        "e9095d02-b2e3-54db-9e93-ea28c6708392",
+        "7fe2067e-b021-5cbb-b7fa-b40d6962a714",
+        "a82310fe-e4ea-5322-811e-b348cecbcb98",
+        "152771fc-dcbd-5611-b4ba-28421ecfaf32"
+      ],
+      "expected": [
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3"
+      ],
+      "hits": [
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "When does the astronomy club meet?",
+      "expected_slugs": [
+        "astroclub"
+      ],
+      "retrieved_slugs": [
+        "astroclub",
+        "openmic",
+        "perseids",
+        "dentist",
+        "chessclub"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": "archived",
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "keyword",
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 64.17,
+      "separation": null
+    },
+    {
+      "query_id": "v2-005",
+      "retrieved": [
+        "4ef5b362-cc38-506b-b720-a64e315e849a",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "d5392a8d-20eb-5619-8afb-36977e01b91c",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c"
+      ],
+      "expected": [
+        "4ef5b362-cc38-506b-b720-a64e315e849a"
+      ],
+      "hits": [
+        "4ef5b362-cc38-506b-b720-a64e315e849a"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Can I still scan medium format negatives?",
+      "expected_slugs": [
+        "filmscanner"
+      ],
+      "retrieved_slugs": [
+        "filmscanner",
+        "tripod",
+        "lens35",
+        "charger",
+        "lenscap"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": "decayed",
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 66.89,
+      "separation": null
+    },
+    {
+      "query_id": "v2-006",
+      "retrieved": [
+        "c7311aad-de5f-514b-8887-d3f78e8ce3ec",
+        "c5be3eae-f6c7-5324-9361-60d425d3ca1d",
+        "4cf9c8f3-2805-565c-b146-a8f739c2a846",
+        "b8cb1ced-289c-5aac-bef5-6e7fb001c798",
+        "2830eebb-5ca5-5216-a8c4-94e48b572404"
+      ],
+      "expected": [
+        "c7311aad-de5f-514b-8887-d3f78e8ce3ec"
+      ],
+      "hits": [
+        "c7311aad-de5f-514b-8887-d3f78e8ce3ec"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Summarise what you know about my allotment",
+      "expected_slugs": [
+        "allotmentsummary"
+      ],
+      "retrieved_slugs": [
+        "allotmentsummary",
+        "runnerbeans",
+        "allotmentplot",
+        "veg",
+        "shedtools"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": "reflection",
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 65.25,
+      "separation": null
+    },
+    {
+      "query_id": "v2-007",
+      "retrieved": [
+        "152771fc-dcbd-5611-b4ba-28421ecfaf32",
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3",
+        "e9095d02-b2e3-54db-9e93-ea28c6708392",
+        "fdc706d3-fb09-5481-8899-b0285fbc383f",
+        "969131e3-0565-50a8-a661-2f9cf78f7a78"
+      ],
+      "expected": [
+        "152771fc-dcbd-5611-b4ba-28421ecfaf32"
+      ],
+      "hits": [
+        "152771fc-dcbd-5611-b4ba-28421ecfaf32"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Where does my chess club meet?",
+      "expected_slugs": [
+        "chessclub"
+      ],
+      "retrieved_slugs": [
+        "chessclub",
+        "astroclub",
+        "openmic",
+        "lessons",
+        "duolingo"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": "soft-deleted",
+      "forbidden_slugs": [
+        "chessnumber"
+      ],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 65.82,
+      "separation": null
+    },
+    {
+      "query_id": "v2-008",
+      "retrieved": [
+        "2830eebb-5ca5-5216-a8c4-94e48b572404",
+        "42578918-6ca9-5dae-820c-c3be52d43859",
+        "98722456-c135-5ed8-b53a-2696ad15438c",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "d5392a8d-20eb-5619-8afb-36977e01b91c"
+      ],
+      "expected": [
+        "2830eebb-5ca5-5216-a8c4-94e48b572404"
+      ],
+      "hits": [
+        "2830eebb-5ca5-5216-a8c4-94e48b572404"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Which tools live in the shed?",
+      "expected_slugs": [
+        "shedtools"
+      ],
+      "retrieved_slugs": [
+        "shedtools",
+        "chisels",
+        "workbench",
+        "lenscap",
+        "charger"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 57.24,
+      "separation": null
+    },
+    {
+      "query_id": "v2-009",
+      "retrieved": [
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "4ef5b362-cc38-506b-b720-a64e315e849a"
+      ],
+      "expected": [
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c",
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "52a99631-07ac-5a39-8a80-e915ec247888"
+      ],
+      "hits": [
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3"
+      ],
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1": 0.8,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 0.8,
+      "query": "What photography gear do I own?",
+      "expected_slugs": [
+        "lens85",
+        "lens35",
+        "lenscap",
+        "tripod",
+        "compactcam"
+      ],
+      "retrieved_slugs": [
+        "lens35",
+        "lenscap",
+        "lens85",
+        "tripod",
+        "filmscanner"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 60.17,
+      "separation": null
+    },
+    {
+      "query_id": "v2-010",
+      "retrieved": [
+        "c7311aad-de5f-514b-8887-d3f78e8ce3ec",
+        "c5be3eae-f6c7-5324-9361-60d425d3ca1d",
+        "4cf9c8f3-2805-565c-b146-a8f739c2a846",
+        "b8cb1ced-289c-5aac-bef5-6e7fb001c798",
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5"
+      ],
+      "expected": [
+        "4cf9c8f3-2805-565c-b146-a8f739c2a846",
+        "c5be3eae-f6c7-5324-9361-60d425d3ca1d",
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5",
+        "a29b5263-7a10-579f-abec-3e0291f93474"
+      ],
+      "hits": [
+        "c5be3eae-f6c7-5324-9361-60d425d3ca1d",
+        "4cf9c8f3-2805-565c-b146-a8f739c2a846",
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5"
+      ],
+      "precision": 0.6,
+      "recall": 0.75,
+      "f1": 0.666667,
+      "reciprocal_rank": 0.5,
+      "precision_at_r": 0.5,
+      "query": "What do I grow and look after on the allotment?",
+      "expected_slugs": [
+        "allotmentplot",
+        "runnerbeans",
+        "greenhouse",
+        "compostbin"
+      ],
+      "retrieved_slugs": [
+        "allotmentsummary",
+        "runnerbeans",
+        "allotmentplot",
+        "veg",
+        "greenhouse"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 1
+      },
+      "contributed_paths": [
+        "keyword",
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 61.33,
+      "separation": null
+    }
+  ]
+}
