@@ -55,7 +55,25 @@ packages = ["api", "capture", "graphs", "jobs", "llm", "store"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "-ra"
+# --import-mode=importlib is REQUIRED for the tree to collect at all.
+#
+# M8 added tests/unit/test_decay.py beside the existing
+# tests/integration/test_decay.py. Under pytest's default "prepend" import mode
+# a test module is named by its basename alone, so those two collide and
+# collection of the whole tree aborts with "import file mismatch" - which is
+# exactly why `pytest tests/` failed while `pytest tests/unit/test_decay.py`
+# passed on its own, and why the collision survived until someone ran the
+# milestone's own final DoD line.
+#
+# importlib mode derives a unique module name from each file's full path, so
+# same-named tests in different suites coexist. Preferred over adding
+# __init__.py to every test directory: no new files, and conftest discovery is
+# unchanged.
+#
+# It goes in addopts rather than an ini key because pytest has no `importmode`
+# ini option and ignores unknown keys SILENTLY - setting it there looks like a
+# fix and changes nothing.
+addopts = "-ra --import-mode=importlib"
 markers = [
     "integration: requires the docker compose stack and live provider keys",
 ]
