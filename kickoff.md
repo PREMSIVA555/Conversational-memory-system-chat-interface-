@@ -33,7 +33,7 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M2.5 | *(inserted)* Thin chat UI — first visible demo | W3 | ✅ | **failed once** (reply outside the aria-live region), fixed, re-checked |
 | M4 | Weighted ranking + token-bounded context composer | W3 | ✅ | independent agent — 7/7 DoD, 12/12 tests; 4 defects closed |
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
-| M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | 📋 | 14/14 tests + mutation-tested; verifier pending |
+| M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ⬜ | — |
 | M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | ⬜ | — |
 
