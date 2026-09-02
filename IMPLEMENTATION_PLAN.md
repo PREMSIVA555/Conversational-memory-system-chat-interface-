@@ -525,7 +525,15 @@ M8 makes the memory store self-maintaining: a nightly decay graph that ages weig
 - [x] From that test's assertions, confirm **no row was processed twice**
 - [x] Run `python evals/run_eval.py --suite golden_set_v2` → exits 0 (`echo $?` → `0`)
 - [x] From that run's stdout, read the reported precision and recall for `golden_set_v2`
-- [x] Compare those numbers against `evals/results/golden_set_v1.json` → v2 precision and recall are each **at or above** the M3 baseline, not merely "some number"; the runner prints the explicit delta and pass/fail against the baseline
+- [ ] Compare those numbers against `evals/results/golden_set_v1.json` → v2 precision and recall are each **at or above** the M3 baseline, not merely "some number"; the runner prints the explicit delta and pass/fail against the baseline
+      <!-- UNTICKED after cold verification. The runner NOW prints the explicit delta and
+           pass/fail on the bare command (that half is fixed). But the literal comparison
+           still fails: v2's blended recall is 0.9763 against v1's 1.0, because v2 adds
+           harder queries on purpose. It passes only on the nine v1 queries held out
+           inside v2. That is a defensible gate and it is documented in harness.md D17 --
+           but it is NOT what this line says, so the line stays unticked until you decide
+           whether to amend it. Same class as M1's pg_policies line: a defect in the
+           verification command, flagged rather than silently reinterpreted. -->
 - [x] Run the full demo command as given: `pytest tests/distributed/test_decay_claims_no_double_process.py && python evals/run_eval.py --suite golden_set_v2` → the whole chain exits 0
 - [x] Manually: `python -m jobs.run --job decay` on a seeded DB → weights visibly decrease (`psql "$DATABASE_URL" -c "select id, weight, archived_at from memories order by weight limit 10"`)
 - [x] Manually: `python -m jobs.run --job reflection` → a new row with `source='reflection'` appears in `memories`

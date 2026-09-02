@@ -941,6 +941,110 @@ day, and is already in history. If it is third-party reference material it shoul
 a public portfolio repo, and stripping it means a history rewrite — cheaper to decide before
 the push than after, which is why it was raised before the push rather than mentioned after.
 
+### D18 — M8 failed cold verification, and the two lines it failed were the two that mattered
+
+Dispatched a cold verifier against M8 per the standing rule. Verdict: **8 of 10 Definition
+of Done lines pass; the milestone does not.** Every M8 box in the plan had been ticked,
+including both failures. That gap between the ticks and the re-run is the entire argument
+for the builder/verifier split, and this is the first time in the project it caught
+something I had personally signed.
+
+#### The finding I should have caught and did not
+
+**The DoD's own command never invoked the gate.** The line is
+`python evals/run_eval.py --suite golden_set_v2`, with no `--baseline`, and `--baseline`
+defaulted to `None`. So the documented command printed no gate table, no delta, no
+pass/fail — while the *same* DoD line requires "the runner prints the explicit delta and
+pass/fail against the baseline".
+
+The verifier proved it from the committed artifact rather than by reasoning about the code:
+
+```json
+"gate": {"baseline": null, "tier": "v1_holdout", "passed": null, "rows": []}
+```
+
+**M8's own recorded result showed the gate had never been run.** I had exercised it by
+hand with `--baseline`, seen it pass, and then — in the last thing I did before committing —
+run the DoD's demo chain, which overwrote that file with an ungated payload. The green I
+reported was real; the artifact I committed was not evidence of it.
+
+The fix is a design change, not a flag: a suite that HAS a baseline is now gated by default
+and `--no-baseline` opts out. **A gate you have to remember to switch on is not a gate**,
+and the DoD command is precisely the invocation that would never remember.
+
+#### The reflection defect was three times worse than I reported, and had a real root cause
+
+I logged it as "the model intermittently returns empty; the DoD line passes, on a retry".
+The verifier ran it nine times: **two successes, seven silent no-ops, every one exiting 0.**
+Then it did the thing I had not, and read the token accounting:
+
+```
+finish_reason=length  content=''  completion_tokens=1024  reasoning_tokens=1022
+```
+
+Not flakiness. `gpt-oss` spends its budget on internal reasoning before emitting content —
+a trap `llm/config.py`'s own module docstring already documents — and the global 1024-token
+default left **two tokens** for the answer. The prompt asks the model to find a shared theme
+across eight memories *and to refuse to invent one*; on an incoherent cluster it reasons
+until the budget is gone.
+
+That reframes the fix completely. I had proposed retry-or-fail-loudly, treating the empty
+completion as irreducible. The actual answer is that this prompt was never given room to
+answer. Both were applied, because they fix different things:
+
+- `SUMMARY_MAX_TOKENS = 3072` for this call specifically. Measured on the exact cluster that
+  used to fail: **0 empty in 6 attempts**, previously 3 in 9.
+- `ReflectionProducedNothing` — a run that selects a cluster and writes nothing now raises,
+  which `jobs/run.py` turns into a non-zero exit. Finding no cluster still exits 0: a cron
+  that alarms on a genuinely quiet night gets muted, and a muted alarm is worse than the
+  silence it replaced.
+
+**The lesson is mine and it is the same one as D14.** There I briefed a plausible mechanism
+as a diagnosis and was wrong; here I accepted "the model is flaky" as a root cause when one
+API response field would have disproved it. A mechanism that explains the symptom is not a
+diagnosis. The verifier read `usage`; I had not.
+
+#### What I left for the user rather than fixing
+
+Two DoD lines cannot pass as written, and both are verification-command defects in the same
+class as M1's `pg_policies` line — so they are flagged, not quietly reinterpreted:
+
+- **DoD 6.** "v2 precision and recall each at or above the M3 baseline" is unsatisfiable
+  alongside "expand the golden set with harder queries", which the same plan step demands.
+  v2's blended recall is 0.9763 against v1's 1.0. The gate compares the nine v1 queries held
+  out inside v2 — a real no-regression test against a corpus half again as large — but that
+  is a reinterpretation. **Unticked**, with the reason inline in the plan.
+- **DoD 9.** "Run the reflection job → a new row appears" assumes an unconsolidated corpus.
+  The second consecutive run correctly finds nothing to consolidate. Right behaviour, wrong
+  line.
+
+#### Verifier findings recorded and deliberately not acted on
+
+- `test_the_sweep_was_actually_concurrent` asserts `>= 2` contributing workers, so it would
+  pass a 299/1/0 split. The observed runs (269/15/16, then 269/16/15 — note how reproducible
+  worker-0's ~90% share is) genuinely establish three concurrent processes, and the verifier
+  confirmed an ~8-second window in which all three were alive. But **the human reading the
+  output establishes DoD line 2, not the test.** Tightening it to `== 3` would trade a weak
+  assertion for a flaky one, since a fast worker draining the table first is legitimate.
+- v2 is only marginally harder than v1: 8 of 10 new queries still hit at rank 1, and the
+  entire non-saturation margin comes from the two multi-answer queries added mid-task. The
+  four lifecycle probes are tripwires for a filter regression, not discriminators. Worth
+  knowing before anyone treats `v2_new` as a quality signal.
+- The forbidden-id check scores the whole ranking rather than the top-k slice, which is
+  correct — but on the one guarded query the keyword path contributes nothing, so `ranked`
+  is exactly 5 long and the extra scope buys no coverage today.
+
+#### What the verifier confirmed, which is worth as much as what it broke
+
+The deleted-row tripwire is the strongest single result in the milestone, and it was proven
+rather than asserted: the verifier computed the full semantic ranking *including* deleted
+rows and found the forbidden memory at **distance 0.3479, rank 2** — well inside
+`semantic_top_k=5`. Remove the `deleted_at IS NULL` filter and it surfaces immediately. It
+also confirmed the lifecycle states in the database at suite time, reproduced the v2 metrics
+bit-identically, proved the gate can actually exit 3 by constructing a baseline nobody can
+meet, and found no order-dependence across the eval tests — including by deliberately
+seeding the *wrong* corpus before an isolated `--no-seed` test.
+
 ### D9 — Rate limits are now the dominant constraint, not correctness
 Both W2 agents have been killed twice by session rate limits mid-task. Both times I surveyed
 the on-disk state first and **resumed** rather than cold-restarting, so each agent kept its

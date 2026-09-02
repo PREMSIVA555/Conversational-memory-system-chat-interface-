@@ -35,10 +35,56 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ⬜ | — |
-| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | **orchestrator-built — needs a cold verifier** (see below) |
+| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | **failed cold verification 8/10**, two blockers fixed, awaiting re-verification |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
 and M7 runs before M6 so the memory panel wires real endpoints instead of mocks.*
+
+### M8's cold verification: 8 of 10, and what it caught
+
+A verifier that did not write any of this re-ran all ten Definition of Done lines and
+**failed the milestone**. It was right to. The two failures were the two lines that were
+supposed to *prove* M8 rather than describe it, and both had been ticked.
+
+**DoD 6 — the gate had never actually run.** The DoD's command is
+`python evals/run_eval.py --suite golden_set_v2`, with no `--baseline`. `--baseline`
+defaulted to `None`, so that command printed no gate at all — while the same DoD line
+requires it to print "the explicit delta and pass/fail against the baseline". The committed
+`golden_set_v2.json` proved it: `"gate": {"baseline": null, "passed": null, "rows": []}`.
+The milestone's own recorded artifact showed the gate had never been exercised. **Fixed** —
+a suite with a baseline is now gated by default (`--no-baseline` opts out), because a gate
+you have to remember to switch on is not a gate.
+
+**DoD 9 — the reflection job wrote nothing 7 times in 9, and exited 0 every time.** The
+verifier isolated the root cause rather than calling it flaky:
+
+```
+finish_reason=length  content=''  completion_tokens=1024  reasoning_tokens=1022
+```
+
+`gpt-oss` spends its budget on internal reasoning *before* emitting content — a trap
+`llm/config.py` already documents — and the global 1024-token default left **two tokens**
+for the answer on a prompt that asks the model to find a shared theme across eight
+memories. **Fixed** on both axes: the summary call gets its own `SUMMARY_MAX_TOKENS = 3072`
+(0/6 empty on the exact cluster that previously failed, was 3/9), and a run that finds a
+cluster and writes nothing now **raises instead of exiting 0**. Having nothing to
+consolidate still exits 0 — a cron that alarms on a genuinely quiet night gets muted, and a
+muted alarm is worse than the silence it replaced.
+
+Two findings I have **not** closed, because they are yours to decide:
+
+- **DoD 6 cannot pass as literally written**, and is now unticked in the plan with the
+  reason inline. v2's blended recall is 0.9763 against v1's 1.0 — because v2 adds harder
+  queries *on purpose*. It passes only on the nine v1 queries held out inside v2. That gate
+  is defensible and documented, but it is a reinterpretation of the line, not a reading of
+  it. Same class as M1's `pg_policies` defect: flagged, not silently rewritten.
+- **DoD 9 assumes an unconsolidated corpus.** Run it twice and the second run correctly
+  reports `no_cluster` and writes nothing. That is right behaviour and a wrong DoD line.
+
+Also worth keeping from the verifier, unfixed and honest: `test_the_sweep_was_actually_
+concurrent` asserts `>= 2` workers, so it would still pass a 299/1/0 split. The observed
+runs (269/15/16, then 269/16/15) do establish three real concurrent processes — but the
+*test* does not enforce what DoD line 2 claims; a human reading the output does.
 
 ### Why M8 is `📋` and not `✅`
 
@@ -187,25 +233,29 @@ change it knowingly than find your verification command quietly rewritten.
 
 ## Open items
 
-- [ ] **The reflection job exits 0 when it writes nothing, and it did so three times in a
-      row.** `python -m jobs.run --job reflection` returned
-      `{"skipped": "empty_summary", "summaries_written": 0}` with exit status **0** on three
-      consecutive runs, then wrote a perfectly good summary on the fourth. The cluster was
-      the same eight rows every time; the completion simply came back empty, and
-      `graphs/reflection_graph.py:147` treats an empty completion as a reason to skip rather
-      than to retry.
+- [x] ~~**The reflection job exits 0 when it writes nothing.**~~ **Closed.** Cold
+      verification measured it far worse than the first report: 7 runs in 9 wrote nothing,
+      all exiting 0. Root cause was not "the model is flaky" but a measured budget
+      exhaustion — `finish_reason=length`, 1022 of 1024 tokens spent on reasoning, two left
+      for the answer, on a prompt asking for a shared theme across eight memories. Fixed
+      with a dedicated `SUMMARY_MAX_TOKENS = 3072` (0/6 empty on the previously-failing
+      cluster) **and** a `ReflectionProducedNothing` raise so a run that finds work and does
+      none of it exits non-zero. Four regression tests guard both halves.
 
-      Nothing here is *wrong* — the DoD line "a new row with `source='reflection'` appears"
-      does pass, and the row that eventually landed is correct: embedded, PII-filtered,
-      8 sources marked `consolidated_at`, 1 `write` + 8 `update` audit rows. But a nightly
-      scheduled job whose failure mode is "succeed silently, do nothing" is the same shape
-      as the two silent-write-loss bugs already recorded in harness.md (D15, and the
-      `stream:false` 500). On a cron there is no one watching the exit code.
+- [ ] **Two DoD lines need your decision, not more code.** Both are verification-command
+      defects in the same class as M1's `pg_policies` line, so they are flagged rather than
+      silently reinterpreted:
 
-      Two candidate fixes, neither applied: retry an empty completion once inside
-      `summarize_node`, or make `summaries_written == 0` with a non-empty cluster a non-zero
-      exit. The second is probably right — the job should be able to say "I found work and
-      failed to do it", which it currently cannot.
+      - **M8 DoD 6** asks that "v2 precision and recall are each at or above the M3
+        baseline". v2's blended recall is 0.9763 against v1's 1.0 — because v2 adds harder
+        queries, which the same plan step asks for. The two halves of the plan contradict.
+        The implemented gate compares the nine v1 queries held out inside v2, which is a
+        real no-regression test against a corpus half again as large. Amend the line to say
+        so, or tell me to gate differently. It is currently **unticked** with the reason
+        inline in the plan.
+      - **M8 DoD 9** ("run the reflection job → a new row appears") assumes an
+        unconsolidated corpus. A second consecutive run correctly finds nothing left to
+        consolidate and writes nothing. Right behaviour, wrong DoD line.
 
 - [ ] **`pytest tests/` could not collect at all until this session.**
       `tests/unit/test_decay.py` and `tests/integration/test_decay.py` share a basename, and
