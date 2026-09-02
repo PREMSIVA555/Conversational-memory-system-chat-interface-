@@ -61,10 +61,15 @@ class SeedMemory:
     source: str = "eval_fixture"
     importance: float = 0.5
     confidence: float = 0.9
+    #: Namespace the row's uuid5 is derived in. Defaults to the v1 prefix, so
+    #: every id already written into `golden_set.jsonl` is unchanged. M8's v2
+    #: additions pass `_PREFIX_V2`, which keeps the two generations' ids in
+    #: separate namespaces and makes "is this a v1 row?" answerable from the id.
+    namespace: str = _PREFIX
 
     @property
     def id(self) -> str:
-        return memory_id(self.slug)
+        return str(uuid.uuid5(_NS, f"{self.namespace}/memory/{self.slug}"))
 
 
 # ---------------------------------------------------------------------------
@@ -331,6 +336,162 @@ MEMORIES: tuple[SeedMemory, ...] = (
 
 BY_SLUG: dict[str, SeedMemory] = {m.slug: m for m in MEMORIES}
 BY_ID: dict[str, SeedMemory] = {m.id: m for m in MEMORIES}
+
+
+# ===========================================================================
+# M8 — the golden_set_v2 corpus extension
+# ===========================================================================
+#
+# Nineteen rows added on top of v1's forty-four, on the SAME subject, so v2 is a
+# strict superset. That matters for the regression gate: v2 re-runs all nine v1
+# queries against a corpus half again as large, which is a genuinely harder
+# condition than v1 faced, not merely a different one.
+#
+# WHAT THE NEW ROWS ARE FOR, and the rule they were written under
+# ---------------------------------------------------------------
+# THE RULE: nothing added here may compete with a v1 query's expected answers,
+# because the v1 queries are the held-out no-regression gate and they are scored
+# at recall = MRR = P@R = 1.0. So the new rows deliberately avoid every theme v1
+# probes — no food or digestion (gs-001), no running (gs-003, gs-004, gs-007),
+# no guitar (gs-005), no work deadlines or written updates (gs-006, gs-008), and
+# above all no Polish family history (gs-009, whose three expected rows must
+# occupy the top three).
+#
+# They also contain no word that stems to the lexeme 'origin'. gs-002's
+# keyword-only probe rests on `to_tsvector('english','original') = 'origin':1`
+# matching the `tiles` row AND NOTHING ELSE corpus-wide; one careless
+# "originally" here would silently break the probe. `test_v2_corpus_does_not_
+# break_the_keyword_only_probe` enforces that rather than trusting this comment.
+#
+# The themes chosen instead — photography, astronomy, an allotment, chess,
+# woodworking — are all absent from v1, and several of the rows exist
+# specifically to be NEAR MISSES for the new queries: `lens35` and `lenscap`
+# share almost all of `lens85`'s vocabulary without being the answer, and
+# `chisels` / `workbench` are tools that are not in the shed.
+#
+# Four rows carry a LIFECYCLE state rather than plain content, which is what the
+# plan's "queries covering decayed/archived memories, reflection summaries, and
+# the deleted-never-resurfaces case" needs (see `LIFECYCLE_V2` below).
+
+_PREFIX_V2 = "memory-system/evals/golden_set_v2"
+
+
+def memory_id_v2(slug: str) -> str:
+    """The stable uuid for a v2-only corpus slug."""
+    return str(uuid.uuid5(_NS, f"{_PREFIX_V2}/memory/{slug}"))
+
+
+def _v2(slug: str, content: str, **kw: Any) -> SeedMemory:
+    return SeedMemory(slug, content, namespace=_PREFIX_V2, **kw)
+
+
+V2_EXTRA: tuple[SeedMemory, ...] = (
+    # -- photography --------------------------------------------------------
+    # `lens85` is the answer to v2-001. `lens35` and `lenscap` are the near
+    # misses: `lenscap` deliberately contains BOTH "85mm" and the lens
+    # vocabulary, so a retriever that matches on surface tokens alone will pull
+    # it in and lose precision@R.
+    _v2("lens85", "The 85mm prime is the lens I reach for whenever I shoot portraits.", importance=0.5),
+    _v2("lens35", "The 35mm sits on the camera almost permanently for street photography.", importance=0.4),
+    _v2("lenscap", "I lost the rear cap for the 85mm somewhere at the bottom of the camera bag.", importance=0.3),
+    _v2("tripod", "The carbon tripod is the only one steady enough for long night exposures.", importance=0.5),
+    # v2-003's answer. It never says "holiday" — the v1 `holiday` row does, and
+    # is the distractor the query is built to be beaten to rank 1 by.
+    _v2("compactcam", "The little compact camera is what actually ends up coming away with me for a fortnight abroad.", importance=0.4),
+
+    # -- astronomy ----------------------------------------------------------
+    _v2("perseids", "The Perseid meteor shower peaks in the middle of August every year.", importance=0.5),
+    # ARCHIVED by LIFECYCLE_V2. v2-004's answer.
+    _v2("astroclub", "The astronomy club meets in the village hall on the first Tuesday.", importance=0.5),
+    _v2("lightpollution", "Light pollution from the retail park washes out anything faint seen from the garden.", importance=0.4),
+
+    # -- allotment ----------------------------------------------------------
+    _v2("allotmentplot", "My allotment plot is number 31 on the site behind the cemetery.", importance=0.5),
+    _v2("runnerbeans", "Runner beans and courgettes are the only things that reliably crop on the allotment.", importance=0.5),
+    _v2("greenhouse", "The greenhouse glass needs replacing before the frosts arrive.", importance=0.5),
+    _v2("shedtools", "The good secateurs and the border fork live in the shed, not the car boot.", importance=0.4),
+    _v2("compostbin", "The compost bin took two summers to produce anything usable.", importance=0.3),
+    # A REFLECTION SUMMARY, written with `source='reflection'` exactly as
+    # `jobs/reflection.py` writes one. v2-006's answer. Its point is that a
+    # machine-derived consolidation is an ordinary retrievable memory.
+    _v2(
+        "allotmentsummary",
+        "The user keeps allotment plot 31 behind the cemetery, grows runner beans and "
+        "courgettes there, and looks after a greenhouse and a compost bin on the same site.",
+        source="reflection",
+        importance=0.6,
+        confidence=0.7,
+    ),
+
+    # -- chess: the deleted-never-resurfaces pair ---------------------------
+    _v2("chessclub", "The chess club plays at the library on Thursday evenings.", importance=0.4),
+    # SOFT-DELETED by LIFECYCLE_V2. v2-007 asks the question this row answers;
+    # the suite's `forbidden_memory_ids` says it must never come back.
+    _v2("chessnumber", "My chess club membership number is written on the back of the fixture card.", importance=0.4),
+
+    # -- decayed ------------------------------------------------------------
+    # Weight driven to DECAY_FLOOR with a three-year-old last_accessed_at by
+    # LIFECYCLE_V2. v2-005's answer.
+    _v2("filmscanner", "The flatbed film scanner in the loft still handles medium format negatives.", importance=0.4),
+
+    # -- woodworking: bulk, and the near misses for v2-008 -------------------
+    _v2("chisels", "The bevel edge chisels want sharpening again before the next project.", importance=0.3),
+    _v2("workbench", "The workbench wobbles unless the back leg is shimmed with a folded beer mat.", importance=0.3),
+)
+
+#: v1 first, then the additions, so a diff of the two corpora is the tail.
+V2_MEMORIES: tuple[SeedMemory, ...] = MEMORIES + V2_EXTRA
+
+#: Post-insert column overrides applied by `seed()` when `lifecycle` is passed.
+#:
+#: These four rows are the reason golden_set_v2 can ask about decayed, archived,
+#: reflection and deleted memories at all — a corpus of uniformly fresh, live
+#: rows cannot express any of those questions.
+#:
+#: NOTE what is deliberately NOT here: `retrieve/` filters on `deleted_at IS
+#: NULL` and nothing else. An archived or decayed row is still retrievable, by
+#: design (see `store/migrations/0007_decay_columns.sql`), and v2-004 / v2-005
+#: expect exactly that. They are the tripwire for anyone who later adds an
+#: `archived_at IS NULL` filter to retrieval without deciding to.
+LIFECYCLE_V2: dict[str, dict[str, Any]] = {
+    # archived, and aged, as the decay job would leave it
+    "astroclub": {
+        "archived_at": "now()",
+        "weight": 0.08,
+        "last_accessed_at": "now() - interval '500 days'",
+    },
+    # decayed to the floor but not archived
+    "filmscanner": {
+        "weight": 0.05,
+        "last_accessed_at": "now() - interval '1100 days'",
+    },
+    # soft-deleted: the user exercised erasure
+    "chessnumber": {"deleted_at": "now()"},
+    # a consolidation, marked as such
+    "allotmentsummary": {"last_accessed_at": "now() - interval '2 days'"},
+}
+
+BY_SLUG_V2: dict[str, SeedMemory] = {m.slug: m for m in V2_MEMORIES}
+
+#: Every row of every generation, keyed by id. `run_eval._slug()` reads this so
+#: it can label a v2 row in a v1 run's output and vice versa.
+BY_ID_ALL: dict[str, SeedMemory] = {m.id: m for m in V2_MEMORIES}
+
+#: Every corpus this repo seeds. Used to prune the embedding cache against the
+#: UNION rather than against whichever suite ran last — otherwise alternating
+#: `--suite golden_set_v1` and `--suite golden_set_v2` evicts the other suite's
+#: vectors every time and re-embeds them on the next run, which on a 3-request-
+#: per-minute provider is a minute of backoff per alternation.
+ALL_CORPORA: tuple[tuple[SeedMemory, ...], ...] = (MEMORIES, V2_MEMORIES)
+
+
+def all_corpus_texts() -> list[str]:
+    """Every distinct content string across every corpus, for cache pruning."""
+    seen: dict[str, None] = {}
+    for corpus in ALL_CORPORA:
+        for mem in corpus:
+            seen.setdefault(mem.content, None)
+    return list(seen)
 
 
 # ---------------------------------------------------------------------------

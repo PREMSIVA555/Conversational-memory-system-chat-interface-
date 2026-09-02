@@ -32,6 +32,12 @@ dependencies = [
     # consult the NER model, so `sm` costs nothing on the required set.
     # Override with PII_SPACY_MODEL if that changes.
     "spacy==3.8.16",
+    # --- M8: scheduled maintenance jobs -------------------------------------
+    # APScheduler 3.x (not the 4.x pre-release): 3.x is what ships the
+    # `SQLAlchemyJobStore` this project uses for a schedule that survives a
+    # restart, and its `AsyncIOScheduler` API is stable. See jobs/scheduler.py
+    # for why the jobstore URL has to be rewritten to `postgresql+psycopg://`.
+    "apscheduler==3.11.0",
 ]
 
 [project.optional-dependencies]
@@ -43,7 +49,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["api", "capture", "graphs", "llm", "store"]
+packages = ["api", "capture", "graphs", "jobs", "llm", "store"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
