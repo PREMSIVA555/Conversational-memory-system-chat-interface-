@@ -20,16 +20,45 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+
+#: The COMMITTED baseline. Read here, never written by this suite - see below.
 RESULTS = ROOT / "evals" / "results" / "golden_set_v1.json"
 
 pytestmark = pytest.mark.integration
 
 
+# ---------------------------------------------------------------------------
+# WHY EVERY RUN IN THIS FILE PASSES `--out`
+# ---------------------------------------------------------------------------
+#
+# `run_eval.py` writes `evals/results/<suite>.json` by default, and
+# `DEFAULT_BASELINES` points the regression gate at
+# `evals/results/golden_set_v1.json`. So a fixture that ran the v1 suite with no
+# `--out` OVERWROTE the very file the gate compares against.
+#
+# That is not a tidiness problem, it defeats the gate. An independent verifier
+# demonstrated the full loop: degrade retrieval, run `pytest tests/`, and the
+# regenerated baseline records the degraded numbers; gate the equally-degraded
+# v2 run against it and you get `+0.0000 ok`, GATE PASS, exit 0 - for a
+# regression that exits 3 against the committed baseline. The project's own
+# workflow (run the suite, commit the artifacts) wrote the regression into the
+# baseline before the gate could read it.
+#
+# So: this suite is now NON-MUTATING. Every run writes to a temp directory, and
+# assertions about "the file the runner wrote" read that temp copy. The
+# committed baseline is only ever read - as the gate's reference, which is
+# exactly what a baseline is for.
+
+
 @pytest.fixture(scope="module")
-def eval_run() -> subprocess.CompletedProcess:
-    """Run the suite exactly as the Definition of Done specifies."""
+def results_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A scratch directory for this module's eval artifacts."""
+    return tmp_path_factory.mktemp("eval-results")
+
+
+def _run_eval_to(out_path: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, "evals/run_eval.py", "--suite", "golden_set_v1"],
+        [sys.executable, "evals/run_eval.py", *args, "--out", str(out_path)],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -40,8 +69,19 @@ def eval_run() -> subprocess.CompletedProcess:
             # raise UnicodeEncodeError and fail the run for a cosmetic reason.
             "PYTHONIOENCODING": "utf-8",
         },
-        timeout=600,
+        timeout=900,
     )
+
+
+@pytest.fixture(scope="module")
+def v1_out(results_dir: Path) -> Path:
+    return results_dir / "golden_set_v1.json"
+
+
+@pytest.fixture(scope="module")
+def eval_run(v1_out: Path) -> subprocess.CompletedProcess:
+    """Run the v1 suite as the Definition of Done specifies, minus the clobber."""
+    return _run_eval_to(v1_out, "--suite", "golden_set_v1")
 
 
 def _metric(stdout: str, label: str) -> float:
@@ -110,12 +150,18 @@ def test_broken_path_expectation_exits_non_zero(tmp_path):
     assert "all path expectations met" not in result.stdout
 
 
-def test_baseline_file_written_with_real_numbers(eval_run):
-    """`evals/results/golden_set_v1.json` is the file M8 regresses against."""
-    assert eval_run.returncode == 0, eval_run.stderr
-    assert RESULTS.exists(), f"{RESULTS} was not written"
+def test_baseline_file_written_with_real_numbers(eval_run, v1_out):
+    """The runner writes a payload of real numbers - the shape M8 gates against.
 
-    payload = json.loads(RESULTS.read_text(encoding="utf-8"))
+    Reads the RUN'S OWN output (`v1_out`), not the committed baseline. Asserting
+    against the committed file would have been satisfied by a stale artifact
+    nobody regenerated, and getting there required overwriting the gate's
+    reference - see the note at the top of this file.
+    """
+    assert eval_run.returncode == 0, eval_run.stderr
+    assert v1_out.exists(), f"{v1_out} was not written"
+
+    payload = json.loads(v1_out.read_text(encoding="utf-8"))
     agg = payload["aggregate"]
 
     assert payload["suite"] == "golden_set_v1"
@@ -159,24 +205,10 @@ def test_baseline_file_written_with_real_numbers(eval_run):
 # M8 — golden_set_v2 and the regression gate
 # ===========================================================================
 
-RESULTS_V2 = ROOT / "evals" / "results" / "golden_set_v2.json"
+#: The COMMITTED v1 baseline. READ-ONLY here — it is the gate's reference, and
+#: this suite regenerating it is precisely the defect described at the top of
+#: this file.
 BASELINE_V1 = ROOT / "evals" / "results" / "golden_set_v1.json"
-
-
-def _run_eval(*args: str, env_extra: dict | None = None, timeout: int = 900):
-    return subprocess.run(
-        [sys.executable, "evals/run_eval.py", *args],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        env={
-            **os.environ,
-            "PYTHONPATH": str(ROOT),
-            "PYTHONIOENCODING": "utf-8",
-            **(env_extra or {}),
-        },
-    )
 
 
 def _baseline_corpus_size() -> int:
@@ -184,12 +216,23 @@ def _baseline_corpus_size() -> int:
 
 
 @pytest.fixture(scope="module")
-def eval_run_v2() -> subprocess.CompletedProcess:
-    """The v2 suite gated against v1 — the Definition of Done's own command."""
-    return _run_eval("--suite", "golden_set_v2", "--baseline", str(BASELINE_V1))
+def v2_out(results_dir: Path) -> Path:
+    return results_dir / "golden_set_v2.json"
 
 
-def test_eval_v2_meets_or_exceeds_v1_baseline(eval_run_v2):
+@pytest.fixture(scope="module")
+def eval_run_v2(v2_out: Path) -> subprocess.CompletedProcess:
+    """The v2 suite gated against the COMMITTED v1 baseline.
+
+    `--baseline` is passed explicitly even though it is now the default, because
+    this fixture is the one place the comparison being made must be unambiguous
+    in the test's own source. Output goes to a temp file so the suite never
+    rewrites a committed artifact.
+    """
+    return _run_eval_to(v2_out, "--suite", "golden_set_v2", "--baseline", str(BASELINE_V1))
+
+
+def test_eval_v2_meets_or_exceeds_v1_baseline(eval_run_v2, v2_out):
     """The plan's M8 gate, implemented per harness.md's binding guidance.
 
     The comparison is v1's NINE QUERIES, held out inside v2, against v1's own
@@ -217,7 +260,7 @@ def test_eval_v2_meets_or_exceeds_v1_baseline(eval_run_v2):
     assert "GATE PASS" in eval_run_v2.stdout
     assert "GATE FAIL" not in eval_run_v2.stdout
 
-    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    payload = json.loads(v2_out.read_text(encoding="utf-8"))
     baseline = json.loads(BASELINE_V1.read_text(encoding="utf-8"))["aggregate"]
     held_out = payload["aggregate_by_tier"]["v1_holdout"]
 
@@ -237,7 +280,7 @@ def test_eval_v2_meets_or_exceeds_v1_baseline(eval_run_v2):
     )
 
 
-def test_v2_new_queries_are_not_saturated(eval_run_v2):
+def test_v2_new_queries_are_not_saturated(eval_run_v2, v2_out):
     """v2's new queries must be able to FAIL, or they measure nothing.
 
     The point of expanding the golden set was to escape v1's ceiling, where
@@ -247,7 +290,7 @@ def test_v2_new_queries_are_not_saturated(eval_run_v2):
     this one was supposed to remove.
     """
     assert eval_run_v2.returncode == 0, eval_run_v2.stderr
-    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    payload = json.loads(v2_out.read_text(encoding="utf-8"))
     new = payload["aggregate_by_tier"]["v2_new"]
 
     assert new["queries"] >= 8, "v2 added too few queries to characterise anything"
@@ -260,7 +303,7 @@ def test_v2_new_queries_are_not_saturated(eval_run_v2):
     assert new["macro_recall"] > 0.5, f"v2 new-query recall implausibly low: {new}"
 
 
-def test_v2_covers_the_lifecycle_states_the_plan_names(eval_run_v2):
+def test_v2_covers_the_lifecycle_states_the_plan_names(eval_run_v2, v2_out):
     """Decayed, archived, reflection and soft-deleted rows are all exercised.
 
     Plan step M8.13 asks for "queries covering decayed/archived memories,
@@ -270,7 +313,7 @@ def test_v2_covers_the_lifecycle_states_the_plan_names(eval_run_v2):
     this milestone exists to prevent.
     """
     assert eval_run_v2.returncode == 0, eval_run_v2.stderr
-    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    payload = json.loads(v2_out.read_text(encoding="utf-8"))
     states = {q.get("lifecycle_state") for q in payload["queries"]}
     for required in ("archived", "decayed", "reflection", "soft-deleted"):
         assert required in states, f"no v2 query exercises a {required} row"
@@ -286,7 +329,7 @@ def test_v2_covers_the_lifecycle_states_the_plan_names(eval_run_v2):
         )
 
 
-def test_soft_deleted_memory_never_resurfaces(eval_run_v2):
+def test_soft_deleted_memory_never_resurfaces(eval_run_v2, v2_out):
     """The erased row must not come back, and the check must be non-vacuous.
 
     `forbidden_memory_ids` is scored over the whole returned ranking rather
@@ -294,7 +337,7 @@ def test_soft_deleted_memory_never_resurfaces(eval_run_v2):
     just got lucky about where the cutoff happened to fall.
     """
     assert eval_run_v2.returncode == 0, eval_run_v2.stderr
-    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    payload = json.loads(v2_out.read_text(encoding="utf-8"))
     assert payload["forbidden_respected"] is True, payload["forbidden_failures"]
 
     guarded = [q for q in payload["queries"] if q.get("forbidden_slugs")]
@@ -311,7 +354,7 @@ def test_soft_deleted_memory_never_resurfaces(eval_run_v2):
     )
 
 
-def test_v2_corpus_does_not_break_the_keyword_only_probe(eval_run_v2):
+def test_v2_corpus_does_not_break_the_keyword_only_probe(eval_run_v2, v2_out):
     """v2's new rows must not contain the lexeme gs-002 depends on.
 
     gs-002 is the suite's only keyword-only probe and it rests on a stemming
@@ -340,7 +383,7 @@ def test_v2_corpus_does_not_break_the_keyword_only_probe(eval_run_v2):
     )
 
     # And the probe still behaved as labelled in the actual v2 run.
-    payload = json.loads(RESULTS_V2.read_text(encoding="utf-8"))
+    payload = json.loads(v2_out.read_text(encoding="utf-8"))
     gs002 = next(q for q in payload["queries"] if q["query_id"] == "gs-002")
     assert gs002["path_expectation_met"], gs002
     assert gs002["target_found_via"] == ["keyword"], gs002
@@ -362,11 +405,11 @@ def test_runner_exits_three_on_a_regressed_baseline(tmp_path):
         ),
         encoding="utf-8",
     )
-    result = _run_eval(
+    result = _run_eval_to(
+        tmp_path / "regressed.json",
         "--suite", "golden_set_v2",
         "--no-seed",
         "--baseline", str(impossible),
-        "--out", str(tmp_path / "regressed.json"),
     )
     assert result.returncode == 3, (
         f"regressed run exited {result.returncode}, expected 3\n{result.stdout[-3000:]}"

@@ -191,6 +191,30 @@ def load_suite(path: Path) -> list[dict]:
     return records
 
 
+def all_suite_queries() -> list[str]:
+    """Every query text across every registered suite, de-duplicated.
+
+    The union the query cache is pruned against. A suite whose file is missing
+    is skipped rather than raising: `SUITES` is the registry of suites that
+    *may* exist, and a partial checkout should not make an otherwise valid run
+    fail on a file it never needed.
+
+    v2 contains all nine v1 queries verbatim, so the union is v2's list — but
+    that is a fact about today's suites, not something to rely on.
+    """
+    seen: dict[str, None] = {}
+    for name in SUITES:
+        try:
+            path = resolve_suite(name)
+        except FileNotFoundError:
+            continue
+        for record in load_suite(path):
+            query = record.get("query")
+            if isinstance(query, str) and query:
+                seen.setdefault(query, None)
+    return list(seen)
+
+
 def _slug(memory_id: str) -> str:
     # BY_ID_ALL, not BY_ID: a v2 run retrieves v2-only rows, and labelling them
     # by a uuid prefix would make the near-miss distractors unreadable in the
@@ -331,10 +355,23 @@ async def run(
 
     suite_queries = [r["query"] for r in records]
     warmed = await warm_query_cache(suite_queries)
-    # Keep the on-disk query cache a faithful record of THIS suite. Editing a
-    # query orphans its old vector (the cache key is a hash of the text), so
-    # without this the file accumulates embeddings of retired probes.
-    orphans = prune_persistent_cache(suite_queries)
+    # Prune against EVERY suite's queries, not just this run's.
+    #
+    # The purpose is unchanged: editing a query orphans its old vector (the
+    # cache key is a hash of the text), so without pruning the file accumulates
+    # embeddings of retired probes.
+    #
+    # But pruning against `suite_queries` alone made each suite evict the
+    # other's vectors — measured, a v1 run took the query cache from 19 entries
+    # to 9, and the next v2 run reported "10 newly embedded in one batched
+    # request", spending a live Voyage request to recover what it had just
+    # thrown away. On a 3-request-per-minute key that is silent: nothing fails,
+    # the run is merely slower.
+    #
+    # This is the same defect that was fixed in `seed()` for the CORPUS cache
+    # via `all_corpus_texts()`; an independent verifier found the query cache
+    # still had it. Both caches now prune against the union.
+    orphans = prune_persistent_cache(all_suite_queries())
     print(
         f"query embeddings: {warmed} newly embedded in one batched request, rest cached"
         + (f"; pruned {orphans} orphaned vector(s)" if orphans else "")

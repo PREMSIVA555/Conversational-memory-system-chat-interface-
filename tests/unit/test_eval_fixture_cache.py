@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from evals import run_eval  # noqa: E402
 from evals.fixtures import seed_memories  # noqa: E402
 from evals.fixtures.seed_memories import (  # noqa: E402
     ALL_CORPORA,
@@ -91,3 +92,73 @@ def test_seed_prunes_against_the_union_not_the_corpus_it_is_seeding():
     assert "prune_cache(contents)" not in source, (
         "seed() is pruning against the corpus being seeded again"
     )
+
+
+# ---------------------------------------------------------------------------
+# the QUERY cache — the same defect, found later
+# ---------------------------------------------------------------------------
+#
+# The corpus cache was fixed first and these tests only covered that one. An
+# independent verifier then measured the query cache doing exactly the same
+# thing: a v1 run took `query_embedding_cache.json` from 19 entries to 9, and
+# the next v2 run printed "10 newly embedded in one batched request" — spending
+# a live request on a rate-limited provider to recover vectors it had just
+# discarded.
+#
+# The lesson worth keeping: fixing one caller of a bad pattern is not fixing the
+# pattern. `prune_cache(contents)` and `prune_persistent_cache(suite_queries)`
+# are the same mistake in two files, and only one of them had a test.
+
+
+def test_all_suite_queries_covers_every_registered_suite():
+    """The union must contain every suite's queries, or pruning evicts one."""
+    union = set(run_eval.all_suite_queries())
+    for name in run_eval.SUITES:
+        path = run_eval.resolve_suite(name)
+        missing = {r["query"] for r in run_eval.load_suite(path)} - union
+        assert not missing, f"{name} queries absent from the union: {sorted(missing)[:3]}"
+
+
+def test_all_suite_queries_is_deduplicated():
+    """v2 carries all nine v1 queries verbatim, so a concatenation would double them."""
+    queries = run_eval.all_suite_queries()
+    assert len(queries) == len(set(queries)), "all_suite_queries returned duplicates"
+
+
+def test_run_eval_prunes_the_query_cache_against_every_suite():
+    """`run()` must prune with `all_suite_queries()`, not this run's queries.
+
+    Source-level for the same reason as the corpus check above, and with the
+    same comment-stripping so the explanatory comment naming the old call is not
+    mistaken for the call itself.
+    """
+    source = chr(10).join(
+        line.split("#", 1)[0] for line in inspect.getsource(run_eval.run).splitlines()
+    )
+    assert "prune_persistent_cache(all_suite_queries())" in source, (
+        "run() no longer prunes the query cache against the union of all suites; "
+        "pruning against one suite's queries evicts the other's vectors and "
+        "silently re-embeds them on the next alternation"
+    )
+    assert "prune_persistent_cache(suite_queries)" not in source, (
+        "run() is pruning the query cache against only this run's queries again"
+    )
+
+
+def test_neither_cache_prunes_against_a_single_corpus_or_suite():
+    """The pattern, not the instance.
+
+    Two callers had the identical defect and only one was covered by a test, so
+    the second survived the first fix. This asserts the shape in both places at
+    once, so a third caller written the same way has somewhere obvious to fail.
+    """
+    for func in (seed_memories.seed, run_eval.run):
+        source = chr(10).join(
+            line.split("#", 1)[0] for line in inspect.getsource(func).splitlines()
+        )
+        for bad in ("prune_cache(contents)", "prune_persistent_cache(suite_queries)"):
+            assert bad not in source, (
+                f"{func.__qualname__} prunes a shared cache against one "
+                f"generation's texts via `{bad}` — the other generation's "
+                f"vectors are evicted and silently re-embedded"
+            )

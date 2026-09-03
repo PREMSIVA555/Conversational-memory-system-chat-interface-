@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from collections import Counter
 from types import SimpleNamespace
 
 import httpx
@@ -402,7 +403,26 @@ async def test_insert_and_reinforce_in_one_batch_audit_separately(gov_store, sub
         f"two governed actions on {memory_id} produced {len(rows)} audit row(s); "
         "the trail under-reports what happened"
     )
-    assert [r["metadata"].get("outcome") for r in rows] == ["insert", "reinforce"]
+    # The MULTISET, not the sequence — and that is a correctness point, not a
+    # weakening of the test.
+    #
+    # Both rows are written in one transaction, `created_at` defaults to now()
+    # which is the TRANSACTION timestamp, and `id` is gen_random_uuid(). So the
+    # schema records nothing that distinguishes which of these two rows was
+    # written first: intra-transaction order is not recoverable, and any
+    # assertion about it is really an assertion about the query plan. This one
+    # was — it passed while the planner chose a seqscan and failed
+    # deterministically once `audit_log` grew enough for an Index Scan Backward
+    # over (subject_id, created_at DESC), which returns tied rows reversed.
+    #
+    # Nothing is lost. This test's claim is in its name — the two actions audit
+    # SEPARATELY, two rows rather than one — and the ordering that IS meaningful
+    # is already asserted above against `persist_candidates`' return value,
+    # which is an ordinary ordered Python list and genuinely records call order.
+    outcomes = Counter(r["metadata"].get("outcome") for r in rows)
+    assert outcomes == Counter({"insert": 1, "reinforce": 1}), (
+        f"expected exactly one insert and one reinforce audit row, got {outcomes}"
+    )
     assert await gov_store.audit_counts(subject_a) == {"write": 2}
 
 

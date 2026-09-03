@@ -221,8 +221,31 @@ class GovernanceStore:
             params.append(memory_id)
         async with admin_session() as conn:
             cursor = await conn.execute(
+                # `, id ASC` is a TIE-BREAK, and it is load-bearing.
+                #
+                # `audit_log.created_at` defaults to now(), which in PostgreSQL
+                # is the TRANSACTION timestamp — so two audit rows written in
+                # one transaction are exactly equal on this key, and
+                # `ORDER BY created_at ASC` alone leaves their order undefined.
+                # Undefined in practice meant "whatever the planner picked":
+                # `audit_log_subject_created_idx` is (subject_id, created_at
+                # DESC), so an ascending sort is served by an Index Scan
+                # Backward, which returns tied rows in REVERSE insertion order.
+                # Forcing a seqscan flipped the same query back.
+                #
+                # That made a test's verdict depend on the query plan, which
+                # flipped on its own as audit_log grew. It passed for one
+                # session and failed deterministically for the next.
+                #
+                # This makes the helper deterministic. It does NOT recover
+                # insertion order — `id` is gen_random_uuid(), so within a tie
+                # the order is stable but arbitrary. Nothing may assert
+                # intra-transaction ORDER from these rows; assert the multiset
+                # instead. See test_insert_and_reinforce_in_one_batch_audit_
+                # separately.
                 "SELECT id, subject_id, actor_id, memory_id, action, metadata, created_at"
-                "  FROM audit_log WHERE " + " AND ".join(clauses) + " ORDER BY created_at ASC",
+                "  FROM audit_log WHERE " + " AND ".join(clauses)
+                + " ORDER BY created_at ASC, id ASC",
                 tuple(params),
             )
             return [dict(row) for row in await cursor.fetchall()]
