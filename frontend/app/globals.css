@@ -231,3 +231,173 @@ body {
   font-size: 0.75rem;
   margin: 0;
 }
+
+/* ==========================================================================
+   M6 additions — nav, streaming caret, degraded notice, memory panel
+   ========================================================================== */
+
+.nav {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.nav a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.nav a:hover,
+.nav a:focus-visible {
+  border-bottom-color: var(--accent);
+}
+
+/* The blinking block at the end of a reply that is still arriving. Purely
+   decorative and aria-hidden — the live region announces the text itself, and
+   an animated element inside it would otherwise be described on every tick. */
+.caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 0.12em;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: caret-blink 1s step-end infinite;
+}
+
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Respect a reduced-motion preference: a blinking cursor is exactly the kind of
+   repetitive animation that setting exists to stop. */
+@media (prefers-reduced-motion: reduce) {
+  .caret { animation: none; }
+}
+
+/* "Answering without memory". Deliberately styled as INFORMATION, not as an
+   error — the reply is genuine, the memory layer was simply skipped, and this
+   fires routinely because the embedding provider is rate limited. Making it
+   look like a failure would train the user to distrust correct answers. */
+.degraded {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--tick);
+  background: color-mix(in srgb, var(--tick) 10%, transparent);
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.degraded strong { color: var(--text); }
+
+.info {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* --- memory panel ------------------------------------------------------- */
+
+.memories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.memory {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.memory__content {
+  margin: 0 0 0.6rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.memory__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.memory__meta div { display: flex; gap: 0.35rem; }
+.memory__meta dt { font-weight: 600; }
+.memory__meta dt::after { content: ":"; }
+.memory__meta dd { margin: 0; }
+
+.memory__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.memory__actions button {
+  padding: 0.35rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.memory__actions button:hover:not(:disabled) { border-color: var(--accent); }
+
+.memory__actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.memory__actions .danger:hover:not(:disabled) {
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+
+.memory__edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.memory__edit label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.memory__edit textarea {
+  width: 100%;
+  padding: 0.6rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.empty button {
+  margin-top: 0.75rem;
+  padding: 0.4rem 0.9rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}

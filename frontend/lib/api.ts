@@ -19,6 +19,8 @@
  * to `API_BASE_URL`. See `app/api/chat/route.ts` for why.
  */
 
+import { readTokenStream, type StreamHandlers } from "@/lib/stream";
+
 /** Request body of `POST /chat`. Mirrors `api.chat.ChatRequest`. */
 export interface ChatRequest {
   /** The user's turn. */
@@ -154,4 +156,71 @@ function extractDetail(payload: unknown): string | undefined {
   if (typeof candidate.detail === "string") return candidate.detail;
   if (typeof candidate.error === "string") return candidate.error;
   return undefined;
+}
+
+/**
+ * Send one turn and render the reply as it arrives (M6 steps 3 and 5).
+ *
+ * This is the streaming sibling of `sendChat`. The difference is the whole
+ * point of the milestone: `sendChat` calls `response.text()`, which waits for
+ * the last byte before the caller sees anything, so the answer appears in a
+ * single paint. Here every chunk reaches `onChunk` as it lands.
+ *
+ * `onMetadata` fires exactly once, before the first chunk, carrying `degraded`
+ * and the memory ids. That ordering is guaranteed by HTTP rather than by
+ * convention: the backend finishes retrieval and composition before committing
+ * a single response byte, and the facts travel as headers, which are flushed
+ * ahead of the body by definition. See `lib/stream.ts`.
+ *
+ * Resolves with the complete reply text. A caller that ignores `onChunk` and
+ * awaits only this promise has reintroduced the single-final-paint behaviour
+ * this function exists to remove.
+ */
+export async function streamChat(
+  request: ChatRequest,
+  handlers: StreamHandlers = {},
+  signal?: AbortSignal,
+): Promise<string> {
+  const body: ChatRequest = {
+    message: request.message,
+    subject_id: request.subject_id ?? null,
+    actor_id: request.actor_id ?? null,
+    stream: true,
+    capture: request.capture ?? true,
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(PROXY_PATH, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (cause) {
+    // An abort is the caller's own doing, not a transport failure; let it
+    // propagate as an AbortError so the UI can tell the two apart.
+    if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+    throw new ChatError("Could not reach the app server.", {
+      detail: cause instanceof Error ? cause.message : String(cause),
+    });
+  }
+
+  if (!response.ok) {
+    // Errors are JSON even on the streaming path: the proxy reshapes an
+    // upstream failure into `{"detail": ...}` before any body is streamed.
+    const text = await response.text();
+    let payload: unknown;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = undefined;
+    }
+    throw new ChatError(`The backend returned ${response.status}.`, {
+      status: response.status,
+      detail: extractDetail(payload) ?? (text ? text.slice(0, 500) : undefined),
+    });
+  }
+
+  return readTokenStream(response, handlers, signal);
 }

@@ -140,9 +140,32 @@ export async function POST(request: Request): Promise<Response> {
     "X-Accel-Buffering": "no",
   });
 
-  // Only forward the identity headers when the backend actually sent them; an
-  // empty header is worse than an absent one.
-  for (const name of ["X-Subject-Id", "X-Actor-Id"]) {
+  // Forward identity AND retrieval metadata.
+  //
+  // M6 NOTE — this list was `["X-Subject-Id", "X-Actor-Id"]` and the four
+  // X-Memory-* headers were being dropped here. Everything still "worked":
+  // replies streamed, nothing errored, and `readStreamMetadata()` simply saw no
+  // `X-Memory-Degraded` and reported not-degraded for every turn. The
+  // "answering without memory" indicator (step 6) could therefore never appear,
+  // and its e2e test would have failed against a backend that was behaving
+  // perfectly.
+  //
+  // The backend already names all six in `Access-Control-Expose-Headers`
+  // (`api/chat.py`), which is the list a *browser* needs to reveal them to page
+  // JavaScript on a cross-origin response. That does nothing here: this route is
+  // a server-side hop, so the headers have to be copied across by hand. Two
+  // different mechanisms, and satisfying one says nothing about the other.
+  for (const name of [
+    "X-Subject-Id",
+    "X-Actor-Id",
+    "X-Memory-Degraded",
+    "X-Memory-Count",
+    "X-Memory-Ids",
+    "X-Memory-Degraded-Reason",
+  ]) {
+    // Only forward what the backend actually sent; an empty header is worse
+    // than an absent one, because `readStreamMetadata` can distinguish "absent"
+    // from "explicitly false" but not from "".
     const value = upstream.headers.get(name);
     if (value) headers.set(name, value);
   }
