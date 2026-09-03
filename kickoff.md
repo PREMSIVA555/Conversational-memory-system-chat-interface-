@@ -34,8 +34,8 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M4 | Weighted ranking + token-bounded context composer | W3 | ✅ | independent agent — 7/7 DoD, 12/12 tests; 4 defects closed |
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
-| M6 | Next.js real-time chat UI + memory management panel | W6 | ⬜ | — |
-| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | **failed cold verification 8/10**, two blockers fixed, awaiting re-verification |
+| M6 | Next.js real-time chat UI + memory management panel | W6 | 📋 | frontend built, 14 mocked e2e pass; **live e2e not yet run**, no verifier yet |
+| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | **failed cold verification twice** (8/10 each, different lines); blockers fixed, awaiting a third |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
 and M7 runs before M6 so the memory panel wires real endpoints instead of mocks.*
@@ -86,6 +86,45 @@ concurrent` asserts `>= 2` workers, so it would still pass a 299/1/0 split. The 
 runs (269/15/16, then 269/16/15) do establish three real concurrent processes — but the
 *test* does not enforce what DoD line 2 claims; a human reading the output does.
 
+### The second cold verification: 8 of 10 again, different lines
+
+Re-verified after those fixes. **It failed again**, which is the process working rather than
+failing — the two blockers above are closed and two new ones took their place, one of them
+created by the closing.
+
+**A test whose verdict was decided by the query planner.**
+`test_insert_and_reinforce_in_one_batch_audit_separately` failed 6/6 for the verifier, having
+passed 187/187 for me hours earlier. Both are true. Two audit rows are written in one
+transaction; `created_at` defaults to `now()`, which is the *transaction* timestamp, and `id`
+is `gen_random_uuid()` — so the rows tie exactly and **intra-transaction order is not
+recoverable from the schema**. `ORDER BY created_at ASC` with no tie-break was served by an
+Index Scan Backward over `(subject_id, created_at DESC)`, which returns tied rows reversed.
+The verifier proved the mechanism instead of guessing: with `enable_indexscan=off` the same
+test passed. It flipped because the planner's choice changed as `audit_log` grew.
+
+Fixed by giving the helper a `, id ASC` tie-break and asserting the **multiset** — the test's
+claim is in its name (the two actions audit *separately*), and the ordering that is genuinely
+meaningful was already asserted a line earlier against an ordered Python list. Verified under
+both plans.
+
+**The gate laundered its own baseline — and that one was mine.** The eval test fixture ran
+the v1 suite with no `--out`, overwriting `evals/results/golden_set_v1.json`: the exact file
+the gate compares against. The verifier demonstrated the whole loop — degrade retrieval, run
+`pytest tests/`, and the regenerated baseline records the degraded numbers, after which the
+same regression that exits 3 against the committed baseline reports **GATE PASS** and exits
+0. It even named the commit: `b3f9fec`, mine, one commit after building the gate.
+
+The suite is now non-mutating; proven by `git checkout evals/results/`, running it, and
+finding `git status` empty. **The lesson: a guard is not verified by testing the guard, but by
+running the workflow the guard has to survive.**
+
+**And my cache fix was half a fix.** The corpus cache was corrected; the *query* cache had the
+identical defect and no test. A v1 run took it from 19 entries to 9, and the next v2 run spent
+a live request re-embedding 10 queries it had just discarded. Both now prune against a union,
+with a test asserting the shape in both places at once.
+
+Full suite after: **191 passed**.
+
 ### Why M8 is `📋` and not `✅`
 
 M8 was built in two halves by two different hands, and only one of them has ever been
@@ -113,8 +152,14 @@ What a verifier should be told to distrust first:
    can only ever catch a regression. That is deliberate (harness.md records why a
    `v2_blended >= v1` gate would have been incoherent), but it means a *passing gate is
    weak evidence* — the strong evidence is the `v2_new` tier being unsaturated.
-3. **The reflection job exits 0 having written nothing.** See the open item below. The DoD
-   line passes, but it passed on a retry.
+3. **The two closed blockers were closed by me, not verified by anyone.** The audit-order
+   tie-break, the non-mutating eval fixture, and the query-cache union are all mine and have
+   had no cold pass. Re-run the workflow, not just the tests: `git checkout evals/results/`,
+   run the full suite, and check `git status` is empty.
+4. **What both verifications kept saying and nobody has acted on:** `v2_new` is permanently
+   ungated ("characterization only", with no plan step promoting it), 9 of its 10 queries hit
+   at rank 1, and its saturation guard currently passes on *label counts* rather than on
+   difficulty. A passing gate here is weak evidence by construction.
 
 ---
 

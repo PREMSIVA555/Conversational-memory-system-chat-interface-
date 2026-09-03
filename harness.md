@@ -1045,6 +1045,125 @@ bit-identically, proved the gate can actually exit 3 by constructing a baseline 
 meet, and found no order-dependence across the eval tests — including by deliberately
 seeding the *wrong* corpus before an isolated `--no-seed` test.
 
+### D19 — M8's second cold verification: failed again, and one of the blockers was the fix
+
+Re-verified M8 after D18's fixes. Verdict: **8 of 10 again, and it does not pass.** Different
+lines this time, which is the point — the two blockers it had are closed and two new ones
+took their place, one of them created by the closing.
+
+The verifier proved its claims rather than asserting them, and its method is worth copying:
+
+- It refused to trust `test_runner_exits_three_on_a_regressed_baseline`, which fabricates an
+  unmeetable 2.0 baseline. It forced a **real** retrieval degradation instead — `--top-k 2`,
+  which drops gs-009 from recall 1.0 to 0.667 — against the *default* baseline with no
+  `--baseline` flag, and got `EXITCODE=3`, `macro_recall -0.0370 REGRESSED`, `GATE FAIL`.
+- It proved `test_barren_run_raises_instead_of_exiting_zero` is non-vacuous **by mutation**:
+  it loaded a verifier-only pytest plugin that recompiled `run_reflection_worker` with the
+  `raise` replaced by `pass`, changing nothing on disk, and got `DID NOT RAISE`.
+- It ran the reflection job **17 times** at the process level rather than accepting one green
+  run.
+
+#### The blocker that was not in M8 at all
+
+`test_insert_and_reinforce_in_one_batch_audit_separately` failed 6/6, deterministically, and
+had passed 187/187 for me hours earlier. Both facts are true and the reconciliation is the
+finding:
+
+```
+ORDER BY created_at ASC          -- no tie-break
+audit_log.created_at DEFAULT now()   -- the TRANSACTION timestamp
+audit_log.id  DEFAULT gen_random_uuid()
+```
+
+Both audit rows are written in one transaction, so they tie *exactly* on `created_at`, and
+`id` is random. **Intra-transaction order is not recoverable from this schema.** The
+assertion was therefore never about the audit trail; it was about which plan the optimiser
+picked. `audit_log_subject_created_idx` is `(subject_id, created_at DESC)`, so an ascending
+sort is served by an **Index Scan Backward**, which returns tied rows reversed. The verifier
+proved the mechanism rather than guessing it: with `enable_indexscan=off` the same test
+passes.
+
+It flipped between my run and theirs because the planner's choice changed as `audit_log`
+grew past a hundred rows. **A test whose verdict depends on the query plan is a latent
+failure, not a flake** — it will keep flipping, in whichever direction is least convenient.
+
+Fixed in two places, and the split matters. The helper gets `, id ASC` so it is deterministic
+under any plan — stable, though arbitrary within a tie, which is the most the schema can
+offer. The assertion becomes a **multiset**, because the test's claim is in its name (the two
+actions audit *separately* — two rows, not one), and the ordering that genuinely is
+meaningful was already asserted one line above against `persist_candidates`' return value,
+an ordinary ordered Python list that really does record call order. Nothing was weakened to
+get green; an assertion the data could not support was replaced by the one it can.
+
+#### The blocker I created while fixing the last one
+
+D18 closed "the gate never runs" by making it run by default. The verifier then found that
+**the gate launders its own baseline**.
+
+`tests/integration/test_eval_harness.py`'s `eval_run` fixture ran the v1 suite with **no
+`--out`**, so it overwrote `evals/results/golden_set_v1.json` — the exact file
+`DEFAULT_BASELINES` points the gate at. It demonstrated the full loop end to end: degrade
+retrieval, run `pytest tests/`, and the regenerated baseline now records the degraded
+numbers; gate the equally-degraded v2 run against it and you get `+0.0000 ok`, **GATE PASS**,
+exit 0 — for the very regression that exits 3 against the committed baseline.
+
+And it identified the commit: `b3f9fec`, "eval cache and result artifacts after the 187-test
+verification run". That is me, one commit after building the gate, committing the overwrite
+that disarms it. The gate worked in every direct test I ran. It did not survive the
+project's own workflow, which is *run the suite, then commit the artifacts*.
+
+The suite is now non-mutating — every run writes to a `tmp_path_factory` directory, and every
+assertion reads that copy rather than the committed file. Proven the only way worth proving
+it: `git checkout evals/results/`, run the suite, and `git status` on `evals/` comes back
+empty.
+
+**The general lesson, which is the one I keep relearning:** a guard is not verified by
+testing the guard. It is verified by running the workflow the guard exists to survive. I
+tested that the gate fails on a bad baseline; I never tested what the project does to the
+baseline between runs.
+
+#### Half a fix, found by looking at the other caller
+
+D18 also fixed the corpus embedding cache to prune against `all_corpus_texts()`. The verifier
+measured the **query** cache doing exactly the same thing: a v1 run took
+`query_embedding_cache.json` from 19 entries to 9, and the next v2 run printed *"10 newly
+embedded in one batched request"* — a live request on a 3-per-minute key to recover vectors
+it had just thrown away.
+
+`prune_cache(contents)` and `prune_persistent_cache(suite_queries)` are the same mistake in
+two files, and only one of them had a test. Now both prune against a union, and there is a
+test asserting the *shape* in both places at once so a third caller written the same way has
+somewhere obvious to fail. Verified across a full `v2 -> v1 -> v2` alternation: query cache
+holds at 19, corpus at 63, final run reports **0 newly embedded**.
+
+#### Findings recorded and deliberately not acted on
+
+- **`v2_new` is permanently ungated.** It is labelled "characterization only" and no plan step
+  promotes it to a baseline, so the harder queries M8 was built to add currently gate nothing.
+  This should fold into the DoD-6 amendment rather than be patched quietly.
+- **v2 is barely harder than v1** — 9 of 10 new queries hit at rank 1, and all four lifecycle
+  probes are perfect. The entire sub-1.0 signal comes from two multi-answer queries, so
+  `test_v2_new_queries_are_not_saturated` is currently satisfied by *label counts* rather than
+  by difficulty, which is the exact property `run_eval.py`'s own NOTE calls gameable for
+  `macro_precision`. Its failure message ("Add near-miss distractors or multi-answer queries")
+  describes the state it is presently accepting.
+- **v2-010 probably mislabels `allotmentsummary`.** It is the labelled answer to v2-006 and a
+  defensible answer to v2-010, is excluded from v2-010's expected set, and ranks 1 there —
+  producing the tier's only MRR loss. Fixing the label would flatten the tier and fire the
+  saturation guard, which is the honest signal that the queries need to get harder. That is
+  real corpus work, not a patch.
+- **Worker fairness is still unasserted.** Split was 270/15/15; `>= 2` contributors would pass
+  at 298/1/1. The *process* claim in DoD line 2 is properly asserted (three pids, none the
+  pytest process, a `decay.worker.start` per worker, shared `run_id`); the *contention* claim
+  is not, and tightening it to `== 3` would trade a weak assertion for a flaky one.
+- **Reflection barrenness is all-or-nothing per sweep**: one barren subject out of 25 raises
+  and fails the whole job. And one run went **>10 minutes** with no log line after
+  `reflection.worker.start` — almost certainly provider backoff, but indistinguishable from a
+  hang by an operator.
+
+Full suite after the fixes: **191 passed in 8m36s**. M8 stays at *awaiting verification* —
+these fixes have not been independently re-verified, and I wrote them.
+
 ### D9 — Rate limits are now the dominant constraint, not correctness
 Both W2 agents have been killed twice by session rate limits mid-task. Both times I surveyed
 the on-disk state first and **resumed** rather than cold-restarting, so each agent kept its
