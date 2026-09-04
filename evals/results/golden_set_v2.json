@@ -1,23 +1,23 @@
 {
   "suite": "golden_set_v2",
-  "generated_at": "2026-09-04T03:00:22.493342+00:00",
+  "generated_at": "2026-09-04T15:21:32.071474+00:00",
   "top_k": 5,
   "subject_id": "93e6200f-ff8f-5502-98fb-a4643a815412",
   "corpus_size": 63,
   "aggregate": {
-    "queries": 19,
-    "macro_precision": 0.284211,
-    "macro_recall": 0.976316,
-    "macro_f1": 0.4099,
-    "micro_precision": 0.284211,
-    "micro_recall": 0.931034,
-    "micro_f1": 0.435484,
-    "mrr": 0.973684,
-    "mean_precision_at_r": 0.963158,
-    "precision": 0.284211,
-    "recall": 0.976316,
-    "f1": 0.4099,
-    "mean_expected_size": 1.526316
+    "queries": 26,
+    "macro_precision": 0.276923,
+    "macro_recall": 0.984615,
+    "macro_f1": 0.403571,
+    "micro_precision": 0.276923,
+    "micro_recall": 0.947368,
+    "micro_f1": 0.428571,
+    "mrr": 0.894231,
+    "mean_precision_at_r": 0.811538,
+    "precision": 0.276923,
+    "recall": 0.984615,
+    "f1": 0.403571,
+    "mean_expected_size": 1.461538
   },
   "aggregate_by_tier": {
     "v1_holdout": {
@@ -36,19 +36,19 @@
       "mean_expected_size": 1.333333
     },
     "v2_new": {
-      "queries": 10,
-      "macro_precision": 0.3,
-      "macro_recall": 0.955,
-      "macro_f1": 0.413333,
-      "micro_precision": 0.3,
-      "micro_recall": 0.882353,
-      "micro_f1": 0.447761,
-      "mrr": 0.95,
-      "mean_precision_at_r": 0.93,
-      "precision": 0.3,
-      "recall": 0.955,
-      "f1": 0.413333,
-      "mean_expected_size": 1.7
+      "queries": 17,
+      "macro_precision": 0.282353,
+      "macro_recall": 0.976471,
+      "macro_f1": 0.402241,
+      "micro_precision": 0.282353,
+      "micro_recall": 0.923077,
+      "micro_f1": 0.432432,
+      "mrr": 0.838235,
+      "mean_precision_at_r": 0.711765,
+      "precision": 0.282353,
+      "recall": 0.976471,
+      "f1": 0.402241,
+      "mean_expected_size": 1.529412
     }
   },
   "gate": {
@@ -85,7 +85,7 @@
     ]
   },
   "per_path_totals": {
-    "semantic_only": 88,
+    "semantic_only": 123,
     "keyword_only": 1,
     "both": 6
   },
@@ -145,7 +145,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 70.4,
+      "elapsed_ms": 94.36,
       "separation": {
         "corpus_size": 62,
         "target_id": "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
@@ -206,7 +206,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 50.15,
+      "elapsed_ms": 55.25,
       "separation": {
         "corpus_size": 62,
         "target_id": "22284a05-c5bf-590c-afba-149d19c20f7e",
@@ -268,7 +268,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 52.55,
+      "elapsed_ms": 61.13,
       "separation": null
     },
     {
@@ -321,7 +321,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 50.83,
+      "elapsed_ms": 57.57,
       "separation": null
     },
     {
@@ -374,7 +374,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 59.61,
+      "elapsed_ms": 62.19,
       "separation": null
     },
     {
@@ -427,7 +427,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.23,
+      "elapsed_ms": 57.73,
       "separation": null
     },
     {
@@ -478,7 +478,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 57.13,
+      "elapsed_ms": 65.8,
       "separation": null
     },
     {
@@ -529,7 +529,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 55.27,
+      "elapsed_ms": 59.92,
       "separation": null
     },
     {
@@ -586,7 +586,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 53.63,
+      "elapsed_ms": 61.86,
       "separation": null
     },
     {
@@ -637,7 +637,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.32,
+      "elapsed_ms": 58.39,
       "separation": null
     },
     {
@@ -688,7 +688,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 47.98,
+      "elapsed_ms": 66.38,
       "separation": null
     },
     {
@@ -739,7 +739,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 52.21,
+      "elapsed_ms": 62.78,
       "separation": null
     },
     {
@@ -792,7 +792,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 52.45,
+      "elapsed_ms": 62.12,
       "separation": null
     },
     {
@@ -843,7 +843,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 57.84,
+      "elapsed_ms": 52.8,
       "separation": null
     },
     {
@@ -894,7 +894,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 53.08,
+      "elapsed_ms": 65.77,
       "separation": null
     },
     {
@@ -947,7 +947,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 47.29,
+      "elapsed_ms": 56.49,
       "separation": null
     },
     {
@@ -998,7 +998,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 49.22,
+      "elapsed_ms": 59.77,
       "separation": null
     },
     {
@@ -1060,7 +1060,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.74,
+      "elapsed_ms": 52.85,
       "separation": null
     },
     {
@@ -1076,24 +1076,27 @@
         "4cf9c8f3-2805-565c-b146-a8f739c2a846",
         "c5be3eae-f6c7-5324-9361-60d425d3ca1d",
         "574c0df0-1d27-5ae8-90ee-69a0647294e5",
-        "a29b5263-7a10-579f-abec-3e0291f93474"
+        "a29b5263-7a10-579f-abec-3e0291f93474",
+        "c7311aad-de5f-514b-8887-d3f78e8ce3ec"
       ],
       "hits": [
+        "c7311aad-de5f-514b-8887-d3f78e8ce3ec",
         "c5be3eae-f6c7-5324-9361-60d425d3ca1d",
         "4cf9c8f3-2805-565c-b146-a8f739c2a846",
         "574c0df0-1d27-5ae8-90ee-69a0647294e5"
       ],
-      "precision": 0.6,
-      "recall": 0.75,
-      "f1": 0.666667,
-      "reciprocal_rank": 0.5,
-      "precision_at_r": 0.5,
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1": 0.8,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 0.8,
       "query": "What do I grow and look after on the allotment?",
       "expected_slugs": [
         "allotmentplot",
         "runnerbeans",
         "greenhouse",
-        "compostbin"
+        "compostbin",
+        "allotmentsummary"
       ],
       "retrieved_slugs": [
         "allotmentsummary",
@@ -1109,6 +1112,7 @@
       "forbidden_slugs": [],
       "forbidden_resurfaced": [],
       "target_found_via": [
+        "keyword",
         "semantic"
       ],
       "path_counts": {
@@ -1120,7 +1124,367 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.59,
+      "elapsed_ms": 55.03,
+      "separation": null
+    },
+    {
+      "query_id": "v2-011",
+      "retrieved": [
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c",
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb"
+      ],
+      "expected": [
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465"
+      ],
+      "hits": [
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 0.5,
+      "precision_at_r": 0.0,
+      "query": "Which lens do I use when I am not shooting portraits?",
+      "expected_slugs": [
+        "lens35"
+      ],
+      "retrieved_slugs": [
+        "lens85",
+        "lens35",
+        "tripod",
+        "lenscap",
+        "commute"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 55.86,
+      "separation": null
+    },
+    {
+      "query_id": "v2-012",
+      "retrieved": [
+        "2830eebb-5ca5-5216-a8c4-94e48b572404",
+        "42578918-6ca9-5dae-820c-c3be52d43859",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "98722456-c135-5ed8-b53a-2696ad15438c",
+        "c7311aad-de5f-514b-8887-d3f78e8ce3ec"
+      ],
+      "expected": [
+        "42578918-6ca9-5dae-820c-c3be52d43859",
+        "98722456-c135-5ed8-b53a-2696ad15438c"
+      ],
+      "hits": [
+        "42578918-6ca9-5dae-820c-c3be52d43859",
+        "98722456-c135-5ed8-b53a-2696ad15438c"
+      ],
+      "precision": 0.4,
+      "recall": 1.0,
+      "f1": 0.571429,
+      "reciprocal_rank": 0.5,
+      "precision_at_r": 0.5,
+      "query": "Which of my tools are not kept in the shed?",
+      "expected_slugs": [
+        "chisels",
+        "workbench"
+      ],
+      "retrieved_slugs": [
+        "shedtools",
+        "chisels",
+        "lenscap",
+        "workbench",
+        "allotmentsummary"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 64.33,
+      "separation": null
+    },
+    {
+      "query_id": "v2-013",
+      "retrieved": [
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5",
+        "22284a05-c5bf-590c-afba-149d19c20f7e",
+        "42578918-6ca9-5dae-820c-c3be52d43859",
+        "cbf52f37-a0df-5e28-a99a-c5672b530beb",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c"
+      ],
+      "expected": [
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5"
+      ],
+      "hits": [
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "What is going to crack if I leave it until the cold weather?",
+      "expected_slugs": [
+        "greenhouse"
+      ],
+      "retrieved_slugs": [
+        "greenhouse",
+        "tiles",
+        "chisels",
+        "flat",
+        "lenscap"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 61.99,
+      "separation": null
+    },
+    {
+      "query_id": "v2-014",
+      "retrieved": [
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "52a99631-07ac-5a39-8a80-e915ec247888",
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c"
+      ],
+      "expected": [
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c"
+      ],
+      "hits": [
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 1.0,
+      "precision_at_r": 1.0,
+      "query": "Which piece of my camera kit is incomplete?",
+      "expected_slugs": [
+        "lenscap"
+      ],
+      "retrieved_slugs": [
+        "lenscap",
+        "compactcam",
+        "lens35",
+        "tripod",
+        "lens85"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 53.58,
+      "separation": null
+    },
+    {
+      "query_id": "v2-015",
+      "retrieved": [
+        "05d2608d-9ce6-5163-806e-8c3f2fe38465",
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "43f75c56-fb66-5e62-b24c-d4bdab25acf3",
+        "52a99631-07ac-5a39-8a80-e915ec247888"
+      ],
+      "expected": [
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c"
+      ],
+      "hits": [
+        "e9ee30b5-2a56-5447-bb29-f3173d69865c"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 0.5,
+      "precision_at_r": 0.0,
+      "query": "Which camera lens do I use least often?",
+      "expected_slugs": [
+        "lens85"
+      ],
+      "retrieved_slugs": [
+        "lens35",
+        "lens85",
+        "lenscap",
+        "tripod",
+        "compactcam"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 56.16,
+      "separation": null
+    },
+    {
+      "query_id": "v2-016",
+      "retrieved": [
+        "574c0df0-1d27-5ae8-90ee-69a0647294e5",
+        "3abc0ad8-9a0b-56a5-b0fa-7b273e1bfa3c",
+        "a29b5263-7a10-579f-abec-3e0291f93474",
+        "22284a05-c5bf-590c-afba-149d19c20f7e",
+        "2830eebb-5ca5-5216-a8c4-94e48b572404"
+      ],
+      "expected": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e"
+      ],
+      "hits": [
+        "22284a05-c5bf-590c-afba-149d19c20f7e"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 0.25,
+      "precision_at_r": 0.0,
+      "query": "What have I already given up on repairing?",
+      "expected_slugs": [
+        "tiles"
+      ],
+      "retrieved_slugs": [
+        "greenhouse",
+        "lenscap",
+        "compostbin",
+        "tiles",
+        "shedtools"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 58.28,
+      "separation": null
+    },
+    {
+      "query_id": "v2-017",
+      "retrieved": [
+        "152771fc-dcbd-5611-b4ba-28421ecfaf32",
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3",
+        "e9095d02-b2e3-54db-9e93-ea28c6708392",
+        "bd62632a-8b64-5041-a84e-94b5be12b4eb",
+        "a82310fe-e4ea-5322-811e-b348cecbcb98"
+      ],
+      "expected": [
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3"
+      ],
+      "hits": [
+        "bce26031-6aba-5bed-b619-8fdbb5639ea3"
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.333333,
+      "reciprocal_rank": 0.5,
+      "precision_at_r": 0.0,
+      "query": "Which club do I go to that is not about chess?",
+      "expected_slugs": [
+        "astroclub"
+      ],
+      "retrieved_slugs": [
+        "chessclub",
+        "astroclub",
+        "openmic",
+        "commute",
+        "dentist"
+      ],
+      "path_expectation": "any",
+      "path_expectation_met": true,
+      "tier": "v2_new",
+      "lifecycle_state": null,
+      "forbidden_slugs": [],
+      "forbidden_resurfaced": [],
+      "target_found_via": [
+        "semantic"
+      ],
+      "path_counts": {
+        "semantic": 5,
+        "keyword": 0
+      },
+      "contributed_paths": [
+        "semantic"
+      ],
+      "degraded": {},
+      "elapsed_ms": 59.81,
       "separation": null
     }
   ]

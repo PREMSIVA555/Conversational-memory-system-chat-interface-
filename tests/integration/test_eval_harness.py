@@ -294,9 +294,49 @@ def test_v2_new_queries_are_not_saturated(eval_run_v2, v2_out):
     new = payload["aggregate_by_tier"]["v2_new"]
 
     assert new["queries"] >= 8, "v2 added too few queries to characterise anything"
+
+    # ---- the structural assertion, and the reason this test was rewritten ---
+    #
+    # The aggregate check below used to be the whole test, and two independent
+    # verifications made the same criticism of it: the tier was scoring under
+    # 1.0 only because two queries labelled 5 and 4 expected answers while the
+    # retriever returns 5 results. That is ARITHMETIC, not difficulty. A suite
+    # can satisfy an aggregate threshold purely by labelling more documents per
+    # query, without a single hard question in it — the exact gameable property
+    # `run_eval.py`'s own NOTE warns about for macro precision.
+    #
+    # So the real assertion is about SINGLE-ANSWER queries. With one expected
+    # row, `reciprocal_rank < 1.0` can only mean the retriever ranked something
+    # else above the right answer. No labelling choice can manufacture that.
+    rows = payload["queries"]
+    single_answer = [q for q in rows if q.get("tier") == "v2_new" and len(q["expected"]) == 1]
+    misranked = [q for q in single_answer if q["reciprocal_rank"] < 1.0]
+
+    assert len(misranked) >= 3, (
+        "fewer than three single-answer v2 queries have their answer below rank 1, so this "
+        "suite is not measuring ranking difficulty. Aggregate scores under 1.0 can be "
+        "produced by labelling more answers per query than the retriever returns; only a "
+        "single-answer query ranked below 1 proves something was preferred over the right "
+        "row. Add queries whose obvious lexical match is deliberately WRONG — negation "
+        "('which lens do I use when NOT shooting portraits') is this retriever's reliable "
+        "blind spot, since naming a row to exclude it promotes it to first place. "
+        f"Currently misranked: {[q['query_id'] for q in misranked]}"
+    )
+
+    # At least one answer should sit well down the list, not merely at rank 2.
+    # A suite where every miss is off-by-one cannot distinguish a small ranking
+    # change from a large one.
+    deep = [q for q in single_answer if q["reciprocal_rank"] <= 0.25]
+    assert deep, (
+        "no single-answer v2 query has its answer at rank 4 or worse. Every miss is "
+        "off-by-one, so the suite cannot tell a small ranking regression from a large "
+        f"one. Ranks: {sorted(round(1 / q['reciprocal_rank']) for q in misranked)}"
+    )
+
+    # The aggregate, kept as a floor rather than as the primary signal.
     assert new["mean_precision_at_r"] < 1.0 or new["mrr"] < 1.0, (
         "every new v2 query scored perfectly, so the suite is bigger but not "
-        f"harder: {new}. Add near-miss distractors or multi-answer queries."
+        f"harder: {new}."
     )
     # ...but not so hard that it is simply broken. A tier scoring near zero
     # means the labels are wrong, not that retrieval is bad.
