@@ -671,8 +671,41 @@ async def run(
 
     out = out_path or (ROOT / "evals" / "results" / f"{suite}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
+
+    # Say loudly when this run has just rewritten a file that other runs gate
+    # against.
+    #
+    # The test suite no longer does this — it writes to a temp directory — but
+    # the bare CLI still does, by design: it is how a baseline gets created in
+    # the first place. The residual hazard is commit discipline. An eval run
+    # leaves the baseline dirty in the working tree, and the next `git add -A`
+    # sweeps it into whatever commit happens to be in progress. That is not
+    # hypothetical: during M8's third verification a docs commit quietly
+    # carried a verifier's eval artifact along with it.
+    #
+    # A regenerated baseline is not wrong. A regenerated baseline committed
+    # WITHOUT noticing is how a live regression becomes the new reference and
+    # the gate goes quiet for good. So name the file and let a human decide.
+    clobbered_a_baseline = (
+        out_path is None
+        and out.exists()
+        and out.name in set(DEFAULT_BASELINES.values())
+    )
+
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(f"wrote baseline -> {out}")
+
+    if clobbered_a_baseline:
+        print(
+            f"\n    NOTE: {out.name} is the baseline other suites gate against, and this"
+            f"\n    run has just overwritten it. That is correct when you MEAN to move the"
+            f"\n    baseline. If you did not, restore it before committing:"
+            f"\n"
+            f"\n        git checkout evals/results/{out.name}"
+            f"\n"
+            f"\n    Committing a regenerated baseline is how a real regression becomes the"
+            f"\n    new reference and the gate silently stops catching it."
+        )
 
     # Exit codes are a contract:
     #   0 = suite ran, every query behaved as labelled, nothing regressed

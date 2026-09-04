@@ -50,8 +50,24 @@ async def test_paths_run_concurrently(monkeypatch):
     implementation fails. The two delays are deliberately different so
     max(a, b) and a + b are far apart and the assertion cannot pass by accident.
     """
-    semantic_delay = 0.30
-    keyword_delay = 0.20
+    # Scaled up from 0.30/0.20 after a real false failure.
+    #
+    # The assertion below is a RELATIVE one — elapsed must land nearer max(a, b)
+    # than a + b — so the whole margin was (0.50 - 0.30) / 2 = 0.10s. Any
+    # scheduling delay above that flips the verdict, and on a machine also
+    # running a dev server and a browser it did: this test failed in a full-suite
+    # run and passed on its own moments later.
+    #
+    # Tripling the delays leaves the ratio (and therefore what is being tested)
+    # identical while tripling the absolute slack to 0.30s, which is far larger
+    # than any plausible event-loop hiccup. It costs 0.6s of wall clock.
+    #
+    # The alternative — loosening the assertion — would have weakened the one
+    # test that catches a sequential `await a; await b` implementation. This is
+    # the same class of defect as the audit-order test whose verdict depended on
+    # the query plan: the code was right, the measurement was too tight.
+    semantic_delay = 0.90
+    keyword_delay = 0.60
 
     async def slow_semantic(query):
         await asyncio.sleep(semantic_delay)

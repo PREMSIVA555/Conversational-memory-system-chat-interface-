@@ -33,8 +33,25 @@ function memory(id: string, content: string, extra: Record<string, unknown> = {}
 const ID_A = "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa";
 const ID_B = "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb";
 
+/**
+ * Give the browser a remembered subject.
+ *
+ * The panel reads its identity from `localStorage` (see `lib/identity.ts`),
+ * because the backend mints the subject on the first CHAT turn and `/memories`
+ * is a separate route with its own component tree. Without this the page
+ * correctly renders "no conversation yet on this browser" and never calls the
+ * API at all — so a spec that forgets it is testing the empty state by
+ * accident.
+ */
+async function withSubject(page: Page): Promise<void> {
+  await page.addInitScript((subject: string) => {
+    window.localStorage.setItem("memory-system.subject-id", subject);
+  }, SUBJECT);
+}
+
 /** Serve a fixed list from `GET /api/memories`. */
 async function mockList(page: Page, rows: ReturnType<typeof memory>[]) {
+  await withSubject(page);
   await page.route("**/api/memories?**", async (route: Route) => {
     if (route.request().method() !== "GET") return route.fallback();
     await route.fulfill({
@@ -220,6 +237,7 @@ test("a failed load shows an error state with a retry that works", async ({ page
       body: JSON.stringify([memory(ID_A, "Recovered.")]),
     });
   };
+  await withSubject(page);
   await page.route("**/api/memories?**", handler);
   await page.route("**/api/memories", handler);
 
@@ -228,4 +246,26 @@ test("a failed load shows an error state with a retry that works", async ({ page
 
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByTestId("memory-content").first()).toContainText("Recovered.");
+});
+
+
+test("a browser that has never chatted is told so, not shown an error", async ({ page }) => {
+  // No subject in storage. The panel must NOT call the API and must NOT render
+  // the error state: `GET /memories/me` with no identity answers
+  // 400 "subject_id is required", and showing that blames the backend for a
+  // browser that has simply never had a conversation.
+  let called = false;
+  await page.route("**/api/memories**", async (route: Route) => {
+    called = true;
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+
+  await page.goto("/memories");
+
+  const notice = page.getByTestId("memories-no-identity");
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText("No conversation yet");
+  await expect(page.getByTestId("memories-error")).toHaveCount(0);
+  await expect(page.getByTestId("memories-empty")).toHaveCount(0);
+  expect(called, "the panel called the API with no identity to send").toBe(false);
 });

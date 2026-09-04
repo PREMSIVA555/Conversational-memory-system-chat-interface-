@@ -32,6 +32,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { ChatError, streamChat } from "@/lib/api";
+import { readSubjectId, writeSubjectId } from "@/lib/identity";
 import type { StreamMetadata } from "@/lib/stream";
 
 interface Turn {
@@ -88,6 +89,15 @@ export default function ChatView() {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns, pending, failure]);
 
+  // Adopt any subject this browser already has, so a reload keeps talking to
+  // the same memories instead of silently starting a new identity. Read in an
+  // effect rather than in `useState`'s initialiser: `localStorage` does not
+  // exist during prerender, and touching it there breaks the build.
+  useEffect(() => {
+    const remembered = readSubjectId();
+    if (remembered) setSubjectId(remembered);
+  }, []);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -122,7 +132,14 @@ export default function ChatView() {
             // Fires once, before the first chunk. The backend mints a
             // subject_id on the first turn; adopt it so every later turn in
             // this session lands under the same subject.
-            if (metadata.subjectId) setSubjectId(metadata.subjectId);
+            if (metadata.subjectId) {
+              setSubjectId(metadata.subjectId);
+              // Persist it so `/memories` — a separate route with its own
+              // component tree — can ask about the same subject. Without this
+              // the panel has no identity to send and the backend correctly
+              // answers 400.
+              writeSubjectId(metadata.subjectId);
+            }
             patch({
               degraded: metadata.degraded,
               degradedReason: metadata.degradedReason,

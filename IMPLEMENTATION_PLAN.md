@@ -12,21 +12,24 @@ Scope: **general conversational memory only** — single-user, self-service. One
 - **A checked box from Claude is not completion.** It is a claim. It means "Claude believes this is done."
 - **The user verifies independently.** Before a milestone counts as complete, the user personally runs every command in that milestone's *Definition of Done* section, on their own machine, and compares the actual output to the stated expected output.
 - **Only the user checks the sign-off line.** Each milestone ends with `**Milestone signed off by user on:** _____________`. Claude never fills that in. Filling it in means the user ran the commands and saw the expected results with their own eyes.
-- **Update the status table** at the top when a milestone is signed off, so there is a quick-glance view of where the project stands.
+- **Update the status table** at the top as a milestone moves, so there is a quick-glance view of
+  where the project stands. It tracks *verification*, which Claude can grant; the sign-off line
+  inside each milestone tracks *your* approval, which it cannot. A row saying "verified" is never
+  a claim that you have signed anything.
 - Milestones are strictly ordered — each one's *Prerequisites checklist* names the specific prior artifacts it depends on. Do not start a milestone whose prerequisites are unchecked.
 
 ## Milestone status
 
 | Milestone | One-line outcome | Status |
 | --- | --- | --- |
-| M1 | Docker infra (Postgres+pgvector, Redis, MinIO, Prometheus, Grafana), core tables with HNSW+GIN+RLS, FastAPI `/health`, LiteLLM wrapper | Not started |
-| M2 | LangGraph capture graph: extract → PII filter → evaluate → embed → dedup → write, running async off the critical path | Not started |
-| M3 | Hybrid retrieval (pgvector HNSW + tsvector/GIN in parallel) plus a seeded golden-set eval harness | Not started |
-| M4 | Weighted ranking node and a token-bounded context composer that drops lowest-scored memories first | Not started |
-| M5 | Streaming response graph with a Redis-backed circuit breaker and graceful memory-less fallback | Not started |
-| M6 | Next.js real-time chat UI and memory management panel | Not started |
-| M7 | Governance: append-only audit log, curated view, soft-delete, GDPR export | Not started |
-| M8 | Distributed decay job (`FOR UPDATE SKIP LOCKED`), reflection agent, expanded evals vs. the M3 baseline | Not started |
+| M1 | Docker infra (Postgres+pgvector, Redis, MinIO, Prometheus, Grafana), core tables with HNSW+GIN+RLS, FastAPI `/health`, LiteLLM wrapper | Verified by a cold agent — **awaiting your sign-off** |
+| M2 | LangGraph capture graph: extract → PII filter → evaluate → embed → dedup → write, running async off the critical path | Verified by a cold agent — **awaiting your sign-off** |
+| M3 | Hybrid retrieval (pgvector HNSW + tsvector/GIN in parallel) plus a seeded golden-set eval harness | Verified (failed once, reworked) — **awaiting your sign-off** |
+| M4 | Weighted ranking node and a token-bounded context composer that drops lowest-scored memories first | Verified by a cold agent — **awaiting your sign-off** |
+| M5 | Streaming response graph with a Redis-backed circuit breaker and graceful memory-less fallback | Verified (failed once, reworked) — **awaiting your sign-off** |
+| M6 | Next.js real-time chat UI and memory management panel | Frontend built, 15 mocked e2e pass — live e2e not yet run, unverified |
+| M7 | Governance: append-only audit log, curated view, soft-delete, GDPR export | Verified by a cold agent — **awaiting your sign-off** |
+| M8 | Distributed decay job (`FOR UPDATE SKIP LOCKED`), reflection agent, expanded evals vs. the M3 baseline | 9/10 DoD verified on the third cold pass — blocked on the DoD-6 amendment below |
 
 ---
 

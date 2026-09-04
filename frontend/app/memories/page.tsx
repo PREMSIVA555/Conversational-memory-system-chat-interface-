@@ -27,14 +27,16 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { ChatError } from "@/lib/api";
+import { readSubjectId } from "@/lib/identity";
 import {
   deleteMemory,
   listMemories,
   updateMemory,
+  type Identity,
   type Memory,
 } from "@/lib/memories";
 
-type LoadState = "loading" | "ready" | "error";
+type LoadState = "loading" | "ready" | "error" | "no-identity";
 
 interface Notice {
   kind: "error" | "info";
@@ -73,8 +75,22 @@ export default function MemoriesPage() {
 
   const load = useCallback(async () => {
     setState("loading");
+
+    // Which subject's memories? The backend mints the id on the first chat turn
+    // and this route has its own component tree, so the id travels through
+    // localStorage — see `lib/identity.ts`. Without one there is nothing
+    // meaningful to ask for: `GET /memories/me` would answer 400, and rendering
+    // that as an error blames the backend for a browser that has simply never
+    // had a conversation.
+    const subjectId = readSubjectId();
+    if (!subjectId) {
+      setState("no-identity");
+      return;
+    }
+    const identity: Identity = { subjectId };
+
     try {
-      const page = await listMemories({ limit: 100 });
+      const page = await listMemories({ limit: 100, identity });
       setMemories(page.memories);
       setTotal(page.total);
       setState("ready");
@@ -93,6 +109,12 @@ export default function MemoriesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** The stored identity, shaped for the client helpers. */
+  function identityOrUndefined(): Identity | undefined {
+    const subjectId = readSubjectId();
+    return subjectId ? { subjectId } : undefined;
+  }
 
   function markBusy(id: string, isBusy: boolean) {
     setBusy((current) => {
@@ -114,7 +136,7 @@ export default function MemoriesPage() {
     markBusy(memory.id, true);
 
     try {
-      await deleteMemory(memory.id);
+      await deleteMemory(memory.id, identityOrUndefined());
     } catch (cause) {
       const status = cause instanceof ChatError ? cause.status : undefined;
       if (status === 404) {
@@ -169,7 +191,7 @@ export default function MemoriesPage() {
     markBusy(memory.id, true);
 
     try {
-      const updated = await updateMemory(memory.id, content);
+      const updated = await updateMemory(memory.id, content, identityOrUndefined());
       // Adopt the server's row: it carries the new `updated_at`, and the
       // backend is the authority on what was actually stored.
       setMemories((current) =>
@@ -228,6 +250,23 @@ export default function MemoriesPage() {
           <button type="button" onClick={() => void load()}>
             Try again
           </button>
+        </div>
+      ) : null}
+
+      {state === "no-identity" ? (
+        /*
+          Distinct from "no memories". This browser has never had a
+          conversation, so there is no subject to ask about — a different fact
+          from "this subject has nothing stored", and it wants a different
+          answer.
+        */
+        <div className="empty" data-testid="memories-no-identity">
+          <p>No conversation yet on this browser.</p>
+          <p>
+            Memories are stored against a subject that the backend creates on your first
+            chat turn. Say something on the <Link href="/">chat page</Link> and this panel
+            will show what gets remembered.
+          </p>
         </div>
       ) : null}
 
