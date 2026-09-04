@@ -348,26 +348,38 @@ M6 gives the system a face: a Next.js chat view that renders streamed tokens inc
 ### Prerequisites checklist
 
 - [ ] M5 is signed off; the chat endpoint streams token chunks
-- [ ] Node 20+ and npm are installed
+- [x] Node 20+ and npm are installed
 - [ ] The backend is reachable from the frontend dev server (CORS configured)
-- [ ] A decision is recorded on whether M7 has landed — if not, the governance endpoints will be stubbed
+- [x] A decision is recorded on whether M7 has landed — if not, the governance endpoints will be stubbed
 
 ### Implementation steps
 
-1. - [ ] Scaffold `frontend/` as a Next.js app (App Router, TypeScript) with the API base URL read from an env var
-2. - [ ] Add `frontend/lib/api.ts` — typed client functions: `sendChat` (streaming), `listMemories`, `updateMemory`, `deleteMemory`, `exportMemories`
-3. - [ ] Add `frontend/lib/stream.ts` — a reader that consumes the SSE/chunked response and emits token chunks plus the leading metadata event (`degraded`, `memory_ids`)
-4. - [ ] Build `frontend/app/chat/page.tsx` — the chat view: message list, composer input, send handler
-5. - [ ] Implement incremental rendering: append each received chunk to the in-progress assistant message so text visibly grows, rather than buffering and painting once at the end
-6. - [ ] Add a visible "answering without memory" indicator driven by the `degraded` metadata flag from M5
-7. - [ ] Build `frontend/app/memories/page.tsx` — the memory management panel listing rows with content, importance, source, and created date
-8. - [ ] Implement inline edit on a memory row, calling `updateMemory` and reflecting the change optimistically with rollback on failure
-9. - [ ] Implement delete on a memory row, calling `deleteMemory` and removing the row from the list **without a full page reload**
-10. - [ ] If M7 has not landed: add `frontend/mocks/governance.ts` with the same response shapes as the real endpoints and a single flag that switches between mock and live; if M7 has landed, wire directly to the real endpoints and delete the flag
-11. - [ ] Add loading, empty, and error states for both views (empty memory list must render a clear empty state, not a blank page)
+1. - [x] Scaffold `frontend/` as a Next.js app (App Router, TypeScript) with the API base URL read from an env var
+2. - [x] Add `frontend/lib/api.ts` — typed client functions: `sendChat` (streaming), `listMemories`, `updateMemory`, `deleteMemory`, `exportMemories`
+3. - [x] Add `frontend/lib/stream.ts` — a reader that consumes the SSE/chunked response and emits token chunks plus the leading metadata event (`degraded`, `memory_ids`)
+4. - [x] Build `frontend/app/chat/page.tsx` — the chat view: message list, composer input, send handler
+5. - [x] Implement incremental rendering: append each received chunk to the in-progress assistant message so text visibly grows, rather than buffering and painting once at the end
+6. - [x] Add a visible "answering without memory" indicator driven by the `degraded` metadata flag from M5
+7. - [x] Build `frontend/app/memories/page.tsx` — the memory management panel listing rows with content, importance, source, and created date
+8. - [x] Implement inline edit on a memory row, calling `updateMemory` and reflecting the change optimistically with rollback on failure
+9. - [x] Implement delete on a memory row, calling `deleteMemory` and removing the row from the list **without a full page reload**
+10. - [x] If M7 has not landed: add `frontend/mocks/governance.ts` with the same response shapes as the real endpoints and a single flag that switches between mock and live; if M7 has landed, wire directly to the real endpoints and delete the flag
+11. - [x] Add loading, empty, and error states for both views (empty memory list must render a clear empty state, not a blank page)
 12. - [ ] Add `frontend/playwright.config.ts` and an e2e setup that boots the backend fixtures, seeds at least one memory, and runs headless
+      <!-- PARTIAL. playwright.config.ts exists with two projects (mocked / live) and runs
+           headless. What is NOT built is the fixture bootstrap: the live specs assume a
+           seeded corpus and skip when they find none, rather than seeding one themselves.
+           Left unticked deliberately - a spec that skips when its precondition is absent
+           reports success while testing nothing, which is the failure mode this project
+           keeps finding. -->
 13. - [ ] Add `npm run test:e2e` and confirm `npm run build` passes with no type errors
-14. - [ ] Add basic accessible markup: labelled inputs, a live region for streamed output, keyboard-operable delete/edit controls
+      <!-- HALF DONE. `npm run build` passes: 8 routes, zero TypeScript errors, and all four
+           API routes compile as dynamic so nothing fetches the backend at build time.
+           `npm run test:e2e` exists and runs both projects - but only the 14 mocked specs
+           have ever been executed (all pass, 45s). The live project has never run, because
+           it needs the stack up and an M8 verification held the database and both provider
+           quotas while this was built. Unticked until the live run happens. -->
+14. - [x] Add basic accessible markup: labelled inputs, a live region for streamed output, keyboard-operable delete/edit controls
 
 ### Test cases
 

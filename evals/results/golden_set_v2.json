@@ -1,6 +1,6 @@
 {
   "suite": "golden_set_v2",
-  "generated_at": "2026-09-02T17:21:19.779270+00:00",
+  "generated_at": "2026-09-04T03:00:22.493342+00:00",
   "top_k": 5,
   "subject_id": "93e6200f-ff8f-5502-98fb-a4643a815412",
   "corpus_size": 63,
@@ -145,7 +145,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 71.64,
+      "elapsed_ms": 70.4,
       "separation": {
         "corpus_size": 62,
         "target_id": "9b0c91e2-ba9d-51d1-99bf-1c6f4e3a91b2",
@@ -206,7 +206,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 47.8,
+      "elapsed_ms": 50.15,
       "separation": {
         "corpus_size": 62,
         "target_id": "22284a05-c5bf-590c-afba-149d19c20f7e",
@@ -268,7 +268,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 47.75,
+      "elapsed_ms": 52.55,
       "separation": null
     },
     {
@@ -321,7 +321,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 52.23,
+      "elapsed_ms": 50.83,
       "separation": null
     },
     {
@@ -374,7 +374,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.75,
+      "elapsed_ms": 59.61,
       "separation": null
     },
     {
@@ -427,7 +427,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.81,
+      "elapsed_ms": 51.23,
       "separation": null
     },
     {
@@ -478,7 +478,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 50.94,
+      "elapsed_ms": 57.13,
       "separation": null
     },
     {
@@ -529,7 +529,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 52.58,
+      "elapsed_ms": 55.27,
       "separation": null
     },
     {
@@ -586,7 +586,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 55.42,
+      "elapsed_ms": 53.63,
       "separation": null
     },
     {
@@ -637,7 +637,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 52.18,
+      "elapsed_ms": 51.32,
       "separation": null
     },
     {
@@ -688,7 +688,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.37,
+      "elapsed_ms": 47.98,
       "separation": null
     },
     {
@@ -739,7 +739,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 48.16,
+      "elapsed_ms": 52.21,
       "separation": null
     },
     {
@@ -792,7 +792,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.07,
+      "elapsed_ms": 52.45,
       "separation": null
     },
     {
@@ -843,7 +843,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 48.01,
+      "elapsed_ms": 57.84,
       "separation": null
     },
     {
@@ -894,7 +894,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.75,
+      "elapsed_ms": 53.08,
       "separation": null
     },
     {
@@ -947,7 +947,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 48.18,
+      "elapsed_ms": 47.29,
       "separation": null
     },
     {
@@ -998,7 +998,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 51.81,
+      "elapsed_ms": 49.22,
       "separation": null
     },
     {
@@ -1060,7 +1060,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 47.69,
+      "elapsed_ms": 51.74,
       "separation": null
     },
     {
@@ -1120,7 +1120,7 @@
         "semantic"
       ],
       "degraded": {},
-      "elapsed_ms": 48.78,
+      "elapsed_ms": 51.59,
       "separation": null
     }
   ]
