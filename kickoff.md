@@ -35,7 +35,7 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | 📋 | frontend built, 14 mocked e2e pass; **live e2e not yet run**, no verifier yet |
-| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | failed cold verification **three times** (8/10, 8/10, 9/10); DoD 6 amended by the user, all 44 boxes now ticked, awaiting a fourth |
+| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | ✅ | independent agent — **10/10 on the fourth pass**, after failing 8/10, 8/10, 9/10; 3 blockers + 9 defects closed |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
 and M7 runs before M6 so the memory panel wires real endpoints instead of mocks.*
