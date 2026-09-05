@@ -27,7 +27,7 @@ Scope: **general conversational memory only** — single-user, self-service. One
 | M3 | Hybrid retrieval (pgvector HNSW + tsvector/GIN in parallel) plus a seeded golden-set eval harness | Verified (failed once, reworked) — **awaiting your sign-off** |
 | M4 | Weighted ranking node and a token-bounded context composer that drops lowest-scored memories first | Verified by a cold agent — **awaiting your sign-off** |
 | M5 | Streaming response graph with a Redis-backed circuit breaker and graceful memory-less fallback | Verified (failed once, reworked) — **awaiting your sign-off** |
-| M6 | Next.js real-time chat UI and memory management panel | Frontend built, 15 mocked e2e pass — live e2e not yet run, unverified |
+| M6 | Next.js real-time chat UI and memory management panel | Verified by a cold agent — 20 e2e (17 mocked + 3 live) — **awaiting your sign-off** |
 | M7 | Governance: append-only audit log, curated view, soft-delete, GDPR export | Verified by a cold agent — **awaiting your sign-off** |
 | M8 | Distributed decay job (`FOR UPDATE SKIP LOCKED`), reflection agent, expanded evals vs. the M3 baseline | 9/10 DoD verified on the third cold pass — blocked on the DoD-6 amendment below |
 
@@ -395,7 +395,9 @@ M6 gives the system a face: a Next.js chat view that renders streamed tokens inc
 13. - [x] Add `npm run test:e2e` and confirm `npm run build` passes with no type errors
       <!-- NOW COMPLETE. `npm run build`: 8 routes, zero TypeScript errors, all four API
            routes dynamic so nothing fetches the backend at build time. `npm run test:e2e`
-           runs both projects: 18 passed (15 mocked + 3 live) against the real stack. -->
+           runs both projects: 20 passed (17 mocked + 3 live) against the real stack,
+           and 6/6 under `--project=live --repeat-each=2`, which is the run that used to
+           produce 2 failures from a positional assertion and a sampling race. -->
 14. - [x] Add basic accessible markup: labelled inputs, a live region for streamed output, keyboard-operable delete/edit controls
 
 ### Test cases

@@ -34,7 +34,7 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M4 | Weighted ranking + token-bounded context composer | W3 | ✅ | independent agent — 7/7 DoD, 12/12 tests; 4 defects closed |
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
-| M6 | Next.js real-time chat UI + memory management panel | W6 | 📋 | frontend built, 14 mocked e2e pass; **live e2e not yet run**, no verifier yet |
+| M6 | Next.js real-time chat UI + memory management panel | W6 | ✅ | independent agent — **failed once** (a ticked test that did not exist), fixed, passed re-verification. Its 5 should-fix findings were closed AFTER that pass and are unverified — see below |
 | M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | ✅ | independent agent — **10/10 on the fourth pass**, after failing 8/10, 8/10, 9/10; 3 blockers + 9 defects closed |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
@@ -124,6 +124,34 @@ a live request re-embedding 10 queries it had just discarded. Both now prune aga
 with a test asserting the shape in both places at once.
 
 Full suite after: **191 passed**.
+
+### M6: passed on the second pass, and what was fixed afterwards
+
+The first cold verification **failed M6** on one blocker: `test_inline_edit_persists` was
+ticked in the plan and had never been written — covering `PATCH`, the one mutation with no
+live coverage at all. Writing it immediately paid for itself: its first run failed because it
+reloaded while the PATCH was still re-embedding, and the audit log showed the write
+committing **two seconds after** the reload had already refetched the old text. The app was
+correct; the test was wrong and accused the app.
+
+The second pass **passed it**, and did so the right way — it broke each guarded behaviour and
+watched the test go red. Made PATCH persist nothing: the edit test failed. Stripped the
+`X-Memory-*` headers from the proxy: the live spec failed with its own diagnostic. Made
+`writeSubjectId` a no-op: the identity test failed. None of those fixes were cosmetic.
+
+**Five should-fix findings from that pass were closed afterwards and have NOT been
+independently re-verified.** What I have is measurement, not a cold agent's word:
+
+| Finding | Fix | Evidence |
+| --- | --- | --- |
+| The edit test was still positional, and my write-up wrongly claimed otherwise | tracks the row by text | `--repeat-each=2` → **6/6**, was 2 failed / 4 passed |
+| The live incremental assertion sampled every 200ms and missed fast replies | a `MutationObserver` records every render | same run |
+| `afterAll` reseeding raced async capture (~15s late), so a clean corpus was luck | `scripts/e2e_settle.py` waits for the count to hold steady first | 44 rows / 0 deleted / no `assistant_note` after a full run |
+| `api/chat.py` still said the memory headers were "NOT YET REACHING THE BROWSER" | corrected; a reader would have concluded the feature was unwired | measured `x-memory-count: 5` through the proxy |
+| The plan's status table still called M6 unverified | updated | — |
+
+The honest summary: the milestone passed verification, and then got better in ways nobody
+has checked. If M6 is re-verified for any reason, those five are what to look at first.
 
 ### The third verification, and the amendment that closed it
 

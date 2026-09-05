@@ -68,6 +68,30 @@ test.beforeAll(() => {
   seedFixtureCorpus();
 });
 
+/**
+ * Wait until asynchronous capture has stopped writing, then reseed.
+ *
+ * Reseeding alone is not enough, and a cold verifier proved it: capture runs
+ * ~15s AFTER a reply completes, so it can commit `assistant_note` rows into the
+ * golden-set subject *after* cleanup has already run. The verifier measured
+ * exactly that — `assistant_note | 5` written after the final reseed — so the
+ * clean result the previous run reported was luck, not structure.
+ *
+ * `scripts/e2e_settle.py` polls until the row count holds steady (or gives up
+ * after 45s, exiting 0 either way, because a slow capture is not a reason to
+ * fail a frontend test run). Only then is the corpus reseeded.
+ */
+function settleThenReseed(): void {
+  const python = path.join(REPO_ROOT, ".venv", "Scripts", "python.exe");
+  execFileSync(python, ["scripts/e2e_settle.py"], {
+    cwd: REPO_ROOT,
+    env: { ...process.env, PYTHONPATH: REPO_ROOT, PYTHONIOENCODING: "utf-8" },
+    timeout: 120_000,
+    stdio: "pipe",
+  });
+  seedFixtureCorpus();
+}
+
 test.afterAll(() => {
   // THIS SUITE MUTATES THE M8 EVALUATION CORPUS, and that is not cosmetic.
   //
@@ -82,7 +106,11 @@ test.afterAll(() => {
   // else under the subject, because `seed()` DELETEs by subject before
   // inserting. Cheap: the vectors come from the on-disk cache, so no provider
   // request is made.
-  seedFixtureCorpus();
+  //
+  // But it must WAIT FIRST — see `settleThenReseed`. Capture commits well after
+  // the reply that triggered it, so a bare reseed races writes that have not
+  // happened yet.
+  settleThenReseed();
 });
 
 test.beforeEach(() => {
@@ -118,37 +146,57 @@ test("chat streams and memory panel lists memories", async ({ page }) => {
   const assistant = page.getByTestId("assistant-text");
   await expect(assistant).toBeVisible();
 
-  // Sample while the reply is in flight. The DoD asks for evidence the text
-  // GREW rather than appearing at once.
-  const samples: number[] = [];
-  const deadline = Date.now() + 150_000;
-  let previous = -1;
-  let settled = 0;
-  while (Date.now() < deadline) {
-    const length = ((await assistant.textContent()) ?? "").length;
-    samples.push(length);
-    if (length > 0 && length === previous) {
-      settled += 1;
-      if (settled >= 4) break;
-    } else {
-      settled = 0;
-    }
-    previous = length;
-    await page.waitForTimeout(200);
-  }
+  // OBSERVE EVERY RENDER, do not sample.
+  //
+  // The first version polled `textContent` every 200ms, and a cold verifier
+  // showed that is flaky by construction: against a short fast reply it
+  // recorded `[0, 239]` and failed, even though the UI had rendered
+  // progressively. The reply simply finished between two polls. That is a
+  // FALSE FAILURE about the DoD's headline claim, which is the worst kind of
+  // unreliable evidence to leave in place.
+  //
+  // A MutationObserver installed BEFORE the first chunk records the length at
+  // every DOM update, so no intermediate state can be missed. If the sequence
+  // still shows only 0 -> final, the UI genuinely painted once.
+  await page.evaluate(() => {
+    const w = window as unknown as { __lengths?: number[] };
+    w.__lengths = [];
+    const observer = new MutationObserver(() => {
+      const node = document.querySelector('[data-testid="assistant-text"]');
+      if (node) w.__lengths!.push((node.textContent ?? "").length);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  });
 
-  const distinct = [...new Set(samples)].sort((a, b) => a - b);
+  // Wait for the stream to finish: the component clears data-streaming when the
+  // body ends. Falls back to text simply being present, in case the attribute
+  // is ever renamed.
+  await expect
+    .poll(
+      async () =>
+        ((await assistant.textContent()) ?? "").length > 0 &&
+        (await page.getByTestId("assistant-turn").getAttribute("data-streaming")) === "false",
+      { timeout: 150_000, message: "the assistant reply never completed" },
+    )
+    .toBe(true);
+
+  const lengths: number[] = await page.evaluate(
+    () => (window as unknown as { __lengths: number[] }).__lengths ?? [],
+  );
+  const distinct = [...new Set(lengths)].sort((a, b) => a - b);
   const finalLength = ((await assistant.textContent()) ?? "").length;
-  expect(finalLength, `the assistant produced no text at all; samples=${JSON.stringify(distinct)}`)
+  expect(finalLength, `the assistant produced no text at all; observed ${JSON.stringify(distinct)}`)
     .toBeGreaterThan(0);
 
   // An intermediate length proves incremental rendering. A buffered
-  // implementation only ever shows 0 and then the final length.
-  const intermediate = distinct.filter((v) => v > 0 && v < distinct[distinct.length - 1]);
+  // implementation only ever goes 0 -> final, with nothing in between.
+  const intermediate = distinct.filter((v) => v > 0 && v < finalLength);
   expect(
     intermediate.length,
-    `no partial render observed against the LIVE backend; sampled lengths ${JSON.stringify(distinct)}. ` +
-      "Either the reply arrived in one chunk (short answers can) or the UI is buffering.",
+    `no partial render observed against the LIVE backend. Every DOM update was recorded, ` +
+      `so this is not a sampling artefact: observed lengths ${JSON.stringify(distinct)}, ` +
+      `final ${finalLength}. Either the backend delivered the whole body in one chunk or ` +
+      "the UI is buffering — check the proxy is not awaiting response.text().",
   ).toBeGreaterThanOrEqual(1);
 
   // ---- what the turn reports about memory, asserted so a dropped header
@@ -311,7 +359,18 @@ test("test_inline_edit_persists", async ({ page }) => {
   await page.getByTestId("memory-save").click();
 
   // Optimistic first: the new text appears without waiting for the round trip.
-  await expect(page.getByTestId("memory-content").first()).toHaveText(edited);
+  //
+  // Located by TEXT, not by position. The fix write-up for the delete test
+  // claimed "both panel tests now identify rows by text" — that was FALSE of
+  // this test, and a cold verifier caught it under `--repeat-each=2`: an
+  // `assistant_note` row captured asynchronously by the CHAT test landed after
+  // `beforeEach` had reseeded, took position 1 by `created_at DESC`, and the
+  // positional assertion failed against a perfectly healthy system. (The tell
+  // was the text: the fixture row reads "I have been learning fingerstyle
+  // guitar", the received row read "The user has been learning…" — third
+  // person, i.e. machine-captured.)
+  const editedRow = page.getByTestId("memory-content").filter({ hasText: edited });
+  await expect(editedRow).toHaveCount(1);
 
   const response = await patched;
   expect(
@@ -325,12 +384,17 @@ test("test_inline_edit_persists", async ({ page }) => {
   await expect(page.getByTestId("memories-loading")).toHaveCount(0, { timeout: 60_000 });
 
   await expect(
-    page.getByTestId("memory-content").first(),
+    page.getByTestId("memory-content").filter({ hasText: edited }),
     "the edit did not survive a reload — it was applied optimistically in the browser " +
       "but never persisted through PATCH /memories/{id} to Postgres",
-  ).toHaveText(edited, { timeout: 60_000 });
+  ).toHaveCount(1, { timeout: 60_000 });
 
-  // The edit replaced a row; it did not add or lose one.
-  await expect(rows).toHaveCount(before);
-  await expect(page.getByTestId("memory-content").first()).not.toHaveText(original);
+  // The edit REPLACED content; the original text must be gone. Asserted by
+  // text rather than by comparing counts, because a concurrent capture can add
+  // a row at any moment and `toHaveCount(before)` would then fail for a reason
+  // that has nothing to do with editing.
+  await expect(
+    page.getByTestId("memory-content").filter({ hasText: original }),
+    "the original text is still present — the edit added a row instead of replacing one",
+  ).toHaveCount(0);
 });

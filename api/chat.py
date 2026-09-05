@@ -139,10 +139,21 @@ def _metadata_headers(event: dict[str, Any]) -> dict[str, str]:
     distinguish "no memories" from "the header was truncated by a proxy" without
     parsing.
 
-    NOT YET REACHING THE BROWSER: `frontend/app/api/chat/route.ts` forwards only
-    `X-Subject-Id` and `X-Actor-Id` from the upstream response, so these four are
-    dropped by that proxy today. Adding them to its forward list is M6's change,
-    not this module's.
+    REACHING THE BROWSER SINCE M6. This paragraph used to read "NOT YET REACHING
+    THE BROWSER", because `frontend/app/api/chat/route.ts` forwarded only
+    `X-Subject-Id` and `X-Actor-Id` and dropped these four. M6 added them to that
+    forward list, and a live turn through the proxy now delivers
+    `x-memory-degraded: false` with `x-memory-count: 5` to page JavaScript.
+
+    Two notes for anyone changing that route again. First, the
+    `Access-Control-Expose-Headers` set below does NOT help there: it tells a
+    *browser* which headers to reveal on a cross-origin response, and the proxy
+    is a server-side hop, so headers must be copied across by hand. Satisfying
+    one says nothing about the other. Second, dropping them again fails loudly
+    rather than silently — `frontend/e2e/live/chat_and_memories.spec.ts` asserts
+    a non-zero memory count or a degraded banner carrying its reason, and a
+    stripped header satisfies neither. That assertion exists because an earlier
+    version of it did not, and would have passed with the headers gone.
 
     `X-Memory-Degraded: false` with an empty id list means the memory layer
     worked and found nothing; `true` means it was skipped. See
