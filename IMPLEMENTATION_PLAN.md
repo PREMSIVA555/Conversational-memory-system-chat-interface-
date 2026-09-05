@@ -540,15 +540,34 @@ M8 makes the memory store self-maintaining: a nightly decay graph that ages weig
 - [x] From that test's assertions, confirm **no row was processed twice**
 - [x] Run `python evals/run_eval.py --suite golden_set_v2` → exits 0 (`echo $?` → `0`)
 - [x] From that run's stdout, read the reported precision and recall for `golden_set_v2`
-- [ ] Compare those numbers against `evals/results/golden_set_v1.json` → v2 precision and recall are each **at or above** the M3 baseline, not merely "some number"; the runner prints the explicit delta and pass/fail against the baseline
-      <!-- UNTICKED after cold verification. The runner NOW prints the explicit delta and
-           pass/fail on the bare command (that half is fixed). But the literal comparison
-           still fails: v2's blended recall is 0.9763 against v1's 1.0, because v2 adds
-           harder queries on purpose. It passes only on the nine v1 queries held out
-           inside v2. That is a defensible gate and it is documented in harness.md D17 --
-           but it is NOT what this line says, so the line stays unticked until you decide
-           whether to amend it. Same class as M1's pg_policies line: a defect in the
-           verification command, flagged rather than silently reinterpreted. -->
+- [x] Compare against `evals/results/golden_set_v1.json` → the **nine v1 queries, held out inside v2**, score **at or above** the M3 baseline on recall, MRR and precision@R; the runner prints the explicit per-metric delta and an explicit PASS/FAIL. v2's own new queries are reported beside them as characterization and are **not** gated on this line — they are guarded instead by `test_v2_new_queries_are_not_saturated`, which requires the tier to keep containing genuinely misranked queries
+      <!-- AMENDED BY THE USER on 2026-09-05, after three cold verifications each failed
+           this line as originally written. Recording why, because the original wording is
+           still the honest thing to have started from.
+
+           IT READ: "v2 precision and recall are each at or above the M3 baseline".
+           That cannot be satisfied. The v1 baseline is SATURATED - recall, MRR and
+           precision@R are all exactly 1.0 - so "at or above" demands a perfect score,
+           while step 13 of this same milestone asks the golden set to be expanded with
+           harder queries. Any query hard enough to be worth adding lowers the blended
+           number. The two instructions are in direct conflict, and measured: blended v2
+           recall is 0.9765 against a baseline of 1.0.
+
+           WHAT REPLACED IT is not a weaker test. The nine v1 queries are run again inside
+           v2, against a corpus of 63 rows rather than the 44 they were measured on, which
+           is a strictly harder condition than v1 itself faced - the runner asserts the
+           corpus grew, so this cannot silently become a re-run of a passing suite. It is
+           a like-for-like comparison, which the blended number never was.
+
+           The part the original line was really reaching for - "the new queries must be
+           able to fail" - now lives where it can be enforced. See the guard named above:
+           it requires at least three SINGLE-answer queries ranked below 1 (with one
+           expected row, only the retriever's ranking can cause that; no labelling choice
+           can manufacture it) and at least one answer at rank 4 or worse.
+
+           Same class as M1's pg_policies defect: a fault in the verification command
+           rather than in the implementation, flagged for the user across three rounds and
+           amended only on their say-so. -->
 - [x] Run the full demo command as given: `pytest tests/distributed/test_decay_claims_no_double_process.py && python evals/run_eval.py --suite golden_set_v2` → the whole chain exits 0
 - [x] Manually: `python -m jobs.run --job decay` on a seeded DB → weights visibly decrease (`psql "$DATABASE_URL" -c "select id, weight, archived_at from memories order by weight limit 10"`)
 - [x] Manually: `python -m jobs.run --job reflection` → a new row with `source='reflection'` appears in `memories`

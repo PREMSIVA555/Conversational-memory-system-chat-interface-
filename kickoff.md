@@ -35,7 +35,7 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M5 | Streaming response graph + Redis circuit breaker | W4 | ✅ | **failed once** (dead `NOSCRIPT` fallback), fixed, passed re-verification |
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | 📋 | frontend built, 14 mocked e2e pass; **live e2e not yet run**, no verifier yet |
-| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | **failed cold verification twice** (8/10 each, different lines); blockers fixed, awaiting a third |
+| M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | 📋 | failed cold verification **three times** (8/10, 8/10, 9/10); DoD 6 amended by the user, all 44 boxes now ticked, awaiting a fourth |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
 and M7 runs before M6 so the memory panel wires real endpoints instead of mocks.*
@@ -124,6 +124,43 @@ a live request re-embedding 10 queries it had just discarded. Both now prune aga
 with a test asserting the shape in both places at once.
 
 Full suite after: **191 passed**.
+
+### The third verification, and the amendment that closed it
+
+The third cold pass found **no new implementation blocker**. All three of the previous
+round's fixes held under tests designed to break them — and on the audit-ordering one the
+verifier went further than the claim, reading the EXPLAIN to show that
+`(subject_id, created_at DESC)` *cannot* satisfy `ORDER BY created_at ASC, id ASC`, so
+PostgreSQL is forced to add a sort node and the plan that reversed tied rows is now
+unreachable. Structural immunity, not a test that happens to pass today.
+
+Nine of ten lines passed. The tenth was DoD 6, which **cannot be satisfied as it was
+written** — the v1 baseline is saturated at 1.0, so "at or above" demands perfection while
+the same milestone asks for harder queries. Three separate verifiers reached that conclusion
+independently. The user amended the line on 2026-09-05 to name the nine held-out v1 queries,
+and it now passes literally: same nine queries both sides, all three metrics at or above,
+measured over 63 corpus rows against the baseline's 44.
+
+**And the criticism underneath it was fixed rather than argued with.** Both earlier passes
+noted that v2's new queries were bigger but not harder — 8 of 10 at rank 1, with the only
+sub-1.0 signal coming from label arithmetic. The golden set now contains queries that are
+hard because *ranking* is hard:
+
+| | before | after |
+| --- | --- | --- |
+| new-tier MRR / P@R | 0.9500 / 0.9300 | **0.8382 / 0.7118** |
+| single-answer queries misranked | **0** | **4** |
+| deepest miss | rank 2 | **rank 4** |
+
+The finding that came out of designing them is worth more than the queries: **this retriever
+has no representation of negation.** Naming a row in order to exclude it reliably promotes
+that row to first place — reproduced across three independent queries. It now has a standing
+test.
+
+Two of my four first attempts were solved at rank 1; those are kept, with notes recording
+that the trap failed, because a probe the retriever defeats is a real result about the
+system. The later ones were measured against the live retriever *before* being committed
+rather than designed and hoped for.
 
 ### Why M8 is `📋` and not `✅`
 
