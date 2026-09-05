@@ -49,11 +49,8 @@ import { expect, test, type Page } from "@playwright/test";
 const FIXTURE_SUBJECT = "93e6200f-ff8f-5502-98fb-a4643a815412";
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
 
-test.beforeAll(() => {
-  // Seed the fixture corpus (plan step 12). Uses the on-disk embedding cache,
-  // so it costs no provider requests. Throws — and therefore fails the run —
-  // if the backend or database is unreachable, which is the point: a missing
-  // precondition must be a failure, not a skip.
+/** Reseed the fixture corpus. Also used as cleanup — see `afterAll`. */
+function seedFixtureCorpus(): void {
   const python = path.join(REPO_ROOT, ".venv", "Scripts", "python.exe");
   execFileSync(python, ["-m", "evals.fixtures.seed_memories"], {
     cwd: REPO_ROOT,
@@ -61,6 +58,47 @@ test.beforeAll(() => {
     timeout: 300_000,
     stdio: "pipe",
   });
+}
+
+test.beforeAll(() => {
+  // Seed the fixture corpus (plan step 12). Uses the on-disk embedding cache,
+  // so it costs no provider requests. Throws — and therefore fails the run —
+  // if the backend or database is unreachable, which is the point: a missing
+  // precondition must be a failure, not a skip.
+  seedFixtureCorpus();
+});
+
+test.afterAll(() => {
+  // THIS SUITE MUTATES THE M8 EVALUATION CORPUS, and that is not cosmetic.
+  //
+  // It shares a subject with the golden set, so a chat turn's capture writes
+  // `assistant_note` rows into it and the delete spec soft-deletes an
+  // `eval_fixture` row. A cold verifier measured the residue after one run:
+  // `assistant_note | 3` and `eval_fixture | 43 live, 1 deleted`. An eval run
+  // following an e2e run would then score against a polluted corpus — silently,
+  // because nothing fails, the numbers merely stop meaning what they claim.
+  //
+  // Re-seeding restores exactly 44 `eval_fixture` rows and drops everything
+  // else under the subject, because `seed()` DELETEs by subject before
+  // inserting. Cheap: the vectors come from the on-disk cache, so no provider
+  // request is made.
+  seedFixtureCorpus();
+});
+
+test.beforeEach(() => {
+  // Reseed BETWEEN tests, not just once for the file.
+  //
+  // The chat test's capture is asynchronous — the backend answers first and
+  // writes the memory afterwards, up to ~15s later — and it writes into the
+  // SAME subject the panel tests read. So rows appeared in the middle of the
+  // delete test, and `toHaveCount(before - 1)` failed against a system working
+  // correctly. Measured: the delete test passes alone and failed immediately
+  // after the chat test.
+  //
+  // Reseeding per test removes the ordering dependence. It does NOT remove the
+  // race on its own — a capture in flight can still land afterwards — which is
+  // why the assertions below identify the specific row rather than counting.
+  seedFixtureCorpus();
 });
 
 /** Give the browser the fixture's identity before any page script runs. */
@@ -113,13 +151,44 @@ test("chat streams and memory panel lists memories", async ({ page }) => {
       "Either the reply arrived in one chunk (short answers can) or the UI is buffering.",
   ).toBeGreaterThanOrEqual(1);
 
-  // The turn reports how it was built. BOTH outcomes are legitimate: on a spent
-  // embedding quota the retrieval path times out and M5's breaker serves the
-  // turn without memory, so asserting "memory was used" would fail this spec
-  // for a rate limit rather than a defect.
+  // ---- what the turn reports about memory, asserted so a dropped header
+  //      cannot satisfy it -------------------------------------------------
+  //
+  // The previous assertion here was `expect(degraded.or(used)).toBeVisible()`,
+  // and a cold verifier showed it was VACUOUS: if every X-Memory-* header were
+  // dropped by the proxy — the exact defect found and fixed during this
+  // milestone — `readStreamMetadata` yields `degraded=false, memoryCount=0`,
+  // the `memory-count` element still renders ("No stored memories matched this
+  // question"), and the assertion passes. Nothing in either suite would have
+  // caught that regression returning; the mocked degraded test fakes the
+  // headers inside the browser and never exercises the proxy at all.
+  //
+  // So assert a disjunction that only REAL headers can satisfy:
+  //   * a non-zero memory count  (needs X-Memory-Count / X-Memory-Ids), or
+  //   * the degraded banner WITH its reason  (needs X-Memory-Degraded and
+  //     X-Memory-Degraded-Reason)
+  //
+  // Both branches are legitimate outcomes here — on a spent embedding quota the
+  // retrieval path times out and M5's breaker serves the turn without memory —
+  // but with the headers stripped, neither holds.
   const degraded = page.getByTestId("degraded-indicator");
   const used = page.getByTestId("memory-count");
   await expect(degraded.or(used).first()).toBeVisible();
+
+  if ((await degraded.count()) > 0) {
+    // The component parenthesises the reason ("...skipped (timeout)"). Its
+    // absence is what a missing X-Memory-Degraded-Reason header looks like.
+    await expect(degraded).toContainText(/\(.+\)/);
+  } else {
+    const text = (await used.textContent()) ?? "";
+    const count = Number.parseInt(text.match(/(\d+)/)?.[1] ?? "0", 10);
+    expect(
+      count,
+      `the turn was not degraded yet reported ${count} memories used. Against a seeded ` +
+        "corpus that means the X-Memory-* headers did not survive the proxy — the exact " +
+        `defect this milestone fixed. Element read: ${JSON.stringify(text)}`,
+    ).toBeGreaterThan(0);
+  }
 
   // ---- the memory panel, over the same identity -------------------------
   await page.getByRole("link", { name: /Manage memories/ }).click();
@@ -143,26 +212,125 @@ test("delete removes a row from the live panel without a page reload", async ({ 
 
   const rows = page.getByTestId("memory-row");
   const before = await rows.count();
-  expect(before, "the fixture corpus seeded no rows — beforeAll did not do its job").toBeGreaterThan(0);
+  expect(before, "the fixture corpus seeded no rows — beforeEach did not do its job").toBeGreaterThan(0);
 
-  const firstText = await page.getByTestId("memory-content").first().textContent();
+  // Identify the row by its TEXT, not by position or by the total count.
+  //
+  // `toHaveCount(before - 1)` is the obvious assertion and it is wrong here: a
+  // chat turn's capture can commit into this same subject while the test runs,
+  // pushing the count back up and failing a delete that in fact succeeded. The
+  // claim being tested is "this row disappeared", so assert exactly that.
+  const doomed = (await page.getByTestId("memory-content").first().textContent()) ?? "";
+  expect(doomed.trim().length).toBeGreaterThan(0);
 
   let navigations = 0;
   page.on("framenavigated", (frame) => {
     if (frame === page.mainFrame()) navigations += 1;
   });
 
+  const deleted = page.waitForResponse(
+    (r) => r.url().includes("/api/memories/") && r.request().method() === "DELETE",
+    { timeout: 60_000 },
+  );
   await page.getByTestId("memory-delete").first().click();
 
-  await expect(rows).toHaveCount(before - 1, { timeout: 60_000 });
+  await expect(page.getByTestId("memory-content").filter({ hasText: doomed })).toHaveCount(0, {
+    timeout: 60_000,
+  });
   expect(navigations, "the page navigated — the row vanished via a reload, not an in-place update").toBe(0);
 
-  // And it is really gone server-side, not just hidden: a reload re-fetches
-  // from the backend, and the soft-deleted row must not come back.
+  const response = await deleted;
+  expect(
+    response.status(),
+    `DELETE /memories/{id} answered ${response.status()}`,
+  ).toBe(200);
+
+  // And it is really gone server-side, not just hidden: a reload refetches from
+  // FastAPI, and a soft-deleted row must not come back.
   await page.reload();
   await expect(page.getByTestId("memories-loading")).toHaveCount(0, { timeout: 60_000 });
-  await expect(rows).toHaveCount(before - 1);
-  if (firstText) {
-    await expect(page.getByTestId("memory-content").first()).not.toHaveText(firstText);
-  }
+  await expect(
+    page.getByTestId("memory-content").filter({ hasText: doomed }),
+    "the deleted row came back after a reload — it was hidden client-side but not soft-deleted",
+  ).toHaveCount(0);
+});
+
+test("test_inline_edit_persists", async ({ page }) => {
+  /*
+    THE PLAN TICKED THIS TEST BEFORE IT EXISTED. A cold verifier grepped for it,
+    found nothing, and made it the blocker that failed M6 — correctly, because
+    of everything the panel does this is the call with the most behind it:
+    `PATCH /memories/{id}` re-embeds the new content against a provider capped
+    at 3 requests/minute, then writes an audit row, all under RLS. It had no
+    live coverage at all. The mocked edit test cannot supply any: its stub echoes
+    back whatever content was PATCHed, so it would pass against a backend that
+    persisted nothing.
+
+    Persistence is the whole claim, so the test reloads. A reload refetches from
+    FastAPI, which means the new text has to have survived the round trip and be
+    in Postgres — not merely in React state from the optimistic update.
+  */
+  await asFixtureSubject(page);
+  await page.goto("/memories");
+  await expect(page.getByTestId("memories-loading")).toHaveCount(0, { timeout: 60_000 });
+
+  const rows = page.getByTestId("memory-row");
+  const before = await rows.count();
+  expect(before, "the fixture corpus seeded no rows — beforeAll did not do its job").toBeGreaterThan(0);
+
+  const original = (await page.getByTestId("memory-content").first().textContent()) ?? "";
+  expect(original.trim().length).toBeGreaterThan(0);
+
+  // Marked with the run's timestamp so a stale row cannot masquerade as a fresh
+  // one, and so a failed run leaves a traceable artefact rather than a mystery.
+  const edited = `Edited by the live e2e at ${new Date().toISOString()}.`;
+
+  await page.getByTestId("memory-edit").first().click();
+  const input = page.getByTestId("memory-edit-input");
+  await expect(input).toBeVisible();
+  await input.fill(edited);
+
+  // WAIT FOR THE ACTUAL PATCH RESPONSE, armed BEFORE the click.
+  //
+  // The first version of this test asserted `memories-notice` had count 0 and
+  // then reloaded, believing that meant the write had landed. It does not:
+  // `toHaveCount(0)` is satisfied instantly by an absent element, so the reload
+  // raced the round trip. `PATCH /memories/{id}` re-embeds the new content
+  // against a provider capped at 3 requests/minute, so it can take tens of
+  // seconds — and the audit log showed the write committing two seconds AFTER
+  // the reload had already refetched the old text.
+  //
+  // That failure looked exactly like "the edit did not persist" while the
+  // backend was behaving perfectly. Worse, no amount of waiting after the
+  // reload could fix it: the panel fetches once on mount, so polling the DOM
+  // re-reads a response that was already stale when it arrived.
+  const patched = page.waitForResponse(
+    (r) => r.url().includes("/api/memories/") && r.request().method() === "PATCH",
+    { timeout: 120_000 },
+  );
+  await page.getByTestId("memory-save").click();
+
+  // Optimistic first: the new text appears without waiting for the round trip.
+  await expect(page.getByTestId("memory-content").first()).toHaveText(edited);
+
+  const response = await patched;
+  expect(
+    response.status(),
+    `PATCH /memories/{id} answered ${response.status()}: ${await response.text()}`,
+  ).toBe(200);
+
+  // THE ASSERTION THAT MATTERS. A reload throws away all client state and asks
+  // the backend again.
+  await page.reload();
+  await expect(page.getByTestId("memories-loading")).toHaveCount(0, { timeout: 60_000 });
+
+  await expect(
+    page.getByTestId("memory-content").first(),
+    "the edit did not survive a reload — it was applied optimistically in the browser " +
+      "but never persisted through PATCH /memories/{id} to Postgres",
+  ).toHaveText(edited, { timeout: 60_000 });
+
+  // The edit replaced a row; it did not add or lose one.
+  await expect(rows).toHaveCount(before);
+  await expect(page.getByTestId("memory-content").first()).not.toHaveText(original);
 });

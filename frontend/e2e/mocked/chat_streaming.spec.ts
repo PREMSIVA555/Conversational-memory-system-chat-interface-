@@ -249,3 +249,68 @@ test("a backend failure is surfaced and leaves no empty reply bubble", async ({ 
   // And the composer must be usable again.
   await expect(page.getByTestId("chat-input")).toBeEnabled();
 });
+
+test("the backend-minted subject is persisted for the memory panel to find", async ({ page }) => {
+  /*
+    THE ONE PATH `lib/identity.ts` EXISTS FOR, and it had no test.
+
+    A cold verifier pointed out that every spec — mocked and live — writes the
+    localStorage key ITSELF before navigating, so nothing ever asserted the
+    thing the module was written to do: adopt the subject the BACKEND mints on
+    turn 1 and persist it, so `/memories` (a separate route, separate component
+    tree) can ask about the same subject afterwards.
+
+    Without that, the panel has no identity to send, `GET /memories/me` answers
+    400, and the user sees an error for a system behaving perfectly. That was a
+    real defect found while wiring the live UI, not a hypothetical.
+
+    So this starts with EMPTY storage — the true first-visit state.
+  */
+  const minted = "7f3d9c21-4b6e-4a12-9c8d-1e5f7a2b3c4d";
+
+  await installStreamingChat(page, {
+    chunks: ["Noted", ", thanks."],
+    headers: { "X-Subject-Id": minted, "X-Memory-Degraded": "false", "X-Memory-Count": "0" },
+  });
+
+  await page.goto("/chat");
+
+  // Genuinely absent to begin with, or this test proves nothing.
+  const before = await page.evaluate(() =>
+    window.localStorage.getItem("memory-system.subject-id"),
+  );
+  expect(before, "storage was not empty at the start — the test is not exercising a first visit")
+    .toBeNull();
+
+  await send(page, "remember this");
+  await expect(page.getByTestId("assistant-text")).toContainText("Noted, thanks.");
+
+  const after = await page.evaluate(() =>
+    window.localStorage.getItem("memory-system.subject-id"),
+  );
+  expect(
+    after,
+    "the subject the backend minted was never persisted, so /memories would have no " +
+      "identity to send and would render an error against a healthy backend",
+  ).toBe(minted);
+});
+
+test("a junk value in the identity key is ignored rather than sent onward", async ({ page }) => {
+  // `readSubjectId` validates against a uuid pattern. If it did not, the panel
+  // would forward whatever it found and the backend would answer 422 — an error
+  // caused by the browser's own storage rather than by anything the user did.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("memory-system.subject-id", "not-a-uuid");
+  });
+
+  let called = false;
+  await page.route("**/api/memories**", async (route) => {
+    called = true;
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+
+  await page.goto("/memories");
+
+  await expect(page.getByTestId("memories-no-identity")).toBeVisible();
+  expect(called, "a malformed stored id was forwarded to the backend").toBe(false);
+});

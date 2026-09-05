@@ -377,19 +377,25 @@ M6 gives the system a face: a Next.js chat view that renders streamed tokens inc
 10. - [x] If M7 has not landed: add `frontend/mocks/governance.ts` with the same response shapes as the real endpoints and a single flag that switches between mock and live; if M7 has landed, wire directly to the real endpoints and delete the flag
 11. - [x] Add loading, empty, and error states for both views (empty memory list must render a clear empty state, not a blank page)
 12. - [x] Add `frontend/playwright.config.ts` and an e2e setup that boots the backend fixtures, seeds at least one memory, and runs headless
-      <!-- PARTIAL. playwright.config.ts exists with two projects (mocked / live) and runs
-           headless. What is NOT built is the fixture bootstrap: the live specs assume a
-           seeded corpus and skip when they find none, rather than seeding one themselves.
-           Left unticked deliberately - a spec that skips when its precondition is absent
-           reports success while testing nothing, which is the failure mode this project
-           keeps finding. -->
+      <!-- NOW COMPLETE. The gap this comment used to describe was real: the live specs
+           assumed a seeded corpus and SKIPPED when they found none, which reports success
+           while testing nothing. `beforeAll` now seeds it and `beforeEach` reseeds between
+           tests, and the run FAILS rather than skips when the database is unreachable -
+           proven by a cold verifier who pointed DATABASE_URL at a dead port and got
+           `PoolTimeout ... 1 failed, 1 did not run`.
+
+           `afterAll` also reseeds, because these specs share a subject with the M8 golden
+           set: a chat turn's capture wrote `assistant_note` rows into it and the delete
+           spec soft-deleted a fixture row, so an eval run following an e2e run would have
+           scored against a polluted corpus. Measured clean afterwards: 44 rows, 0 deleted.
+
+           One thing this still does NOT do, despite the step's wording: it seeds fixtures
+           but "boots" nothing. Docker, migrations and `python -m api.main` must already be
+           running. A cold start fails loudly, which is the right failure. -->
 13. - [x] Add `npm run test:e2e` and confirm `npm run build` passes with no type errors
-      <!-- HALF DONE. `npm run build` passes: 8 routes, zero TypeScript errors, and all four
-           API routes compile as dynamic so nothing fetches the backend at build time.
-           `npm run test:e2e` exists and runs both projects - but only the 14 mocked specs
-           have ever been executed (all pass, 45s). The live project has never run, because
-           it needs the stack up and an M8 verification held the database and both provider
-           quotas while this was built. Unticked until the live run happens. -->
+      <!-- NOW COMPLETE. `npm run build`: 8 routes, zero TypeScript errors, all four API
+           routes dynamic so nothing fetches the backend at build time. `npm run test:e2e`
+           runs both projects: 18 passed (15 mocked + 3 live) against the real stack. -->
 14. - [x] Add basic accessible markup: labelled inputs, a live region for streamed output, keyboard-operable delete/edit controls
 
 ### Test cases
@@ -399,6 +405,15 @@ M6 gives the system a face: a Next.js chat view that renders streamed tokens inc
 - [x] `test_memory_panel_lists_at_least_one_row` (e2e) — with a seeded memory, opens `/memories`; asserts at least one row is visible
 - [x] `test_delete_removes_row_without_page_reload` (e2e) — records the page's navigation/load count, deletes a row; asserts the row disappears from the list and no full page reload occurred
 - [x] `test_inline_edit_persists` (e2e, additional) — edits a memory's content, reloads the page; asserts the new content is shown
+      <!-- This box was ticked before the test existed. A cold verifier grepped for it,
+           found nothing, and made it the blocker that failed M6 - correctly, because
+           `PATCH /memories/{id}` re-embeds and writes an audit row and had NO live
+           coverage; the mocked edit test echoes back whatever was sent, so it would
+           pass against a backend that persisted nothing. The test now exists and runs
+           against the real stack. Its first version failed for a reason worth keeping:
+           it reloaded while the PATCH was still re-embedding, and the audit row showed
+           the write committing two seconds AFTER the reload had refetched the old text.
+           It now waits on the actual PATCH response. -->
 - [x] `test_empty_memory_list_shows_empty_state` (e2e, additional, empty-input case) — with no memories seeded; asserts an explicit empty-state message renders
 - [x] `test_degraded_flag_shows_no_memory_indicator` (e2e, additional) — backend forced into degraded mode; asserts the "answering without memory" indicator is visible
 - [x] `test_failed_delete_restores_row` (e2e, additional) — backend returns an error on delete; asserts the optimistic removal rolls back and an error is shown
