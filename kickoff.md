@@ -193,10 +193,15 @@ What a verifier should be told to distrust first:
    tie-break, the non-mutating eval fixture, and the query-cache union are all mine and have
    had no cold pass. Re-run the workflow, not just the tests: `git checkout evals/results/`,
    run the full suite, and check `git status` is empty.
-4. **What both verifications kept saying and nobody has acted on:** `v2_new` is permanently
-   ungated ("characterization only", with no plan step promoting it), 9 of its 10 queries hit
-   at rank 1, and its saturation guard currently passes on *label counts* rather than on
-   difficulty. A passing gate here is weak evidence by construction.
+4. **A passing gate is weak evidence, and the fourth verification measured how weak.**
+   Cutting `SEMANTIC_TOP_K` from 10 to 3 — a real 70% retrieval degradation — left the gated
+   tier at 1.0/1.0/1.0 and exit 0, while the **ungated** `v2_new` tier caught it (recall
+   0.9765 → 0.8647). Only 3 of the 45 top-5 slots across the nine gated queries are even
+   occupied by v2-only rows.
+
+   So the strong evidence that retrieval works is `v2_new` — which is now genuinely
+   unsaturated (4 single-answer queries misranked, one at rank 4) and which **nothing
+   currently gates**. Promoting it to a baseline is the open decision.
 
 ---
 

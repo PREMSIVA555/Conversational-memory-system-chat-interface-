@@ -326,11 +326,21 @@ def test_v2_new_queries_are_not_saturated(eval_run_v2, v2_out):
     # At least one answer should sit well down the list, not merely at rank 2.
     # A suite where every miss is off-by-one cannot distinguish a small ranking
     # change from a large one.
+    #
+    # READ THE FAILURE CAREFULLY IF THIS TRIPS. It is satisfied today by exactly
+    # one query (v2-016, answer at rank 4), which means retrieval IMPROVING on
+    # that query turns this red. That is deliberate — the suite losing its only
+    # deep probe is something to notice — but the failure will look like a
+    # regression when it may be the opposite, so the message says so.
     deep = [q for q in single_answer if q["reciprocal_rank"] <= 0.25]
     assert deep, (
-        "no single-answer v2 query has its answer at rank 4 or worse. Every miss is "
-        "off-by-one, so the suite cannot tell a small ranking regression from a large "
-        f"one. Ranks: {sorted(round(1 / q['reciprocal_rank']) for q in misranked)}"
+        "no single-answer v2 query has its answer at rank 4 or worse, so the suite can "
+        "no longer tell a small ranking regression from a large one. "
+        "This is NOT necessarily a regression: it also fires when retrieval IMPROVES "
+        "enough to pull the deep probe up the list. Check which — if the answers moved "
+        "UP, the suite needs a new, harder query rather than a fix. "
+        f"Single-answer ranks currently below 1: "
+        f"{sorted(round(1 / q['reciprocal_rank']) for q in misranked) or 'none'}"
     )
 
     # The aggregate, kept as a floor rather than as the primary signal.
@@ -347,16 +357,76 @@ def test_v2_covers_the_lifecycle_states_the_plan_names(eval_run_v2, v2_out):
     """Decayed, archived, reflection and soft-deleted rows are all exercised.
 
     Plan step M8.13 asks for "queries covering decayed/archived memories,
-    reflection summaries, and the deleted-never-resurfaces case". This asserts
-    the suite contains all four rather than trusting the labels — a query
-    tagged `archived` against a row nobody archived is exactly the vacuous pass
-    this milestone exists to prevent.
+    reflection summaries, and the deleted-never-resurfaces case".
+
+    THIS TEST USED TO PASS FOR THE WRONG REASON, and the fourth cold verifier
+    caught it. Its docstring claimed it checked the states "rather than trusting
+    the labels" — and then read `lifecycle_state` straight out of the golden-set
+    label, which is exactly trusting the label. If `_apply_lifecycle` stopped
+    archiving `astroclub` tomorrow, the row would seed as an ordinary live
+    memory, the query would still be tagged `archived`, and this test would
+    still pass while measuring nothing. That is the precise vacuous pass the
+    milestone exists to prevent, sitting inside the test written to prevent it.
+
+    It now reads the DATABASE. The label says which state a query claims to
+    exercise; the database says whether the row is actually in it.
     """
     assert eval_run_v2.returncode == 0, eval_run_v2.stderr
     payload = json.loads(v2_out.read_text(encoding="utf-8"))
     states = {q.get("lifecycle_state") for q in payload["queries"]}
     for required in ("archived", "decayed", "reflection", "soft-deleted"):
         assert required in states, f"no v2 query exercises a {required} row"
+
+    # ---- the labels are now checked against the rows themselves ------------
+    import asyncio
+
+    from evals.fixtures.seed_memories import (
+        BY_SLUG_V2,
+        GOLDEN_SET_ACTOR_ID,
+        GOLDEN_SET_SUBJECT_ID,
+        LIFECYCLE_V2,
+    )
+    from store.db import admin_session, close_pools
+
+    async def _fetch(ids: list[str]) -> dict[str, dict]:
+        try:
+            async with admin_session() as conn:
+                cur = await conn.execute(
+                    "SELECT id, source, weight, archived_at, deleted_at, last_accessed_at"
+                    "  FROM memories WHERE id = ANY(%s::uuid[])",
+                    (ids,),
+                )
+                return {str(r["id"]): dict(r) for r in await cur.fetchall()}
+        finally:
+            await close_pools()
+
+    slugs = list(LIFECYCLE_V2)
+    rows = asyncio.run(_fetch([BY_SLUG_V2[s].id for s in slugs]))
+    assert len(rows) == len(slugs), (
+        f"the eval run did not leave all lifecycle rows in the database: "
+        f"expected {slugs}, found {len(rows)}"
+    )
+
+    def row_for(slug: str) -> dict:
+        found = rows.get(BY_SLUG_V2[slug].id)
+        assert found is not None, f"{slug} is missing from the corpus entirely"
+        return found
+
+    # Each claim, checked against the column that would carry it.
+    assert row_for("astroclub")["archived_at"] is not None, (
+        "v2-004 is labelled `archived` but astroclub carries no archived_at — "
+        "the query is measuring an ordinary live row"
+    )
+    assert row_for("filmscanner")["weight"] <= 0.1, (
+        "v2-005 is labelled `decayed` but filmscanner is not at a decayed weight"
+    )
+    assert row_for("chessnumber")["deleted_at"] is not None, (
+        "v2-007 is labelled `soft-deleted` but chessnumber is not deleted — the "
+        "never-resurfaces check would pass against a row that was never erased"
+    )
+    assert row_for("allotmentsummary")["source"] == "reflection", (
+        "v2-006 is labelled `reflection` but allotmentsummary is not sourced as one"
+    )
 
     # The archived and decayed rows must still be RETRIEVABLE. Archiving is not
     # erasure: retrieval filters on `deleted_at IS NULL` and nothing else. If

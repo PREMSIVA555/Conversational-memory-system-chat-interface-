@@ -554,10 +554,29 @@ M8 makes the memory store self-maintaining: a nightly decay graph that ages weig
            recall is 0.9765 against a baseline of 1.0.
 
            WHAT REPLACED IT is not a weaker test. The nine v1 queries are run again inside
-           v2, against a corpus of 63 rows rather than the 44 they were measured on, which
-           is a strictly harder condition than v1 itself faced - the runner asserts the
-           corpus grew, so this cannot silently become a re-run of a passing suite. It is
-           a like-for-like comparison, which the blended number never was.
+           v2 - verbatim, same expected ids - against a corpus of 63 rows rather than the
+           44 they were measured on. It is a like-for-like comparison, which the blended
+           number never was.
+
+           TWO CORRECTIONS TO THIS RATIONALE, from the fourth cold verification. Recorded
+           rather than quietly edited, because both weaken the claim:
+
+           (a) An earlier draft of this comment said "the runner asserts the corpus grew".
+               It does not. `run_eval.py` only PRINTS both sizes; the assertion is in
+               `tests/integration/test_eval_harness.py` ("v2 did not seed a larger corpus
+               than v1; the gate proves nothing"). So the DoD's own command would exit 0
+               against a shrunken corpus - the guard exists, but in the pytest wrapper,
+               not in the line you run by hand.
+
+           (b) "A strictly harder condition" is true but thin. Only 3 of the 45 top-5 slots
+               across the nine gated queries are occupied by v2-only rows, and the verifier
+               measured the consequence: cutting SEMANTIC_TOP_K from 10 to 3 - a real 70%
+               retrieval degradation - left this gate at 1.0/1.0/1.0 and exit 0, while the
+               UNGATED v2_new tier caught it (recall 0.9765 -> 0.8647).
+
+           So read a passing gate here as weak evidence, exactly as kickoff.md already
+           says. The strong evidence that retrieval still works is the v2_new tier, which
+           is now unsaturated for the right reason - and which nothing currently gates.
 
            The part the original line was really reaching for - "the new queries must be
            able to fail" - now lives where it can be enforced. See the guard named above:
