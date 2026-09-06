@@ -5,19 +5,31 @@
 
 THE WEIGHTED FORMULA
 --------------------
-This is the whole of M4's ranking, and it is deliberately four lines long:
+This is the whole of the ranking, and it is deliberately five lines long:
 
-    score = 0.4 * semantic_score
-          + 0.2 * recency_score
-          + 0.2 * frequency_score
-          + 0.2 * importance_score
+    score = 0.35 * semantic_score      how well it matches THIS query
+          + 0.25 * recency_score       decay on created_at        (STATED when)
+          + 0.10 * activation_score    decay on last_accessed_at  (READ when)
+          + 0.10 * frequency_score     saturating reinforcement_count
+          + 0.20 * importance_score    M2's evaluate node
 
-The four weights are `WEIGHT_SEMANTIC = 0.4`, `WEIGHT_RECENCY = 0.2`,
-`WEIGHT_FREQUENCY = 0.2`, `WEIGHT_IMPORTANCE = 0.2`. They are **defined once**,
-in `retrieve/config.py`, which raises at import time if they do not sum to 1.0;
-this module imports them and re-exports them under the same names so a reader
-lands on the numbers here and the guarantee there. No literal weight appears
-anywhere else in the codebase.
+M4 had four terms, with a single `recency` decaying on `last_accessed_at`. M9
+split it, because retrieval WRITES `last_accessed_at` on every row it returns:
+memories retrieved together always looked equally fresh, so the term could not
+distinguish a fact stated an hour ago from one stated yesterday. A user who
+said "Python", then "Java", then "C++" kept getting answers in Python, because
+all three rows were identical on every signal and the tie fell to semantic
+similarity between three near-identical sentences.
+
+Reading a memory is evidence that it is USEFUL. It is not evidence that it is
+CURRENT. Those are now two terms, and `recency` is weighted 2.5x `activation`
+so the distinction cannot collapse back — `retrieve/config.py` raises at import
+if that ordering is ever inverted.
+
+The weights are **defined once**, in `retrieve/config.py`, which raises at
+import time if they do not sum to 1.0; this module imports and re-exports them
+so a reader lands on the numbers here and the guarantee there. No literal weight
+appears anywhere else in the codebase.
 
 Because every feature in `retrieve/features.py` is bounded to [0, 1] and the
 weights sum to 1.0, `score_candidate()` returns a value in [0, 1] for every
@@ -48,6 +60,7 @@ from retrieve.features import (
     frequency_score,
     importance_score,
     recency_score,
+    activation_score,
     semantic_score,
     utc_now,
 )
@@ -59,16 +72,25 @@ logger = logging.getLogger(__name__)
 # the weights (plan step 3) — re-exported from their single definition
 # ---------------------------------------------------------------------------
 #
-#     semantic    0.4
-#     recency     0.2
-#     frequency   0.2
-#     importance  0.2
+#     semantic    0.35   how well it matches THIS query
+#     recency     0.25   decay on created_at        — when the fact was STATED
+#     activation  0.10   decay on last_accessed_at  — when it was last READ
+#     frequency   0.10   saturating reinforcement_count
+#     importance  0.20   M2's evaluate node
+#
+# M9 split M4's single `recency` term in two. M4 decayed on `last_accessed_at`,
+# but retrieval WRITES that column on every row it returns — so contradictory
+# memories retrieved together always looked equally fresh, and a preference the
+# user had replaced could outrank the one that replaced it. Reading a memory is
+# evidence it is useful, not evidence it is current. Full reasoning and the
+# measured failure are above the constants in `retrieve/config.py`.
 #
 # Defined in `retrieve/config.py`; imported, never re-spelled, so there is
 # exactly one number to change and one import-time check that they sum to 1.0.
 
 WEIGHT_SEMANTIC = config.WEIGHT_SEMANTIC
 WEIGHT_RECENCY = config.WEIGHT_RECENCY
+WEIGHT_ACTIVATION = config.WEIGHT_ACTIVATION
 WEIGHT_FREQUENCY = config.WEIGHT_FREQUENCY
 WEIGHT_IMPORTANCE = config.WEIGHT_IMPORTANCE
 
@@ -83,6 +105,17 @@ RANKING_WEIGHTS = config.RANKING_WEIGHTS
 # `retrieve/config.py` ever drifts from what M4 specifies, and to make the
 # numbers visible to a human reading the ranking node itself.
 _PLAN_WEIGHTS = {
+    "semantic": 0.35,
+    "recency": 0.25,
+    "activation": 0.10,
+    "frequency": 0.10,
+    "importance": 0.20,
+}
+
+# M4's numbers, kept so the change is legible from this file rather than only
+# from a diff. This guard did its job: changing the weights made the whole app
+# refuse to start until the specification was updated deliberately.
+_M4_WEIGHTS = {
     "semantic": 0.4,
     "recency": 0.2,
     "frequency": 0.2,
@@ -91,7 +124,7 @@ _PLAN_WEIGHTS = {
 
 if RANKING_WEIGHTS != _PLAN_WEIGHTS:
     raise RuntimeError(
-        "ranking weights have drifted from the M4 specification: "
+        "ranking weights have drifted from the M9 specification: "
         f"retrieve/config.py declares {RANKING_WEIGHTS!r}, "
         f"the plan specifies {_PLAN_WEIGHTS!r}"
     )
@@ -99,6 +132,7 @@ if RANKING_WEIGHTS != _PLAN_WEIGHTS:
 __all__ = [
     "WEIGHT_SEMANTIC",
     "WEIGHT_RECENCY",
+    "WEIGHT_ACTIVATION",
     "WEIGHT_FREQUENCY",
     "WEIGHT_IMPORTANCE",
     "RANKING_WEIGHTS",
@@ -125,6 +159,7 @@ class ScoreBreakdown:
 
     semantic: float
     recency: float
+    activation: float
     frequency: float
     importance: float
     total: float
@@ -133,6 +168,7 @@ class ScoreBreakdown:
         return {
             "semantic": round(self.semantic, 6),
             "recency": round(self.recency, 6),
+            "activation": round(self.activation, 6),
             "frequency": round(self.frequency, 6),
             "importance": round(self.importance, 6),
             "total": round(self.total, 6),
@@ -142,7 +178,8 @@ class ScoreBreakdown:
         """One human-readable line: the arithmetic, not just the answer."""
         return (
             f"{WEIGHT_SEMANTIC}*{self.semantic:.4f}(sem) + "
-            f"{WEIGHT_RECENCY}*{self.recency:.4f}(rec) + "
+            f"{WEIGHT_RECENCY}*{self.recency:.4f}(rec:created) + "
+            f"{WEIGHT_ACTIVATION}*{self.activation:.4f}(act:accessed) + "
             f"{WEIGHT_FREQUENCY}*{self.frequency:.4f}(freq) + "
             f"{WEIGHT_IMPORTANCE}*{self.importance:.4f}(imp) = {self.total:.6f}"
         )
@@ -188,16 +225,24 @@ def score_breakdown(
     candidate: RetrievalCandidate,
     now: datetime | None = None,
 ) -> ScoreBreakdown:
-    """Compute the four signals and the weighted total, keeping both."""
+    """Compute the five signals and the weighted total, keeping both.
+
+    `recency` and `activation` are separate on purpose — see the block comment
+    above the weights in `retrieve/config.py`. One decays on when the fact was
+    STATED, the other on when it was last READ, and collapsing them back into a
+    single term reintroduces the defect M9 exists to fix.
+    """
     semantic = semantic_score(candidate)
     recency = recency_score(candidate, now)
+    activation = activation_score(candidate, now)
     frequency = frequency_score(candidate)
     importance = importance_score(candidate)
 
-    # The formula, spelled out. 0.4 / 0.2 / 0.2 / 0.2.
+    # The formula, spelled out. 0.35 / 0.25 / 0.10 / 0.10 / 0.20.
     total = (
         WEIGHT_SEMANTIC * semantic
         + WEIGHT_RECENCY * recency
+        + WEIGHT_ACTIVATION * activation
         + WEIGHT_FREQUENCY * frequency
         + WEIGHT_IMPORTANCE * importance
     )
@@ -205,6 +250,7 @@ def score_breakdown(
     return ScoreBreakdown(
         semantic=semantic,
         recency=recency,
+        activation=activation,
         frequency=frequency,
         importance=importance,
         total=total,

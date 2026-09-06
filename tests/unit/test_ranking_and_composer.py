@@ -23,6 +23,7 @@ from retrieve import config as retrieve_config
 from retrieve import features
 from retrieve import ranking
 from retrieve.ranking import (
+    WEIGHT_ACTIVATION,
     WEIGHT_FREQUENCY,
     WEIGHT_IMPORTANCE,
     WEIGHT_RECENCY,
@@ -33,6 +34,10 @@ from retrieve.ranking import (
 )
 from tests.unit.fixtures.ranking_fixtures import (
     EXPECTED_ORDER,
+    SUPERSESSION_EXPECTED_ORDER,
+    SUPERSESSION_EXPECTED_SCORES,
+    SUPERSESSION_M4_TIED_SCORE,
+    supersession_candidates,
     EXPECTED_SCORES,
     EXPECTED_SIGNALS,
     NOW,
@@ -91,17 +96,22 @@ def test_score_matches_hand_computed_value():
     assert breakdown.frequency == pytest.approx(signals["frequency"], abs=TOLERANCE)
     assert breakdown.importance == pytest.approx(signals["importance"], abs=TOLERANCE)
 
-    # ...and the total is the hand-computed 0.620, spelled out here so a
-    # reweighting cannot pass by changing both the code and one constant.
-    assert score_candidate(candidate, NOW) == pytest.approx(0.620, abs=TOLERANCE)
-    assert breakdown.total == pytest.approx(0.620, abs=TOLERANCE)
+    # mem-03 sets created_at == last_accessed_at, so activation == recency.
+    assert breakdown.activation == pytest.approx(signals["recency"], abs=TOLERANCE)
 
-    # A wrong weighting that still sums to 1 — 0.25 each — gives
-    # 0.25 * (0.80 + 0.50 + 0.50 + 0.50) = 0.25 * 2.30 = 0.575, not 0.620, so
-    # this fixture discriminates between weightings on the score as well as on
-    # the order.
-    assert 0.25 * (0.80 + 0.50 + 0.50 + 0.50) == pytest.approx(0.575, abs=TOLERANCE)
-    assert 0.575 != pytest.approx(0.620, abs=1e-3)
+    # ...and the total is the hand-computed 0.605, spelled out here so a
+    # reweighting cannot pass by changing both the code and one constant.
+    #   0.35*0.80 + 0.25*0.50 + 0.10*0.50 + 0.10*0.50 + 0.20*0.50
+    # = 0.280 + 0.125 + 0.050 + 0.050 + 0.100 = 0.605
+    assert score_candidate(candidate, NOW) == pytest.approx(0.605, abs=TOLERANCE)
+    assert breakdown.total == pytest.approx(0.605, abs=TOLERANCE)
+
+    # A wrong weighting that still sums to 1 — 0.2 each — gives
+    # 0.2 * (0.80 + 0.50 + 0.50 + 0.50 + 0.50) = 0.2 * 2.80 = 0.56, not 0.605,
+    # so this fixture discriminates between weightings on the score as well as
+    # on the order.
+    assert 0.2 * (0.80 + 0.50 + 0.50 + 0.50 + 0.50) == pytest.approx(0.56, abs=TOLERANCE)
+    assert 0.56 != pytest.approx(0.605, abs=1e-3)
 
 
 @pytest.mark.parametrize("scheme", sorted(WRONG_WEIGHTINGS))
@@ -124,9 +134,10 @@ def test_ranking_order_would_break_under_a_wrong_weighting(monkeypatch, scheme):
     `retrieve.config`, because `score_breakdown()` reads its module globals —
     patching the source module would not change the arithmetic.
     """
-    semantic, recency, frequency, importance = WRONG_WEIGHTINGS[scheme]
+    semantic, recency, activation, frequency, importance = WRONG_WEIGHTINGS[scheme]
     monkeypatch.setattr(ranking, "WEIGHT_SEMANTIC", semantic)
     monkeypatch.setattr(ranking, "WEIGHT_RECENCY", recency)
+    monkeypatch.setattr(ranking, "WEIGHT_ACTIVATION", activation)
     monkeypatch.setattr(ranking, "WEIGHT_FREQUENCY", frequency)
     monkeypatch.setattr(ranking, "WEIGHT_IMPORTANCE", importance)
 
@@ -141,13 +152,26 @@ def test_ranking_order_would_break_under_a_wrong_weighting(monkeypatch, scheme):
 
 
 def test_weights_sum_to_one():
-    """The declared weights are 0.4/0.2/0.2/0.2 and sum to exactly 1.0."""
-    assert WEIGHT_SEMANTIC == 0.4
-    assert WEIGHT_RECENCY == 0.2
-    assert WEIGHT_FREQUENCY == 0.2
-    assert WEIGHT_IMPORTANCE == 0.2
+    """The declared weights are 0.35/0.25/0.10/0.10/0.20 and sum to exactly 1.0."""
+    assert WEIGHT_SEMANTIC == 0.35
+    assert WEIGHT_RECENCY == 0.25
+    assert WEIGHT_ACTIVATION == 0.10
+    assert WEIGHT_FREQUENCY == 0.10
+    assert WEIGHT_IMPORTANCE == 0.20
 
-    total = WEIGHT_SEMANTIC + WEIGHT_RECENCY + WEIGHT_FREQUENCY + WEIGHT_IMPORTANCE
+    # The ordering that makes the split meaningful: a fact stated recently must
+    # be able to outrank one merely read recently. `retrieve/config.py` raises
+    # at import if this is ever inverted; asserted here too so the reason is
+    # visible from the test file.
+    assert WEIGHT_RECENCY > WEIGHT_ACTIVATION
+
+    total = (
+        WEIGHT_SEMANTIC
+        + WEIGHT_RECENCY
+        + WEIGHT_ACTIVATION
+        + WEIGHT_FREQUENCY
+        + WEIGHT_IMPORTANCE
+    )
     assert total == pytest.approx(1.0, abs=TOLERANCE)
 
     # Same constants, single definition: ranking re-exports config's values.
@@ -482,3 +506,96 @@ def test_compose_returns_included_memory_ids_in_rank_order():
     # The ids line up positionally with the rendered lines.
     lines = result.block.split(context_config.LINE_SEPARATOR)[1:]
     assert len(lines) == len(result.memory_ids)
+
+
+# ---------------------------------------------------------------------------
+# M9 — recency (stated) vs activation (read)
+# ---------------------------------------------------------------------------
+
+def test_recency_reads_created_at_and_activation_reads_last_accessed_at():
+    """The two signals must read DIFFERENT columns, asserted directly.
+
+    Everything else in this section depends on this being true, so it is
+    checked once at the source rather than inferred from a score. The candidate
+    is deliberately old-but-just-read: stated 60 days ago (recency 0.25),
+    retrieved moments ago (activation 1.0). If either function reaches for the
+    wrong column the two numbers swap and this fails.
+    """
+    candidate = make_candidate(
+        "mem-split",
+        "The user prefers c++.",
+        semantic=0.70,
+        age_days=60.0,            # created_at  -> recency 0.5**(60/30) = 0.25
+        accessed_days_ago=0.0,    # last_accessed_at -> activation 1.0
+        reinforcement_count=2,
+        importance=0.70,
+    )
+
+    assert features.recency_score(candidate, NOW) == pytest.approx(0.25, abs=TOLERANCE)
+    assert features.activation_score(candidate, NOW) == pytest.approx(1.0, abs=TOLERANCE)
+
+
+def test_recently_stated_preference_outranks_a_recently_read_one():
+    """THE REGRESSION TEST for the bug that shipped.
+
+    Three contradictory preferences, all retrieved together — so all three carry
+    an identical `last_accessed_at`, which is what retrieval does to every row it
+    returns — differing only in when the user actually said them.
+
+    Under M4 these tied at exactly 0.70 apiece and the tiebreaker handed first
+    place to the alphabetically-first id, which was the OLDEST. The user saw the
+    assistant answer in Python long after saying they preferred Java, then C++.
+    """
+    ranked = rank(supersession_candidates(), top_k=3, now=NOW)
+
+    assert [item.memory_id for item in ranked] == SUPERSESSION_EXPECTED_ORDER, (
+        "the most recently STATED preference must rank first even though all "
+        "three were read at the same instant"
+    )
+    for item in ranked:
+        assert item.score == pytest.approx(
+            SUPERSESSION_EXPECTED_SCORES[item.memory_id], abs=TOLERANCE
+        )
+
+    # And the scores are strictly separated, not merely ordered — a tie broken
+    # by id is what produced the bug, so "no ties here" is the real property.
+    scores = [item.score for item in ranked]
+    assert len(set(scores)) == 3, f"expected three distinct scores, got {scores}"
+
+
+def test_m4_weighting_tied_all_three_preferences(monkeypatch):
+    """Mutation test: restore M4's behaviour and the bug comes back.
+
+    This is what gives the regression test above its meaning — without a
+    mutation that fails, an ordering assertion is decorative.
+
+    Under M4 the three did not merely order wrongly, they scored IDENTICALLY.
+    That distinction is the whole diagnosis: a tie means the outcome was decided
+    by the id tiebreaker rather than by any signal, which is why the symptom
+    looked so arbitrary from outside.
+
+    WHY THE MUTATION IS "zero the creation-time weight" AND NOT "swap the two
+    weights". Swapping them was tried first and it does NOT reproduce the bug:
+    all three candidates share one `last_accessed_at`, so activation is constant
+    across the set and contributes nothing to the ordering no matter what weight
+    it carries. Recency still decides, just more weakly, and the order comes out
+    correct. The bug needs creation time to be ignored ENTIRELY, which is
+    precisely what M4 did by never reading `created_at` at all.
+    """
+    monkeypatch.setattr(ranking, "WEIGHT_SEMANTIC", 0.4)
+    monkeypatch.setattr(ranking, "WEIGHT_RECENCY", 0.0)
+    # M4's `recency` decayed on last_accessed_at, which is this module's
+    # `activation`. Give it M4's 0.2 and zero the creation-time term.
+    monkeypatch.setattr(ranking, "WEIGHT_ACTIVATION", 0.2)
+    monkeypatch.setattr(ranking, "WEIGHT_FREQUENCY", 0.2)
+    monkeypatch.setattr(ranking, "WEIGHT_IMPORTANCE", 0.2)
+
+    ranked = rank(supersession_candidates(), top_k=3, now=NOW)
+    scores = {item.memory_id: item.score for item in ranked}
+
+    for memory_id, score in scores.items():
+        assert score == pytest.approx(SUPERSESSION_M4_TIED_SCORE, abs=TOLERANCE), (
+            f"{memory_id} scored {score}, expected the M4 three-way tie at "
+            f"{SUPERSESSION_M4_TIED_SCORE}"
+        )
+    assert len(set(round(s, 12) for s in scores.values())) == 1

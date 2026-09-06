@@ -49,6 +49,7 @@ from retrieve.types import RetrievalCandidate
 __all__ = [
     "semantic_score",
     "recency_score",
+    "activation_score",
     "frequency_score",
     "importance_score",
     "utc_now",
@@ -161,18 +162,25 @@ def recency_score(
     *,
     half_life_days: float | None = None,
 ) -> float:
-    """Exponential decay on `last_accessed_at`: `0.5 ** (age_days / half_life)`.
+    """Exponential decay on `created_at`: `0.5 ** (age_days / half_life)`.
+
+    WHEN THE FACT WAS STATED, not when it was last read. M4 used
+    `last_accessed_at` here and that was the defect: retrieval stamps
+    `last_accessed_at` on every row it returns, so three contradictory
+    preferences retrieved together all reset to the same instant and the term
+    could not tell "said an hour ago" from "said yesterday". `activation_score`
+    below now carries the access signal, under its own name and weight.
 
     Half-life rather than a linear window, because the shape matches how a fact
     about a person ages: yesterday and the day before are near-identical, while
     "last month" and "last year" are genuinely different claims. Linear decay
     would make the first distinction as large as the second.
 
-    Missing / unparseable `last_accessed_at` → `config.RECENCY_DEFAULT` (0.0).
-    A timestamp in the future (clock skew, or a row written mid-request) clamps
-    to 1.0 rather than exceeding it.
+    Missing / unparseable `created_at` → `config.RECENCY_DEFAULT` (0.0). A
+    timestamp in the future (clock skew, or a row written mid-request) clamps to
+    1.0 rather than exceeding it.
     """
-    accessed = _as_datetime(_meta(candidate, "last_accessed_at"))
+    accessed = _as_datetime(_meta(candidate, "created_at"))
     if accessed is None:
         return _clamp01(config.RECENCY_DEFAULT)
 
@@ -188,6 +196,49 @@ def recency_score(
     if half_life <= 0:
         # A non-positive half-life has no meaning; treat every past access as
         # fully decayed rather than raising inside a scoring loop.
+        return 0.0
+
+    return _clamp01(0.5 ** (age_days / half_life))
+
+
+def activation_score(
+    candidate: RetrievalCandidate,
+    now: datetime | None = None,
+    *,
+    half_life_days: float | None = None,
+) -> float:
+    """Exponential decay on `last_accessed_at`: how recently this was USED.
+
+    Deliberately a separate signal from `recency_score`, which decays on
+    `created_at`. Reading a memory says it was useful; it says nothing about
+    whether the fact is still true. Conflating the two is what let a superseded
+    preference outrank the one that replaced it — retrieval stamps
+    `last_accessed_at` on everything it returns, so contradictory rows retrieved
+    together are always equally "fresh".
+
+    Weighted well below recency (0.10 vs 0.25, enforced at import in
+    `retrieve/config.py`) precisely so it cannot re-create that behaviour, and
+    given a shorter half-life because usefulness moves faster than truth.
+
+    Missing / unparseable `last_accessed_at` → `config.ACTIVATION_DEFAULT` (0.0).
+    A future timestamp clamps to 1.0.
+    """
+    accessed = _as_datetime(_meta(candidate, "last_accessed_at"))
+    if accessed is None:
+        return _clamp01(config.ACTIVATION_DEFAULT)
+
+    reference = now or utc_now()
+    if reference.tzinfo is None:
+        reference = reference.replace(tzinfo=timezone.utc)
+
+    age_days = (reference - accessed).total_seconds() / 86400.0
+    if age_days <= 0:
+        return 1.0
+
+    half_life = (
+        half_life_days if half_life_days is not None else config.ACTIVATION_HALF_LIFE_DAYS
+    )
+    if half_life <= 0:
         return 0.0
 
     return _clamp01(0.5 ** (age_days / half_life))

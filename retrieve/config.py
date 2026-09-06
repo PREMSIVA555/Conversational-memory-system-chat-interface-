@@ -168,35 +168,88 @@ TS_RANK_REFERENCE = 0.0607927
 # M4 ranking weights (plan steps 3, 5) — THE single definition
 # ---------------------------------------------------------------------------
 #
-# The weighted formula the plan specifies, verbatim:
+# M4 specified four terms:
 #
-#     score = 0.4 * semantic
-#           + 0.2 * recency
-#           + 0.2 * frequency
-#           + 0.2 * importance
+#     score = 0.4 * semantic + 0.2 * recency + 0.2 * frequency + 0.2 * importance
 #
-# These four constants are the ONLY place those numbers exist. `retrieve/ranking`
-# imports them and re-exports them under the same names; no other module may
-# spell a weight literal. They are frozen module constants rather than env-tuned
-# `_env()` lookups on purpose: a weight set that does not sum to 1.0 silently
-# rescales every score, and that is not something a stray environment variable
-# should be able to do to a running system. Retuning is a code change and a diff.
+# where `recency` decayed on `last_accessed_at`. M9 SPLITS THAT TERM IN TWO, and
+# the reason is a measured failure rather than a preference.
 #
-# Semantic gets double the weight of any other signal because it is the only
-# signal about *this query*; recency, frequency and importance are properties of
-# the memory that are identical no matter what the user just asked.
+# THE BUG THIS FIXES
+# ------------------
+# A user stated three programming-language preferences over two days — Python,
+# then Java, then C++ — and the assistant kept answering in the OLDEST one. The
+# store held all three as live, mutually contradictory rows, and every ranking
+# signal was IDENTICAL across them:
+#
+#     content                         importance  weight  reinforced  last_accessed
+#     "…likes code examples in Python"      0.70    1.50           2   09-05 11:31
+#     "The user prefers Java."              0.70    1.50           2   09-05 11:31
+#     "The user prefers c++."               0.70    1.50           2   09-05 11:31
+#
+# `last_accessed_at` was identical because RETRIEVAL ITSELF touches every row it
+# returns. So the one signal that could have distinguished "stated an hour ago"
+# from "stated yesterday" reset all three to the same instant on every turn, and
+# the ranking fell back to semantic similarity between three near-identical
+# sentences — effectively a coin flip.
+#
+# Reading a memory is not evidence that the fact is fresh. It is evidence that
+# the fact is USEFUL. Those are different claims and they now have different
+# terms:
+#
+#     score = 0.35 * semantic          how well it matches THIS query
+#           + 0.25 * recency           decay on created_at   — when it was STATED
+#           + 0.10 * activation        decay on last_accessed_at — when last READ
+#           + 0.10 * frequency         saturating reinforcement_count
+#           + 0.20 * importance        M2's evaluate node
+#
+# WHY THESE NUMBERS
+# -----------------
+# `recency` is deliberately 2.5x `activation`. That ordering is the whole point:
+# a fact stated more recently must be able to outrank one merely read more
+# recently, or the bug above returns. Anything that lets activation approach
+# recency re-creates it.
+#
+# `frequency` drops from 0.2 to 0.1 because it turned out to be an amplifier for
+# a feedback loop: capture reads the assistant's reply as well as the user's
+# message, so the assistant restating a preference reinforced it, which raised
+# its frequency score, which made it more likely to be retrieved and restated.
+# Repetition was outcompeting recency. M9 also stops `assistant_note` rows from
+# incrementing the counter (see `capture/`), but the weight comes down too.
+#
+# `semantic` drops 0.4 -> 0.35 to fund the split while keeping it the largest
+# single term — it is still the only signal about the query the user just typed.
+#
+# These constants are the ONLY place the numbers exist. `retrieve/ranking`
+# imports and re-exports them; no other module may spell a weight literal. They
+# are frozen module constants rather than `_env()` lookups on purpose: a weight
+# set that does not sum to 1.0 silently rescales every score, and a stray
+# environment variable should not be able to do that to a running system.
+# Retuning is a code change and a diff.
 
-WEIGHT_SEMANTIC = 0.4
-WEIGHT_RECENCY = 0.2
-WEIGHT_FREQUENCY = 0.2
-WEIGHT_IMPORTANCE = 0.2
+WEIGHT_SEMANTIC = 0.35
+WEIGHT_RECENCY = 0.25
+WEIGHT_ACTIVATION = 0.10
+WEIGHT_FREQUENCY = 0.10
+WEIGHT_IMPORTANCE = 0.20
 
 RANKING_WEIGHTS: dict[str, float] = {
     "semantic": WEIGHT_SEMANTIC,
     "recency": WEIGHT_RECENCY,
+    "activation": WEIGHT_ACTIVATION,
     "frequency": WEIGHT_FREQUENCY,
     "importance": WEIGHT_IMPORTANCE,
 }
+
+# The invariant that makes the split safe, asserted rather than assumed: a fact
+# stated recently must be able to beat one merely read recently.
+if WEIGHT_RECENCY <= WEIGHT_ACTIVATION:
+    raise RuntimeError(
+        "WEIGHT_RECENCY must exceed WEIGHT_ACTIVATION, or read access mimics "
+        "temporal freshness again and a superseded preference can outrank the "
+        f"one that replaced it; got recency={WEIGHT_RECENCY!r} "
+        f"activation={WEIGHT_ACTIVATION!r}"
+    )
 
 # Plan step 5: assert at import time that the weights sum to 1.0.
 #
@@ -220,18 +273,50 @@ if abs(_WEIGHT_SUM - 1.0) > 1e-9:
 # same spirit as TS_RANK_REFERENCE above: a signal's value must depend only on
 # the memory itself, never on what else happened to be retrieved alongside it.
 
-# Recency: exponential decay on `last_accessed_at`, expressed as a half-life.
-# A memory touched today scores 1.0, one untouched for 30 days scores 0.5, one
-# untouched for 60 days scores 0.25. 30 days is roughly the horizon over which a
-# stated preference stops being a safe assumption about a person.
+# Recency: exponential decay on `created_at` — WHEN THE FACT WAS STATED.
+#
+# Not `last_accessed_at`. That was the M4 behaviour and it is the bug documented
+# above the weights: retrieval writes `last_accessed_at` on every row it returns,
+# so the column measures how recently a memory was USED, and using it as recency
+# made three contradictory preferences indistinguishable.
+#
+# A memory stated today scores 1.0, one stated 30 days ago 0.5, 60 days ago 0.25.
+# 30 days is roughly the horizon over which a stated preference stops being a
+# safe assumption about a person.
 RECENCY_HALF_LIFE_DAYS = 30.0
 
-# Recency when `last_accessed_at` is missing entirely. The column is NOT NULL in
+# Recency when `created_at` is missing. The column is NOT NULL in
 # 0002_memories.sql, so a missing value means the candidate did not come from a
-# `memories` row (a synthetic or hand-built candidate). 0.0 — no evidence of
-# access is not evidence of recent access — so a synthetic candidate can never
-# out-rank a real one on a signal it has no data for.
+# `memories` row (a synthetic or hand-built one). 0.0 — no evidence of when a
+# claim was made is not evidence that it was made recently — so a synthetic
+# candidate can never out-rank a real one on a signal it has no data for.
 RECENCY_DEFAULT = 0.0
+
+# Activation: exponential decay on `last_accessed_at` — when it was last READ.
+#
+# This is the signal M4 called "recency", kept because it is genuinely useful:
+# a memory the system keeps reaching for is probably relevant to how this person
+# uses the assistant. It is simply not evidence about whether the fact is
+# CURRENT, which is what the split exists to separate.
+#
+# THE SAME half-life as recency, and that is a deliberate non-choice.
+#
+# A shorter one is tempting — usefulness plausibly moves faster than truth — but
+# the separation this split exists to create comes from the two signals reading
+# DIFFERENT TIMESTAMPS and carrying DIFFERENT WEIGHTS, not from different decay
+# shapes. Adding a third difference buys nothing measured and costs something
+# real: `tests/unit/fixtures/ranking_fixtures.py` chooses ages that are
+# multiples of the half-life so every expected score is exact in binary and
+# computable on paper. Two half-lives means ages that are multiples of both, or
+# expectations nobody can check by hand.
+#
+# Retune it when there is evidence about how access recency actually behaves in
+# this system, not before.
+ACTIVATION_HALF_LIFE_DAYS = RECENCY_HALF_LIFE_DAYS
+
+# Activation when `last_accessed_at` is missing: same reasoning as
+# RECENCY_DEFAULT. No evidence of access is not evidence of recent access.
+ACTIVATION_DEFAULT = 0.0
 
 # Frequency: saturating transform `n / (n + FREQUENCY_REFERENCE)` over
 # `reinforcement_count`. Three reinforcements — the user having said the same
