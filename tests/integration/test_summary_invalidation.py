@@ -307,3 +307,113 @@ async def test_invalidation_is_audited(subject):
     assert str(rows[0]["memory_id"]) == summary_id
     assert rows[0]["metadata"]["reason"] == "source_deleted"
     assert str(rows[0]["metadata"]["triggered_by"]) == sources[0]
+
+
+# ---------------------------------------------------------------------------
+# the PRODUCTION wiring — the endpoints, not the helper
+# ---------------------------------------------------------------------------
+#
+# A cold verifier deleted the cascade call from `api/memories.py` and 102
+# integration and acceptance tests stayed GREEN. Every test above reaches
+# `mark_summary_stale` through a local helper, so the feature's only two real
+# entry points had zero coverage: the code could have been removed from
+# production entirely without a single failure.
+#
+# These call `delete_memory` and `patch_memory` directly.
+
+
+async def _identity(subject_id: str, actor_id: str | None = None):
+    from api.memories import Identity
+
+    return Identity(subject_id, actor_id or subject_id)
+
+
+async def test_the_delete_endpoint_invalidates_the_summary(subject):
+    """`DELETE /memories/{id}` itself, not the helper underneath it."""
+    from api.memories import delete_memory
+
+    sources, summary_id = await _seed_summary_with_sources(
+        subject, ["The user prefers Java."], "PremSiva prefers Java and works at TCS."
+    )
+
+    result = await delete_memory(memory_id=sources[0], identity=await _identity(subject))
+    assert result["deleted"] is True
+
+    assert (await _row(summary_id))["stale_at"] is not None, (
+        "the endpoint reported a successful erasure while the summary quoting "
+        "the erased fact stayed live and retrievable"
+    )
+
+
+async def test_the_patch_endpoint_invalidates_the_summary(subject, monkeypatch):
+    """`PATCH /memories/{id}` itself. The re-embed is stubbed: this is about the
+    cascade, and the real call would spend a rate-limited provider request."""
+    from llm import config as llm_config
+    from api.memories import MemoryPatch, patch_memory
+
+    sources, summary_id = await _seed_summary_with_sources(
+        subject, ["The user works at TCS."], "The user works at TCS."
+    )
+
+    async def _stub_embed(texts, **kwargs):
+        return [_vector(77) for _ in ([texts] if isinstance(texts, str) else texts)]
+
+    # `patch_memory` does `from llm.config import embed` INSIDE the function, so
+    # the name is resolved on the module at call time — patch it there.
+    monkeypatch.setattr(llm_config, "embed", _stub_embed)
+
+    await patch_memory(
+        patch=MemoryPatch(content="The user works at Infosys."),
+        memory_id=sources[0],
+        identity=await _identity(subject),
+    )
+
+    assert (await _row(summary_id))["stale_at"] is not None, (
+        "an edit left the summary asserting what the user had just corrected"
+    )
+
+
+async def test_erasure_cascades_across_actors(subject):
+    """THE BLOCKER a cold verifier found: RLS silently swallowed the cascade.
+
+    Both `memories` policies are scoped on `actor_id` as well as `subject_id`,
+    so a summary written by a DIFFERENT actor — the reflection job's, or another
+    client of the same subject — was invisible to the deleting caller. The
+    UPDATE matched zero rows, the cascade returned `[]`, and that looked exactly
+    like "this source had no summary". The endpoint returned 200 and the audit
+    trail recorded a clean erasure while the fact stayed retrievable.
+
+    The asymmetry that hid it: `ensure_owned` authorises on `subject_id` alone,
+    so the delete is legitimate; the cascade was gated on `actor_id` too.
+    """
+    from api.memories import delete_memory
+
+    other_actor = str(uuid.uuid4())
+
+    async with session(subject, subject) as conn:
+        source_id = await insert_memory(
+            subject, subject, "The user prefers Java.", _vector(1),
+            "user_preference", 0.7, 0.9, conn=conn,
+        )
+    # The summary belongs to the same SUBJECT but a different ACTOR, which is
+    # what a background job writing on the user's behalf looks like.
+    async with admin_session() as conn:
+        cursor = await conn.execute(
+            "INSERT INTO memories (subject_id, actor_id, content, source, importance,"
+            "                      confidence)"
+            " VALUES (%s::uuid, %s::uuid, %s, %s, %s, %s) RETURNING id",
+            (subject, other_actor, "PremSiva prefers Java.", REFLECTION_SOURCE, 0.6, 0.7),
+        )
+        summary_id = str((await cursor.fetchone())["id"])
+        await conn.execute(
+            "UPDATE memories SET consolidated_at = now(), consolidated_into = %s::uuid"
+            " WHERE id = %s::uuid",
+            (summary_id, source_id),
+        )
+
+    await delete_memory(memory_id=source_id, identity=await _identity(subject))
+
+    assert (await _row(summary_id))["stale_at"] is not None, (
+        "the summary was written by a different actor and RLS hid it from the "
+        "cascade — the erasure reported success and the fact survives"
+    )

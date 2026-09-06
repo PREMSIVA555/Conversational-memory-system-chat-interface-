@@ -27,7 +27,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from graphs.capture_state import Candidate  # noqa: E402
-from store.db import admin_session  # noqa: E402
+from store.db import admin_session, session  # noqa: E402
 from store.memories import persist_candidates  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.timeout(180)]
@@ -375,3 +375,91 @@ async def test_the_curated_list_still_shows_superseded_memories(subject):
 
     assert new["superseded"] is False
     assert new["superseded_by"] is None
+
+
+async def test_a_superseded_row_cannot_absorb_a_new_statement(subject):
+    """`find_similar` must not offer retired rows as dedup targets.
+
+    UNDEFENDED UNTIL A COLD VERIFIER REMOVED THE FILTER AND NOTHING WENT RED.
+    The commit that added it called it out explicitly — "absorbing 'prefers C++'
+    into the retired 'prefers Java' row would undo the supersession" — and then
+    shipped no test for it.
+
+    The verifier's measured consequence, for "Java, then C++, then Java again":
+
+        with the filter     action=insert     live=['The user prefers Java.']
+        without the filter  action=reinforce  live=['The user prefers c++.']
+
+    Without it the user's newest statement is silently discarded onto a row that
+    is no longer live, and the value they just moved away from stays current.
+    Nothing errors and nothing in the panel explains it.
+    """
+    shared = _vector(60)
+
+    def candidate(text: str) -> Candidate:
+        return Candidate(
+            text=text,
+            source="user_preference",
+            attribute=LANGUAGE,
+            embedding=shared,
+            importance=0.7,
+            confidence=0.9,
+        )
+
+    await persist_candidates(subject, subject, [candidate("The user prefers Java.")])
+    await persist_candidates(subject, subject, [candidate("The user prefers c++.")])
+
+    # ...and now back to Java. Identical embedding, so the ONLY thing that can
+    # stop the retired Java row absorbing this is the filter in `find_similar`.
+    results = await persist_candidates(subject, subject, [candidate("The user prefers Java.")])
+
+    assert results[0]["action"] == "insert", (
+        "the new statement was absorbed by a superseded row: "
+        f"{results[0]}"
+    )
+
+    live = [r for r in await _rows(subject) if r["superseded_at"] is None]
+    assert len(live) == 1, f"exactly one value may be live: {live}"
+    assert live[0]["content"] == "The user prefers Java.", (
+        "the user switched back to Java and the store still says c++"
+    )
+
+
+async def test_superseding_a_source_invalidates_its_summary(subject):
+    """The third of item 3's three triggers, which had no test.
+
+    Delete and edit were covered; supersession was not, even though it is the
+    one that fires without any explicit user action on the summary's source.
+    """
+    from jobs.reflection import REFLECTION_SOURCE
+    from store.memories import insert_memory
+
+    async with session(subject, subject) as conn:
+        source_id = await insert_memory(
+            subject, subject, "The user prefers Java.", _vector(70),
+            "user_preference", 0.7, 0.9, attribute=LANGUAGE, conn=conn,
+        )
+        summary_id = await insert_memory(
+            subject, subject, "PremSiva prefers Java.", _vector(71),
+            REFLECTION_SOURCE, 0.6, 0.7, conn=conn,
+        )
+        await conn.execute(
+            "UPDATE memories SET consolidated_at = now(), consolidated_into = %s::uuid"
+            " WHERE id = %s::uuid",
+            (summary_id, source_id),
+        )
+
+    await persist_candidates(
+        subject, subject, [_candidate("The user prefers c++.", LANGUAGE, 72)]
+    )
+
+    async with admin_session() as conn:
+        cursor = await conn.execute(
+            "SELECT stale_at FROM memories WHERE id = %s::uuid", (summary_id,)
+        )
+        stale_at = (await cursor.fetchone())["stale_at"]
+
+    assert stale_at is not None, (
+        "superseding a source left the summary built on it live, still asserting "
+        "a preference the user has replaced"
+    )

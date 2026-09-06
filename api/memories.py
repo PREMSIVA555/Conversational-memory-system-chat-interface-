@@ -73,7 +73,7 @@ from store.audit import DELETE as AUDIT_DELETE
 from store.audit import UPDATE as AUDIT_UPDATE
 from store.audit import write_audit
 from store.db import load_env, session
-from store.memories import mark_summary_stale
+from store.memories import invalidate_summaries_for
 
 logger = logging.getLogger("memsys.api.memories")
 
@@ -369,6 +369,31 @@ async def delete_memory(
         # Layer 1: the explicit application-level ownership check (step 12).
         await ensure_owned(conn, memory_id, identity.subject_id)
 
+    # M9 item 3: invalidate any summary built on this memory BEFORE erasing it,
+    # and outside this RLS session.
+    #
+    # Both `memories` policies are scoped on `actor_id` as well as `subject_id`,
+    # so a summary written under a different actor is INVISIBLE here - the
+    # cascade matched zero rows, returned [], and that was indistinguishable
+    # from "no summary existed". The delete then reported success and the erased
+    # fact stayed retrievable. `invalidate_summaries_for` runs as the owner so
+    # RLS cannot hide the subject's own summary from their own erasure.
+    #
+    # BEFORE, not after: if invalidation fails this raises and nothing is
+    # deleted, so the user sees an error rather than a false success. If the
+    # delete below then fails, a summary has been marked stale for nothing -
+    # one wasted rebuild, no leak. Conservative in the safe direction.
+    stale = await invalidate_summaries_for(
+        subject_id=identity.subject_id,
+        actor_id=identity.actor_id,
+        source_id=memory_id,
+        reason="source_deleted",
+    )
+
+    async with session(identity.subject_id, identity.actor_id) as conn:
+        await conn.execute(_LOCK_TIMEOUT_SQL, (f"{LOCK_TIMEOUT_MS}ms",))
+        await conn.execute(_MEMORY_LOCK_SQL, (memory_id,))
+
         # Layer 2: the same scoping restated in SQL, plus the liveness predicate
         # that decides the concurrent race.
         cursor = await conn.execute(
@@ -397,21 +422,7 @@ async def delete_memory(
             metadata={"soft": True},
         )
 
-        # M9 item 3: erasure must reach the DERIVED copies too.
-        #
-        # Deleting a memory used to leave any reflection summary built from it
-        # untouched and live — so the deleted fact kept reaching the model,
-        # quoted inside a paragraph nobody had deleted. The delete appeared to
-        # work, this audit row said it worked, and the fact survived anyway.
-        # Same transaction, so the invalidation cannot be lost while the delete
-        # commits.
-        stale = await mark_summary_stale(
-            conn,
-            subject_id=identity.subject_id,
-            actor_id=identity.actor_id,
-            source_id=memory_id,
-            reason="source_deleted",
-        )
+
 
     if stale:
         logger.info(
@@ -483,6 +494,18 @@ async def patch_memory(
         raise HTTPException(status_code=502, detail="embedding provider returned no vector")
     literal = "[" + ",".join(repr(float(v)) for v in vectors[0]) + "]"
 
+    # M9 item 3, same reasoning and same ordering as the delete path above. An
+    # edit invalidates a derived summary just as an erasure does, and is in some
+    # ways worse: the summary then asserts something the user has explicitly
+    # corrected, and unlike a deletion there is no missing row to hint that
+    # anything changed.
+    await invalidate_summaries_for(
+        subject_id=identity.subject_id,
+        actor_id=identity.actor_id,
+        source_id=memory_id,
+        reason="source_edited",
+    )
+
     async with session(identity.subject_id, identity.actor_id) as conn:
         await conn.execute(_LOCK_TIMEOUT_SQL, (f"{LOCK_TIMEOUT_MS}ms",))
         await conn.execute(_MEMORY_LOCK_SQL, (memory_id,))
@@ -520,17 +543,7 @@ async def patch_memory(
             },
         )
 
-        # M9 item 3. An EDIT invalidates a derived summary just as a delete
-        # does, and is in some ways worse: the summary now asserts something the
-        # user has explicitly corrected, and unlike a deletion there is no
-        # missing row to hint that anything changed.
-        await mark_summary_stale(
-            conn,
-            subject_id=identity.subject_id,
-            actor_id=identity.actor_id,
-            source_id=memory_id,
-            reason="source_edited",
-        )
+
 
     payload = serialize_memory(dict(row))
     payload["audit_id"] = audit_id

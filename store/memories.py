@@ -52,7 +52,9 @@ from capture import config as capture_config
 from capture.attributes import is_single_valued
 from capture.metrics import log_event
 from store.audit import UPDATE, WRITE, write_audit
-from store.db import session
+import json
+
+from store.db import admin_session, session
 
 # ---------------------------------------------------------------------------
 # vector marshalling
@@ -305,6 +307,20 @@ _SUBJECT_LOCK_SQL = "SELECT pg_advisory_xact_lock(hashtext(%s))"
 _LOCK_TIMEOUT_SQL = "SELECT set_config('lock_timeout', %s, true)"
 
 
+_STALE_ANY_ACTOR_SQL = """
+UPDATE memories AS summary
+   SET stale_at   = now(),
+       updated_at = now()
+  FROM memories AS src
+ WHERE src.id             = %(source_id)s::uuid
+   AND src.subject_id     = %(subject_id)s::uuid
+   AND summary.id         = src.consolidated_into
+   AND summary.subject_id = %(subject_id)s::uuid
+   AND summary.deleted_at IS NULL
+   AND summary.stale_at   IS NULL
+RETURNING summary.id, summary.content, summary.actor_id
+"""
+
 _STALE_SQL = """
 UPDATE memories AS summary
    SET stale_at   = now(),
@@ -319,6 +335,92 @@ RETURNING summary.id, summary.content
 """
 
 
+async def invalidate_summaries_for(
+    *,
+    subject_id: str,
+    actor_id: str,
+    source_id: str,
+    reason: str,
+) -> list[dict[str, Any]]:
+    """Invalidate a source's summary ACROSS ACTORS. Call before the mutation.
+
+    WHY THIS EXISTS SEPARATELY FROM `mark_summary_stale`
+    ----------------------------------------------------
+    A cold verifier found an erasure hole. `mark_summary_stale` runs in the
+    caller's RLS session, and BOTH policies on `memories` are scoped on
+    `actor_id` as well as `subject_id`:
+
+        memories_select_own  subject_id = app.subject_id AND actor_id = app.actor_id
+        memories_update_own  subject_id = app.subject_id AND actor_id = app.actor_id
+
+    A summary written under a DIFFERENT actor - the reflection job's actor, say,
+    or another client of the same subject - is therefore invisible to the
+    deleting caller. The UPDATE matched zero rows, the function returned `[]`,
+    and that is indistinguishable from "this source had no summary". The DELETE
+    returned 200 and the audit trail recorded a successful erasure while the
+    erased fact stayed retrievable.
+
+    Note the asymmetry that made it silent: `ensure_owned` authorises on
+    `subject_id` alone, so the delete is legitimate, while the cascade is gated
+    on `actor_id` too. Ownership is checked on one axis and propagation on
+    another.
+
+    So this runs as the owner, where RLS cannot hide a row from the subject's
+    own erasure. That is a real privilege escalation and it is deliberately
+    narrow: it can only ever set `stale_at` on a summary belonging to the
+    subject named in the argument, and only for a source that also belongs to
+    them - the WHERE clause checks both.
+
+    ORDERING MATTERS AND IS PART OF THE FIX. Callers invoke this BEFORE the
+    mutation, in its own transaction. If invalidation fails, the caller aborts
+    and nothing is deleted - the user sees an error instead of a false success.
+    If the mutation then fails, a summary has been marked stale unnecessarily,
+    which costs one rebuild and leaks nothing. Conservative in the safe
+    direction.
+    """
+    async with admin_session() as conn:
+        cursor = await conn.execute(
+            _STALE_ANY_ACTOR_SQL, {"source_id": source_id, "subject_id": subject_id}
+        )
+        stale = [dict(row) for row in await cursor.fetchall()]
+
+        for row in stale:
+            await conn.execute(
+                """
+                INSERT INTO audit_log (subject_id, actor_id, memory_id, action, metadata)
+                VALUES (%s::uuid, %s::uuid, %s::uuid, 'update', %s::jsonb)
+                """,
+                (
+                    subject_id,
+                    actor_id,
+                    str(row["id"]),
+                    json.dumps(
+                        {
+                            "outcome": "stale",
+                            "reason": reason,
+                            "triggered_by": source_id,
+                            "cross_actor": str(row["actor_id"]) != str(actor_id),
+                        }
+                    ),
+                ),
+            )
+
+    if stale:
+        log_event(
+            "store.summary.stale",
+            reason=reason,
+            source_id=source_id,
+            summaries=[str(row["id"]) for row in stale],
+            cross_actor=[
+                str(row["id"])
+                for row in stale
+                if str(row["actor_id"]) != str(actor_id)
+            ],
+        )
+
+    return stale
+
+
 async def mark_summary_stale(
     conn: Any,
     *,
@@ -328,6 +430,11 @@ async def mark_summary_stale(
     reason: str,
 ) -> list[dict[str, Any]]:
     """Invalidate the summary a changed memory was folded into.
+
+    IN-TRANSACTION variant, scoped by the caller's RLS session. Use
+    `invalidate_summaries_for` instead on any path where the summary might have
+    been written by a different actor - notably erasure. See that function for
+    the hole this one has.
 
     Returns the summaries it marked, so the caller can log them. Empty when the
     source was never consolidated, which is the common case.

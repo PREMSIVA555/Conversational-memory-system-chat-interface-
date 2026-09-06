@@ -14,12 +14,13 @@ This is the whole of the ranking, and it is deliberately five lines long:
           + 0.20 * importance_score    M2's evaluate node
 
 M4 had four terms, with a single `recency` decaying on `last_accessed_at`. M9
-split it, because retrieval WRITES `last_accessed_at` on every row it returns:
-memories retrieved together always looked equally fresh, so the term could not
-distinguish a fact stated an hour ago from one stated yesterday. A user who
-said "Python", then "Java", then "C++" kept getting answers in Python, because
-all three rows were identical on every signal and the tie fell to semantic
-similarity between three near-identical sentences.
+split it, because `last_accessed_at` is written by `reinforce()` on every
+restatement of a fact — including one the assistant made. Memories that had each
+been repeated therefore looked equally fresh, and the term could not distinguish
+a fact stated an hour ago from one stated yesterday. A user who said "Python",
+then "Java", then "C++" kept getting answers in Python, because all three rows
+had reinforcement_count = 2 and an identical timestamp, and the tie fell to
+semantic similarity between three near-identical sentences.
 
 Reading a memory is evidence that it is USEFUL. It is not evidence that it is
 CURRENT. Those are now two terms, and `recency` is weighted 2.5x `activation`
@@ -79,10 +80,10 @@ logger = logging.getLogger(__name__)
 #     importance  0.20   M2's evaluate node
 #
 # M9 split M4's single `recency` term in two. M4 decayed on `last_accessed_at`,
-# but retrieval WRITES that column on every row it returns — so contradictory
-# memories retrieved together always looked equally fresh, and a preference the
-# user had replaced could outrank the one that replaced it. Reading a memory is
-# evidence it is useful, not evidence it is current. Full reasoning and the
+# but `reinforce()` writes that column on every restatement — so contradictory
+# memories that had each been repeated looked equally fresh, and a preference the
+# user had replaced could outrank the one that replaced it. Repetition is
+# evidence a fact keeps coming up, not evidence it is current. Full reasoning and the
 # measured failure are above the constants in `retrieve/config.py`.
 #
 # Defined in `retrieve/config.py`; imported, never re-spelled, so there is

@@ -187,11 +187,22 @@ TS_RANK_REFERENCE = 0.0607927
 #     "The user prefers Java."              0.70    1.50           2   09-05 11:31
 #     "The user prefers c++."               0.70    1.50           2   09-05 11:31
 #
-# `last_accessed_at` was identical because RETRIEVAL ITSELF touches every row it
-# returns. So the one signal that could have distinguished "stated an hour ago"
-# from "stated yesterday" reset all three to the same instant on every turn, and
-# the ranking fell back to semantic similarity between three near-identical
-# sentences — effectively a coin flip.
+# `last_accessed_at` was identical because REINFORCEMENT stamps it. Every one of
+# those rows had been said more than once (reinforcement_count = 2), and
+# `store/memories.py:reinforce()` sets `last_accessed_at = now()` — it is the
+# ONLY writer of that column in the codebase.
+#
+# CORRECTION, recorded rather than quietly edited. The first version of this
+# comment said retrieval writes the column on every row it returns. It does not:
+# a cold verifier ran the real `keyword_search` and `semantic_search` and the
+# timestamp did not move, and neither path contains an UPDATE at all. The fix
+# below is unaffected — the two signals still needed separating — but the
+# mechanism is reinforcement, not reading.
+#
+# That makes the provenance rule in `store/memories.py` (an assistant_note may
+# not reinforce) MORE load-bearing than it first appeared: the assistant
+# restating a fact was refreshing this timestamp, which is precisely how three
+# contradictory preferences came to look equally fresh.
 #
 # Reading a memory is not evidence that the fact is fresh. It is evidence that
 # the fact is USEFUL. Those are different claims and they now have different

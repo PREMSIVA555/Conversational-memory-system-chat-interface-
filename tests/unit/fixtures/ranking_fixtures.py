@@ -408,10 +408,11 @@ def single_oversized_candidate(repeats: int = 200) -> RetrievalCandidate:
 #   "The user prefers Java."                   0.70    1.50           2   09-05 11:31
 #   "The user prefers c++."                    0.70    1.50           2   09-05 11:31
 #
-# `last_accessed_at` was identical because RETRIEVAL WRITES IT on every row it
-# returns. M4's recency term decayed on that column, so all three scored the
-# same on the one signal that should have separated them, and the tie fell
-# through to semantic similarity between three near-identical sentences.
+# `last_accessed_at` was identical because REINFORCEMENT stamps it — note the
+# reinforcement_count of 2 on all three. `reinforce()` is the only writer of that
+# column. M4's recency term decayed on it, so all three scored the same on the
+# one signal that should have separated them, and the tie fell through to
+# semantic similarity between three near-identical sentences.
 #
 # These three model exactly that: same semantic, same reinforcement, same
 # importance, ALL READ AT THE SAME MOMENT (accessed_days_ago=0, as retrieval

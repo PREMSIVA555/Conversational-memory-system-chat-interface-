@@ -165,11 +165,13 @@ def recency_score(
     """Exponential decay on `created_at`: `0.5 ** (age_days / half_life)`.
 
     WHEN THE FACT WAS STATED, not when it was last read. M4 used
-    `last_accessed_at` here and that was the defect: retrieval stamps
-    `last_accessed_at` on every row it returns, so three contradictory
-    preferences retrieved together all reset to the same instant and the term
-    could not tell "said an hour ago" from "said yesterday". `activation_score`
-    below now carries the access signal, under its own name and weight.
+    `last_accessed_at` here and that was the defect. That column is stamped by
+    `reinforce()` — the only writer of it anywhere — so every restatement of a
+    fact, including one the ASSISTANT made, reset it to now(). Three
+    contradictory preferences that had each been said twice therefore carried an
+    identical timestamp, and the term could not tell "said an hour ago" from
+    "said yesterday". `activation_score` below carries that signal under its own
+    name and weight.
 
     Half-life rather than a linear window, because the shape matches how a fact
     about a person ages: yesterday and the day before are near-identical, while
@@ -212,13 +214,17 @@ def activation_score(
     Deliberately a separate signal from `recency_score`, which decays on
     `created_at`. Reading a memory says it was useful; it says nothing about
     whether the fact is still true. Conflating the two is what let a superseded
-    preference outrank the one that replaced it — retrieval stamps
-    `last_accessed_at` on everything it returns, so contradictory rows retrieved
-    together are always equally "fresh".
+    preference outrank the one that replaced it — `reinforce()` stamps
+    `last_accessed_at` on every restatement, so contradictory rows that have each
+    been repeated are always equally "fresh".
 
     Weighted well below recency (0.10 vs 0.25, enforced at import in
-    `retrieve/config.py`) precisely so it cannot re-create that behaviour, and
-    given a shorter half-life because usefulness moves faster than truth.
+    `retrieve/config.py`) precisely so it cannot re-create that behaviour. The
+    half-life is the SAME as recency's — a shorter one was considered and
+    deliberately not taken, because the separation comes from the two signals
+    reading different columns and carrying different weights, and a third
+    difference would cost the ranking fixtures their hand-computable exactness.
+    See `ACTIVATION_HALF_LIFE_DAYS`.
 
     Missing / unparseable `last_accessed_at` → `config.ACTIVATION_DEFAULT` (0.0).
     A future timestamp clamps to 1.0.
