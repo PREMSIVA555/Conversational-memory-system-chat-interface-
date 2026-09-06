@@ -67,6 +67,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Sequence
 
+from store.audit import DELETE as AUDIT_DELETE
 from store.audit import UPDATE as AUDIT_UPDATE
 from store.audit import WRITE as AUDIT_WRITE
 from store.audit import write_audit
@@ -174,6 +175,7 @@ WITH candidates AS (
       FROM memories
      WHERE subject_id      = %(subject_id)s::uuid
        AND deleted_at      IS NULL
+       AND superseded_at   IS NULL
        AND consolidated_at IS NULL
        AND embedding       IS NOT NULL
        AND (source IS DISTINCT FROM %(reflection_source)s)
@@ -413,6 +415,131 @@ HAVING count(*) >= %(minimum)s
 """
 
 
+_STALE_SUMMARIES_SQL = """
+SELECT id, content
+  FROM memories
+ WHERE subject_id = %(subject_id)s::uuid
+   AND stale_at   IS NOT NULL
+   AND deleted_at IS NULL
+ ORDER BY stale_at
+ LIMIT %(limit)s
+"""
+
+_RETIRE_STALE_SQL = """
+UPDATE memories
+   SET deleted_at = now(),
+       updated_at = now()
+ WHERE id         = %(summary_id)s::uuid
+   AND subject_id = %(subject_id)s::uuid
+   AND deleted_at IS NULL
+RETURNING id
+"""
+
+_FREE_SOURCES_SQL = """
+UPDATE memories
+   SET consolidated_at   = NULL,
+       consolidated_into = NULL,
+       updated_at        = now()
+ WHERE consolidated_into = %(summary_id)s::uuid
+   AND subject_id        = %(subject_id)s::uuid
+   AND deleted_at        IS NULL
+   AND superseded_at     IS NULL
+RETURNING id
+"""
+
+
+async def rebuild_stale_summaries(
+    subject_id: str,
+    actor_id: str,
+    *,
+    limit: int = 25,
+) -> dict[str, Any]:
+    """Retire summaries whose sources changed, and free the survivors.
+
+    The lazy half of M9 item 3. Marking a summary stale removes it from
+    retrieval IMMEDIATELY — that is the safety property, since it may quote
+    something the user erased — but leaves a gap: the other facts folded into it
+    stop being summarised. This closes that gap on the next reflection run.
+
+    For each stale summary:
+
+      1. soft-delete it. Not a hard delete: it is a memory the user could see in
+         the panel, and M7's rule is that rows leave by way of `deleted_at`.
+      2. clear `consolidated_at` / `consolidated_into` on its surviving sources,
+         which makes them candidates again. The next clustering pass rebuilds a
+         summary from what is actually left.
+
+    Sources that were themselves deleted or superseded are deliberately NOT
+    freed — they must stay out of the next summary, which is the entire point of
+    having invalidated the old one.
+
+    Returns a small summary dict for the caller to log.
+    """
+    # Imported here rather than at module scope, matching
+    # `run_reflection_worker` below: `jobs.metrics` pulls in the Prometheus
+    # client, and this module is imported by the graph on paths that never emit
+    # a metric.
+    from jobs.metrics import log_event
+
+    retired: list[str] = []
+    freed = 0
+
+    async with session(subject_id, actor_id) as conn:
+        cursor = await conn.execute(
+            _STALE_SUMMARIES_SQL, {"subject_id": subject_id, "limit": limit}
+        )
+        stale = [dict(row) for row in await cursor.fetchall()]
+
+        for summary in stale:
+            summary_id = str(summary["id"])
+
+            cursor = await conn.execute(
+                _RETIRE_STALE_SQL, {"summary_id": summary_id, "subject_id": subject_id}
+            )
+            if await cursor.fetchone() is None:
+                continue  # someone else retired it first
+
+            await write_audit(
+                conn,
+                subject_id=subject_id,
+                actor_id=actor_id,
+                action=AUDIT_DELETE,
+                memory_id=summary_id,
+                metadata={"soft": True, "reason": "stale_summary_rebuilt", "job": "reflection"},
+                allow_repeat=True,
+            )
+
+            cursor = await conn.execute(
+                _FREE_SOURCES_SQL, {"summary_id": summary_id, "subject_id": subject_id}
+            )
+            released = [str(row["id"]) for row in await cursor.fetchall()]
+            freed += len(released)
+
+            for source_id in released:
+                await write_audit(
+                    conn,
+                    subject_id=subject_id,
+                    actor_id=actor_id,
+                    action=AUDIT_UPDATE,
+                    memory_id=source_id,
+                    metadata={
+                        "outcome": "unconsolidated",
+                        "job": "reflection",
+                        "previous_summary": summary_id,
+                    },
+                    allow_repeat=True,
+                )
+
+            retired.append(summary_id)
+            log_event(
+                "reflection.stale.retired",
+                summary_id=summary_id,
+                sources_freed=len(released),
+            )
+
+    return {"retired": retired, "sources_freed": freed}
+
+
 async def list_subjects_with_candidates(*, limit: int = 100) -> list[tuple[str, str]]:
     """`(subject_id, actor_id)` pairs with enough un-consolidated rows to try.
 
@@ -481,6 +608,23 @@ async def run_reflection_worker(
 
     try:
         for subject, actor in targets:
+            # M9 item 3, and it must run BEFORE clustering.
+            #
+            # Retiring a stale summary frees its surviving sources to be
+            # consolidated again. Doing it first means this same pass can
+            # rebuild them; doing it after would leave the gap open for another
+            # whole night, during which those facts are in no summary at all.
+            rebuilt = await rebuild_stale_summaries(subject, actor)
+            if rebuilt["retired"]:
+                log_event(
+                    "reflection.stale.rebuilt",
+                    run_id=run,
+                    worker=worker,
+                    subject_id=subject,
+                    retired=len(rebuilt["retired"]),
+                    sources_freed=rebuilt["sources_freed"],
+                )
+
             state = await run_reflection(subject_id=subject, actor_id=actor)
             if state.get("summary_id"):
                 record.count_summary()

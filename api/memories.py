@@ -73,6 +73,7 @@ from store.audit import DELETE as AUDIT_DELETE
 from store.audit import UPDATE as AUDIT_UPDATE
 from store.audit import write_audit
 from store.db import load_env, session
+from store.memories import mark_summary_stale
 
 logger = logging.getLogger("memsys.api.memories")
 
@@ -396,6 +397,27 @@ async def delete_memory(
             metadata={"soft": True},
         )
 
+        # M9 item 3: erasure must reach the DERIVED copies too.
+        #
+        # Deleting a memory used to leave any reflection summary built from it
+        # untouched and live — so the deleted fact kept reaching the model,
+        # quoted inside a paragraph nobody had deleted. The delete appeared to
+        # work, this audit row said it worked, and the fact survived anyway.
+        # Same transaction, so the invalidation cannot be lost while the delete
+        # commits.
+        stale = await mark_summary_stale(
+            conn,
+            subject_id=identity.subject_id,
+            actor_id=identity.actor_id,
+            source_id=memory_id,
+            reason="source_deleted",
+        )
+
+    if stale:
+        logger.info(
+            "memory soft-deleted id=%s subject=%s; invalidated %d summary/summaries %s",
+            memory_id, identity.subject_id, len(stale), [str(r["id"]) for r in stale],
+        )
     logger.info("memory soft-deleted id=%s subject=%s", memory_id, identity.subject_id)
     return {
         "id": memory_id,
@@ -496,6 +518,18 @@ async def patch_memory(
                 "reembedded": True,
                 "embedding_dim": len(vectors[0]),
             },
+        )
+
+        # M9 item 3. An EDIT invalidates a derived summary just as a delete
+        # does, and is in some ways worse: the summary now asserts something the
+        # user has explicitly corrected, and unlike a deletion there is no
+        # missing row to hint that anything changed.
+        await mark_summary_stale(
+            conn,
+            subject_id=identity.subject_id,
+            actor_id=identity.actor_id,
+            source_id=memory_id,
+            reason="source_edited",
         )
 
     payload = serialize_memory(dict(row))

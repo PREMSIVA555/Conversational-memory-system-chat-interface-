@@ -69,6 +69,11 @@ FROM memories m
 WHERE m.subject_id = %(subject_id)s::uuid
   AND m.deleted_at IS NULL
   AND m.superseded_at IS NULL
+  AND m.stale_at IS NULL
+  -- M9: a summary whose sources changed may assert something no longer true.
+  -- Excluded until the reflection job rebuilds it -- a stale summary is the
+  -- shape the erasure bug took, where deleted facts kept reaching the model
+  -- quoted inside a paragraph nobody had deleted.
   -- M9: a preference the user has since replaced must not reach the model.
   -- Superseded is NOT deleted -- the row stays visible in the curated list and
   -- the GDPR export, because changing your mind is not a request for erasure.

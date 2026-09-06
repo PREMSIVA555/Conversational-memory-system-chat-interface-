@@ -263,6 +263,82 @@ _SUBJECT_LOCK_SQL = "SELECT pg_advisory_xact_lock(hashtext(%s))"
 _LOCK_TIMEOUT_SQL = "SELECT set_config('lock_timeout', %s, true)"
 
 
+_STALE_SQL = """
+UPDATE memories AS summary
+   SET stale_at   = now(),
+       updated_at = now()
+  FROM memories AS src
+ WHERE src.id                = %(source_id)s::uuid
+   AND summary.id            = src.consolidated_into
+   AND summary.subject_id    = %(subject_id)s::uuid
+   AND summary.deleted_at    IS NULL
+   AND summary.stale_at      IS NULL
+RETURNING summary.id, summary.content
+"""
+
+
+async def mark_summary_stale(
+    conn: Any,
+    *,
+    subject_id: str,
+    actor_id: str,
+    source_id: str,
+    reason: str,
+) -> list[dict[str, Any]]:
+    """Invalidate the summary a changed memory was folded into.
+
+    Returns the summaries it marked, so the caller can log them. Empty when the
+    source was never consolidated, which is the common case.
+
+    WHY THIS EXISTS. M7 promises erasure; M8 writes summaries; nothing joined
+    them. A user deleted two preferences, both rows were soft-deleted correctly,
+    and the summary quoting them stayed live and kept feeding the model the
+    facts they had just erased. The delete APPEARED to work — the audit trail
+    said so — and the fact reached the model anyway.
+
+    The edge was already in the schema: `0007` gave every consolidated source a
+    `consolidated_into` pointer and an index on it. Nothing had ever read it
+    back. This walks it.
+
+    Called for a delete, an edit and a supersession — anything that makes the
+    source no longer support what the summary asserts. Runs inside the caller's
+    transaction so the invalidation commits with the change that caused it; a
+    summary left live after its source vanished is precisely the bug.
+
+    `stale_at IS NULL` makes it idempotent: retiring three sources of one
+    summary marks it once and leaves the original timestamp alone.
+    """
+    cursor = await conn.execute(
+        _STALE_SQL, {"source_id": source_id, "subject_id": subject_id}
+    )
+    stale = [dict(row) for row in await cursor.fetchall()]
+
+    for row in stale:
+        await write_audit(
+            conn,
+            subject_id=subject_id,
+            actor_id=actor_id,
+            action=UPDATE,
+            memory_id=str(row["id"]),
+            metadata={
+                "outcome": "stale",
+                "reason": reason,
+                "triggered_by": source_id,
+            },
+            allow_repeat=True,
+        )
+
+    if stale:
+        log_event(
+            "store.summary.stale",
+            reason=reason,
+            source_id=source_id,
+            summaries=[str(row["id"]) for row in stale],
+        )
+
+    return stale
+
+
 _SUPERSEDE_SQL = """
 UPDATE memories
    SET superseded_by = %(new_id)s::uuid,
@@ -312,6 +388,17 @@ async def supersede_slot(
     retired = [dict(row) for row in await cursor.fetchall()]
 
     for row in retired:
+        # A superseded source no longer supports what a summary built on it
+        # asserts, so the summary must be rebuilt. Same transaction as the
+        # supersession itself.
+        await mark_summary_stale(
+            conn,
+            subject_id=subject_id,
+            actor_id=actor_id,
+            source_id=str(row["id"]),
+            reason="source_superseded",
+        )
+
         # M7's trail: a supersession is a governed mutation of an existing row,
         # so it earns an audit entry like any other. `allow_repeat` because one
         # new value can retire several older ones in a single transaction —
