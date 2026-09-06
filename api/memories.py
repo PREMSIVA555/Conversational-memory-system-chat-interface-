@@ -112,7 +112,7 @@ _LOCK_TIMEOUT_SQL = "SELECT set_config('lock_timeout', %s, true)"
 MEMORY_COLUMNS = """
     id, subject_id, actor_id, content, source, importance, confidence,
     weight, reinforcement_count, created_at, updated_at, last_accessed_at,
-    deleted_at
+    deleted_at, attribute, superseded_at, superseded_by
 """
 
 
@@ -260,6 +260,16 @@ def serialize_memory(row: dict[str, Any], *, include_deleted_marker: bool = Fals
         "created_at": _iso(row.get("created_at")),
         "updated_at": _iso(row.get("updated_at")),
         "last_accessed_at": _iso(row.get("last_accessed_at")),
+        # M9. Surfaced so the panel can show "you changed this" rather than
+        # silently hiding it: a superseded memory leaves RETRIEVAL but stays
+        # visible, because the user changed their mind rather than asking for
+        # erasure. `attribute` is NULL on the overwhelming majority of rows.
+        "attribute": row.get("attribute"),
+        "superseded": row.get("superseded_at") is not None,
+        "superseded_at": _iso(row.get("superseded_at")),
+        "superseded_by": (
+            str(row["superseded_by"]) if row.get("superseded_by") else None
+        ),
     }
     if include_deleted_marker:
         payload["deleted"] = row.get("deleted_at") is not None

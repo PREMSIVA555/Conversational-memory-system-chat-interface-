@@ -23,6 +23,7 @@ from typing import Any
 from llm import config as llm_config
 
 from capture import config as capture_config
+from capture.attributes import normalise_attribute
 from capture.metrics import log_event, log_warning, node_span
 from graphs.capture_state import Candidate, CaptureState, Turn, turn_text
 
@@ -42,7 +43,24 @@ Return ONLY a JSON array. No prose, no markdown fences, no explanation.
 
 Each array element is an object:
   {"text": "<one self-contained fact, third person, about the user>",
-   "source": "<one of: user_statement, user_preference, user_plan, assistant_note>"}
+   "source": "<one of: user_statement, user_preference, user_plan, assistant_note>",
+   "attribute": "<a slot name from the list below, or omit entirely>"}
+
+ATTRIBUTE is optional and most facts do not have one. Include it ONLY when the
+fact fills one of these exact slots:
+
+  default_programming_language   the language they want code written in
+  preferred_response_language    the human language they want replies in
+  preferred_response_format      e.g. bullet points, prose, tables
+  preferred_code_comment_style
+  employer                       job_title            city_of_residence
+  timezone                       preferred_name
+  food_preference                dietary_restriction  allergy
+  hobby                          programming_language_known             skill
+
+Use the exact spelling above. Omit `attribute` if the fact does not fill one of
+these slots — that is the common case and it is the correct answer. Never invent
+a slot name.
 
 RULES
 - Atomic: one fact per element. Split compound statements.
@@ -60,8 +78,11 @@ Turn: "User: hi"                                     -> []
 Turn: "User: thanks!"                                -> []
 Turn: "User: what's the weather?"                    -> []
 Turn: "User: Can you explain recursion?"             -> []
-Turn: "User: I'm allergic to peanuts."               -> [{"text": "The user is allergic to peanuts.", "source": "user_statement"}]
-Turn: "User: I moved to Lisbon and I work as a nurse." -> [{"text": "The user lives in Lisbon.", "source": "user_statement"}, {"text": "The user works as a nurse.", "source": "user_statement"}]
+Turn: "User: I'm allergic to peanuts."               -> [{"text": "The user is allergic to peanuts.", "source": "user_statement", "attribute": "allergy"}]
+Turn: "User: I moved to Lisbon and I work as a nurse." -> [{"text": "The user lives in Lisbon.", "source": "user_statement", "attribute": "city_of_residence"}, {"text": "The user works as a nurse.", "source": "user_statement", "attribute": "job_title"}]
+Turn: "User: I prefer C++."                          -> [{"text": "The user prefers code in C++.", "source": "user_preference", "attribute": "default_programming_language"}]
+Turn: "User: I like dosa."                           -> [{"text": "The user likes dosa.", "source": "user_preference", "attribute": "food_preference"}]
+Turn: "User: My sister is named Mia."                -> [{"text": "The user's sister is named Mia.", "source": "user_statement"}]
 """
 
 
@@ -107,11 +128,13 @@ def _coerce_candidates(items: list[Any]) -> list[Candidate]:
     """Accept both the documented object shape and a bare list of strings."""
     out: list[Candidate] = []
     for item in items:
+        attribute_raw: object = None
         if isinstance(item, str):
             text, source = item, "user_statement"
         elif isinstance(item, dict):
             text = item.get("text") or item.get("fact") or item.get("content") or ""
             source = item.get("source") or "user_statement"
+            attribute_raw = item.get("attribute")
         else:
             continue
 
@@ -119,7 +142,21 @@ def _coerce_candidates(items: list[Any]) -> list[Candidate]:
         if not text:
             continue
         source = str(source).strip() or "user_statement"
-        out.append(Candidate(text=text, source=source))
+
+        # Validated against the closed registry, never taken on trust. An
+        # unrecognised slot becomes None — the memory is stored as an ordinary
+        # fact and supersedes nothing. That is the safe failure direction: a
+        # missed supersession is a nuisance, a wrongly-recognised one marks a
+        # true memory superseded and removes it from retrieval.
+        attribute = normalise_attribute(attribute_raw)
+        if attribute_raw is not None and attribute is None:
+            log_warning(
+                "capture.extract.unknown_attribute",
+                proposed=str(attribute_raw)[:60],
+                text=text[:80],
+            )
+
+        out.append(Candidate(text=text, source=source, attribute=attribute))
     return out
 
 

@@ -34,6 +34,13 @@ class Candidate:
     # --- from extract ---
     text: str
     source: str = "chat"
+    attribute: Optional[str] = None
+    """The slot this fact fills, e.g. `default_programming_language`, or None.
+
+    Validated against the closed registry in `capture/attributes.py` at
+    extraction time, so anything reaching here is either a known slot or None.
+    A single-valued slot makes the write supersede whatever filled it before —
+    see `store/memories.py`."""
 
     # --- from pii ---
     pii_entities: list[str] = field(default_factory=list)

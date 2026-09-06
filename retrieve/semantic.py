@@ -68,6 +68,11 @@ SELECT {_COLUMNS},
 FROM memories m
 WHERE m.subject_id = %(subject_id)s::uuid
   AND m.deleted_at IS NULL
+  AND m.superseded_at IS NULL
+  -- M9: a preference the user has since replaced must not reach the model.
+  -- Superseded is NOT deleted -- the row stays visible in the curated list and
+  -- the GDPR export, because changing your mind is not a request for erasure.
+  -- It is only RETRIEVAL that must see the current value and nothing else.
   AND m.embedding IS NOT NULL
 ORDER BY m.embedding <=> %(vec)s::vector, m.id
 LIMIT %(limit)s

@@ -49,7 +49,9 @@ from __future__ import annotations
 from typing import Any, Iterable, Optional, Sequence
 
 from capture import config as capture_config
-from store.audit import WRITE, write_audit
+from capture.attributes import is_single_valued
+from capture.metrics import log_event
+from store.audit import UPDATE, WRITE, write_audit
 from store.db import session
 
 # ---------------------------------------------------------------------------
@@ -93,6 +95,14 @@ async def find_similar(
       ``deleted_at IS NULL``  a soft-deleted memory (M7) must not silently
                               resurrect itself by absorbing a new fact as a
                               "duplicate".
+      ``superseded_at IS NULL``  nor may a preference the user has since changed
+                              (M9). Absorbing "prefers C++" into the superseded
+                              "prefers Java" row would undo the supersession and
+                              restore exactly the bug it was built to fix.
+
+    `attribute` is selected because `persist_candidates` needs it: a near-match
+    that fills the SAME single-valued slot with a DIFFERENT value is a
+    supersession, not a duplicate.
 
     `<=>` is pgvector's cosine *distance*, so similarity is `1 - distance`.
     """
@@ -101,11 +111,13 @@ async def find_similar(
         """
         SELECT id,
                content,
+               attribute,
                reinforcement_count,
                1 - (embedding <=> %s::vector) AS similarity
           FROM memories
          WHERE subject_id = %s
            AND deleted_at IS NULL
+           AND superseded_at IS NULL
            AND embedding IS NOT NULL
          ORDER BY embedding <=> %s::vector
          LIMIT %s
@@ -152,6 +164,7 @@ async def insert_memory(
     importance: float | None,
     confidence: float | None,
     *,
+    attribute: str | None = None,
     conn: Any = None,
 ) -> str:
     """Insert one memory row and return its id (plan step 8).
@@ -169,18 +182,20 @@ async def insert_memory(
         async with session(subject_id, actor_id) as own_conn:
             return await insert_memory(
                 subject_id, actor_id, content, embedding, source,
-                importance, confidence, conn=own_conn,
+                importance, confidence, attribute=attribute, conn=own_conn,
             )
 
     literal = to_vector_literal(embedding) if embedding is not None else None
     cursor = await conn.execute(
         """
         INSERT INTO memories
-               (subject_id, actor_id, content, embedding, source, importance, confidence)
-        VALUES (%s, %s, %s, %s::vector, %s, %s, %s)
+               (subject_id, actor_id, content, embedding, source, importance,
+                confidence, attribute)
+        VALUES (%s, %s, %s, %s::vector, %s, %s, %s, %s)
         RETURNING id
         """,
-        (subject_id, actor_id, content, literal, source, importance, confidence),
+        (subject_id, actor_id, content, literal, source, importance, confidence,
+         attribute),
     )
     row = await cursor.fetchone()
     return str(row["id"])
@@ -248,6 +263,76 @@ _SUBJECT_LOCK_SQL = "SELECT pg_advisory_xact_lock(hashtext(%s))"
 _LOCK_TIMEOUT_SQL = "SELECT set_config('lock_timeout', %s, true)"
 
 
+_SUPERSEDE_SQL = """
+UPDATE memories
+   SET superseded_by = %(new_id)s::uuid,
+       superseded_at = now(),
+       updated_at    = now()
+ WHERE subject_id    = %(subject_id)s::uuid
+   AND attribute     = %(attribute)s
+   AND id           <> %(new_id)s::uuid
+   AND deleted_at    IS NULL
+   AND superseded_at IS NULL
+RETURNING id, content
+"""
+
+
+async def supersede_slot(
+    conn: Any,
+    *,
+    subject_id: str,
+    actor_id: str,
+    attribute: str,
+    new_id: str,
+) -> list[dict[str, Any]]:
+    """Mark every other live occupant of a single-valued slot as superseded.
+
+    Returns the rows it retired, so the caller can log and audit them.
+
+    NOT A DELETE. `superseded_at` says the user changed their mind;
+    `deleted_at` says they asked for erasure. Superseded rows leave retrieval —
+    which is the whole point, since a preference the user has replaced must stop
+    reaching the model — but stay in the curated list and the GDPR export,
+    because "you said Java in September and C++ in October" is history they are
+    entitled to see.
+
+    `id <> new_id` guards the obvious own-goal: the row that just filled the
+    slot must not supersede itself. `superseded_at IS NULL` makes the statement
+    idempotent, so a retry cannot rewrite an earlier supersession's pointer and
+    lose the chain.
+
+    Called under the same advisory lock and inside the same transaction as the
+    INSERT that triggered it, so a reader never sees two live values in a
+    single-valued slot.
+    """
+    cursor = await conn.execute(
+        _SUPERSEDE_SQL,
+        {"new_id": new_id, "subject_id": subject_id, "attribute": attribute},
+    )
+    retired = [dict(row) for row in await cursor.fetchall()]
+
+    for row in retired:
+        # M7's trail: a supersession is a governed mutation of an existing row,
+        # so it earns an audit entry like any other. `allow_repeat` because one
+        # new value can retire several older ones in a single transaction —
+        # rare, but it happens when a slot was somehow left with two occupants.
+        await write_audit(
+            conn,
+            subject_id=subject_id,
+            actor_id=actor_id,
+            action=UPDATE,
+            memory_id=str(row["id"]),
+            metadata={
+                "outcome": "superseded",
+                "attribute": attribute,
+                "superseded_by": new_id,
+            },
+            allow_repeat=True,
+        )
+
+    return retired
+
+
 async def persist_candidates(
     subject_id: str,
     actor_id: str,
@@ -283,12 +368,47 @@ async def persist_candidates(
         for candidate in items:
             embedding = getattr(candidate, "embedding", None)
             text = getattr(candidate, "text", "")
+            attribute = getattr(candidate, "attribute", None)
+            single_valued = is_single_valued(attribute)
 
             match: dict[str, Any] | None = None
             if embedding:
                 rows = await find_similar(conn, subject_id, embedding, limit=1)
                 if rows and rows[0]["similarity"] is not None and rows[0]["similarity"] >= limit:
                     match = rows[0]
+
+            # DEDUP MUST NOT SWALLOW A CHANGE OF MIND.
+            #
+            # Two statements filling the same single-valued slot with different
+            # values are a supersession, however similar they read. Left to the
+            # cosine threshold alone, the newer statement would "reinforce" the
+            # older row — the count would rise, the CONTENT would stay the old
+            # value, and the user's update would vanish silently.
+            #
+            # Measured on the real rows that produced this bug:
+            #
+            #   "The user prefers c++."  vs  "The user prefers Java."   0.7735
+            #   "The user prefers c++."  vs  "…code in Python."         0.7401
+            #
+            # Both sit below the 0.82 threshold, so today they would not have
+            # collided. That is luck, not design — "Java" vs "Kotlin" is a
+            # closer pair, and the margin is 0.05. This guard removes the
+            # dependence on the margin entirely.
+            if (
+                match is not None
+                and single_valued
+                and match.get("attribute") == attribute
+                and str(match.get("content", "")).strip() != text.strip()
+            ):
+                log_event(
+                    "capture.persist.supersedes_near_duplicate",
+                    attribute=attribute,
+                    similarity=float(match["similarity"]),
+                    threshold=limit,
+                    existing=str(match.get("content", ""))[:80],
+                    incoming=text[:80],
+                )
+                match = None
 
             if match is not None:
                 await reinforce(str(match["id"]), conn=conn)
@@ -333,8 +453,30 @@ async def persist_candidates(
                     getattr(candidate, "source", None),
                     getattr(candidate, "importance", None),
                     getattr(candidate, "confidence", None),
+                    attribute=attribute,
                     conn=conn,
                 )
+
+                # M9: a new value in a single-valued slot retires the old one,
+                # inside this same transaction and advisory lock so no reader
+                # ever sees two live values for one slot.
+                superseded: list[dict[str, Any]] = []
+                if single_valued:
+                    superseded = await supersede_slot(
+                        conn,
+                        subject_id=subject_id,
+                        actor_id=actor_id,
+                        attribute=str(attribute),
+                        new_id=memory_id,
+                    )
+                    if superseded:
+                        log_event(
+                            "capture.persist.superseded",
+                            attribute=attribute,
+                            new_id=memory_id,
+                            retired=[str(row["id"]) for row in superseded],
+                            count=len(superseded),
+                        )
                 # M7 step 3, same transaction as the INSERT above. Note the
                 # ordering matters for more than atomicity: `audit_log.memory_id`
                 # has a foreign key to `memories(id)`, so the audit row can only
@@ -362,6 +504,8 @@ async def persist_candidates(
                         "text": text,
                         "action": "insert",
                         "memory_id": memory_id,
+                        "attribute": attribute,
+                        "superseded": [str(row["id"]) for row in superseded],
                         "similarity": getattr(candidate, "similarity", None),
                         "dedup_status_at_write": "new",
                         "dedup_status_from_node": getattr(candidate, "dedup_status", None),
