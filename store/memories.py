@@ -127,6 +127,48 @@ async def find_similar(
     return [dict(row) for row in await cursor.fetchall()]
 
 
+_TOMBSTONE_SQL = """
+SELECT id,
+       content,
+       deleted_at,
+       superseded_at,
+       1 - (embedding <=> %s::vector) AS similarity
+  FROM memories
+ WHERE subject_id = %s
+   AND embedding IS NOT NULL
+   AND (deleted_at IS NOT NULL OR superseded_at IS NOT NULL)
+ ORDER BY embedding <=> %s::vector
+ LIMIT %s
+"""
+
+
+async def find_similar_tombstones(
+    conn: Any,
+    subject_id: str,
+    embedding: Sequence[float],
+    *,
+    limit: int = 1,
+) -> list[dict[str, Any]]:
+    """Nearest DELETED or SUPERSEDED memories — the mirror of `find_similar`.
+
+    `find_similar` deliberately hides these, because a retired row must never
+    absorb a new fact as a "duplicate". This exists for the opposite question:
+    "is this candidate something the user already got rid of?"
+
+    Used only for candidates the ASSISTANT produced. The asymmetry is the whole
+    point and is spelled out in `persist_candidates`: a user restating a fact
+    means they still hold it, so it should come back. The assistant restating a
+    fact means only that it read the fact somewhere — quite possibly from a
+    summary that had not yet been invalidated — and letting that recreate an
+    erased memory is how a deleted preference resurrects itself.
+    """
+    literal = to_vector_literal(embedding)
+    cursor = await conn.execute(
+        _TOMBSTONE_SQL, (literal, subject_id, literal, limit)
+    )
+    return [dict(row) for row in await cursor.fetchall()]
+
+
 async def get_memory(conn: Any, memory_id: str) -> Optional[dict[str, Any]]:
     cursor = await conn.execute("SELECT * FROM memories WHERE id = %s", (memory_id,))
     row = await cursor.fetchone()
@@ -456,7 +498,77 @@ async def persist_candidates(
             embedding = getattr(candidate, "embedding", None)
             text = getattr(candidate, "text", "")
             attribute = getattr(candidate, "attribute", None)
+            source = getattr(candidate, "source", None)
+
+            # ---- M9 item 4: STRICT PROVENANCE ------------------------------
+            #
+            # Capture reads BOTH halves of a turn, user and assistant alike,
+            # so the extractor can mint a memory out of the assistant's own
+            # words. That is useful for genuine inferences ("the user has travel
+            # experience") and dangerous for anything else, because the
+            # assistant's reply is downstream of what retrieval fed it. The
+            # observed failure: a summary that had not yet been invalidated told
+            # the model the user preferred Java, the model said so, and capture
+            # stored "The user prefers Java." as a brand-new live row ninety
+            # seconds after the user had deleted exactly that.
+            #
+            # Rule 1: the assistant may not SET A SLOT. This is new risk that
+            # supersession created — without it, an assistant_note could
+            # supersede the user's real preference, and the system would
+            # overwrite what the user said with what it had just said itself.
+            assistant_sourced = source == "assistant_note"
+            if assistant_sourced and attribute is not None:
+                log_event(
+                    "capture.persist.assistant_slot_stripped",
+                    attribute=attribute,
+                    text=text[:80],
+                )
+                attribute = None
+
             single_valued = is_single_valued(attribute)
+
+            # Rule 2: the assistant may not RESURRECT what the user removed.
+            #
+            # A user restating a fact means they still hold it, so it should
+            # come back — no tombstone check on their side. The assistant
+            # restating one means only that it read it somewhere, quite possibly
+            # from a stale summary. Skipping the candidate entirely (no row, no
+            # audit) is right: nothing happened, and recording that nothing
+            # happened would just be noise in the trail.
+            if assistant_sourced and embedding:
+                tombstones = await find_similar_tombstones(
+                    conn, subject_id, embedding, limit=1
+                )
+                if (
+                    tombstones
+                    and tombstones[0]["similarity"] is not None
+                    and tombstones[0]["similarity"] >= limit
+                ):
+                    grave = tombstones[0]
+                    log_event(
+                        "capture.persist.resurrection_blocked",
+                        similarity=float(grave["similarity"]),
+                        threshold=limit,
+                        blocked=text[:80],
+                        matched=str(grave["content"])[:80],
+                        reason=(
+                            "deleted" if grave["deleted_at"] is not None else "superseded"
+                        ),
+                    )
+                    results.append(
+                        {
+                            "text": text,
+                            "action": "blocked",
+                            "memory_id": None,
+                            "similarity": float(grave["similarity"]),
+                            "reason": "assistant_resurrection",
+                            "dedup_status_at_write": None,
+                            "dedup_status_from_node": getattr(
+                                candidate, "dedup_status", None
+                            ),
+                        }
+                    )
+                    continue
 
             match: dict[str, Any] | None = None
             if embedding:
@@ -497,7 +609,38 @@ async def persist_candidates(
                 )
                 match = None
 
-            if match is not None:
+            if match is not None and assistant_sourced:
+                # Rule 3: the assistant repeating itself is not evidence.
+                #
+                # `reinforcement_count` means "the user said this again", and it
+                # feeds M4's frequency signal. Letting the assistant increment
+                # it created a loop with a clear direction: retrieval surfaces a
+                # fact, the model restates it, capture reinforces it, its
+                # frequency score rises, retrieval surfaces it more. Repetition
+                # was outcompeting recency, and the facts that won were the ones
+                # the system had been talking to itself about.
+                #
+                # M9 also halved the frequency weight (0.2 -> 0.1) for the same
+                # reason; this closes the loop at the source rather than merely
+                # damping it.
+                log_event(
+                    "capture.persist.assistant_reinforcement_skipped",
+                    similarity=float(match["similarity"]),
+                    memory_id=str(match["id"]),
+                    text=text[:80],
+                )
+                results.append(
+                    {
+                        "text": text,
+                        "action": "ignored",
+                        "memory_id": str(match["id"]),
+                        "similarity": float(match["similarity"]),
+                        "reason": "assistant_note_duplicate",
+                        "dedup_status_at_write": "duplicate",
+                        "dedup_status_from_node": getattr(candidate, "dedup_status", None),
+                    }
+                )
+            elif match is not None:
                 await reinforce(str(match["id"]), conn=conn)
                 # M7 step 3. Inside the same transaction and the same advisory
                 # lock as the reinforcement itself, so the row and its audit

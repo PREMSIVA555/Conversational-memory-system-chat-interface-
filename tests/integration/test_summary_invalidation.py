@@ -62,7 +62,8 @@ async def subject():
                 "DELETE FROM audit_log WHERE subject_id = %s::uuid", (subject_id,)
             )
             await conn.execute(
-                "UPDATE memories SET consolidated_into = NULL, superseded_by = NULL "
+                "UPDATE memories SET consolidated_into = NULL, superseded_by = NULL, "
+                "superseded_at = NULL "
                 "WHERE subject_id = %s::uuid",
                 (subject_id,),
             )
