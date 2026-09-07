@@ -36,7 +36,7 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ✅ | independent agent — **failed once** (a ticked test that did not exist), fixed, passed re-verification. Its 5 should-fix findings were closed AFTER that pass and are unverified — see below |
 | M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | ✅ | independent agent — **10/10 on the fourth pass**, after failing 8/10, 8/10, 9/10; 3 blockers + 9 defects closed |
-| M9 | *(inserted, reactive)* Fix a reported production bug: contradictory preferences and deleted facts both kept reaching the model | W7 | 📋 | second cold pass on `7eabdbe` confirmed both prior blockers fixed + full suite 243/243; found one test lacked teeth, fixed same-day (self-verified only) — **awaiting a fresh cold pass on the fix before ✅** |
+| M9 | *(inserted, reactive)* Fix a reported production bug: contradictory preferences and deleted facts both kept reaching the model | W7 | ✅ | 3 cold verification passes (blockers, root cause, entity slots, provenance, the fix-of-the-fix — all mutation-tested) + a clean 243/243 full-suite run once the host had headroom — **awaiting your sign-off** |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
 and M7 runs before M6 so the memory panel wires real endpoints instead of mocks. M9 was not
@@ -148,8 +148,24 @@ check. Proven with a mutation test: removed `find_similar`'s `superseded_at IS N
 reran just this test, watched it **fail** (`AssertionError: find_similar returned a superseded
 row as a dedup target`), then reverted the filter (confirmed via `git diff` clean) and reran —
 green, 13/13 in the file. This was self-verified by the same session that made the change, so
-per [[verification-always-separate-agent]] it is **not** sufficient on its own — a fresh cold
-verifier is the next step before this can be called `✅`.
+per [[verification-always-separate-agent]] it wasn't sufficient on its own.
+
+**A third cold verifier (round 3) independently redid the mutation test from scratch on
+`a5158ab`** — confirmed clean: 4/4 uncontended reruns failed with the exact targeted assertion
+when the filter was removed, 5/5 reruns passed with it restored, `git diff --stat
+store/memories.py` empty afterward. It also reasoned through *why* the new assertion can't have
+its own hidden luck-dependency (unfiltered row count + 1 as the limit structurally cannot be
+truncated by tie-break order — Postgres's `LIMIT` can't drop a qualifying row when the limit
+exceeds the maximum possible match count) rather than just re-running it and hoping. All 33
+M9-specific tests (`test_supersession.py` 13, `test_summary_invalidation.py` 11,
+`test_provenance.py` 9) passed clean and fast in isolation. All five carried-forward open items
+were re-confirmed still accurately open, none silently fixed.
+
+**The one gap from round 3 is now closed.** That round's full-suite run was OOM-killed on an
+8GB host measured at ~0.17GB free. After the user freed up memory (~1GB free), the full suite
+was re-run to completion: **243 passed, 0 failed, 0 errors, 473.89s (7m53s)**. Between three
+rounds of adversarial cold verification and this clean full-suite run, **M9 is `✅` — awaiting
+your sign-off**, same as every other milestone in this project.
 
 ### M8's cold verification: 8 of 10, and what it caught
 

@@ -1226,6 +1226,23 @@ fail with the exact regression it targets, reverted, reran green (13/13 in the f
 **This fix is self-verified only** — per [[verification-always-separate-agent]] that is not
 sufficient to call M9 `✅`. A fresh cold verifier for the fix itself is the next step.
 
+**Round 3, on `a5158ab`.** A third cold verifier redid the mutation test from scratch: 4/4
+uncontended reruns failed with the exact targeted assertion when `find_similar`'s filter was
+removed, 5/5 passed with it restored, `git diff` clean afterward. It also reasoned through why
+the new `find_similar(..., limit=len(rows)+1)` assertion can't repeat the earlier accident —
+the limit exceeds the maximum possible match count, so `LIMIT` structurally cannot truncate the
+result regardless of tie-break order. All 33 M9-specific tests and the two adjacent M9 files
+passed clean. All five carried-forward open items re-confirmed still open, none silently fixed.
+
+One thing it could not do: this host measured **~0.17GB free of 7.8GB total** during the run,
+and the full `pytest tests/ -v` was OOM-killed once and threw one flaky failure on a retry (the
+same test passed clean in isolation moments later). Not a code finding — reported plainly as an
+environmental gap rather than folded into the verdict.
+
+**Closed same session.** The user freed memory (~1GB free); the full suite was re-run to
+completion: **243 passed, 0 failed, 0 errors, 473.89s**. Three cold verification rounds plus
+this clean full-suite run — M9 moves to `✅`, awaiting the user's sign-off in the plan.
+
 ### D9 — Rate limits are now the dominant constraint, not correctness
 Both W2 agents have been killed twice by session rate limits mid-task. Both times I surveyed
 the on-disk state first and **resumed** rather than cold-restarting, so each agent kept its
