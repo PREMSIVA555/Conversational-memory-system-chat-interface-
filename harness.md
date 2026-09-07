@@ -1164,6 +1164,68 @@ holds at 19, corpus at 63, final run reports **0 newly embedded**.
 Full suite after the fixes: **191 passed in 8m36s**. M8 stays at *awaiting verification* —
 these fixes have not been independently re-verified, and I wrote them.
 
+### D20 — M9: a reactive out-of-plan milestone for a user-reported bug, one cold pass, not yet clean
+
+Opened outside the numbered plan after a live bug report: contradictory stated preferences
+(Python/Java/C++) all reached the model with the oldest one winning, and deleted preferences
+kept reaching it because a reflection summary quoting them was never invalidated. Built in
+four parts across separate commits (recency/activation split, entity-slot supersession,
+cascading summary invalidation, strict provenance on capture) — see `kickoff.md`'s M9 section
+for the full breakdown; not duplicating it here.
+
+One cold verification pass ran (self-initiated, consistent with the builder/verifier split
+this project already uses). It **failed** the milestone as first built:
+
+- A real erasure could be silently defeated by an RLS asymmetry — ownership checked on
+  `subject_id` alone, cascade gated on `subject_id` **and** `actor_id`, so a summary written
+  under a different `actor_id` was invisible to the invalidation UPDATE, which matched zero
+  rows and returned success indistinguishable from "no summary existed."
+- The production wiring (the real `DELETE`/`PATCH` endpoints) had **zero** test coverage —
+  all 102 tests went through a local shortcut instead, so the two real entry points could have
+  been deleted without failing anything.
+- A previously-recorded root cause (retrieval writes `last_accessed_at`) was **false** — the
+  verifier ran the real retrieval paths and found no UPDATE in either; the actual writer is
+  `reinforce()` in the capture path. Corrected across five files rather than quietly patched.
+
+Fixes for all of the above landed in `7eabdbe`. Per [[verification-always-separate-agent]], a
+cold verifier was dispatched for it (2026-09-07), briefed to trust nothing it did not run
+itself and to reproduce the two prior blockers live rather than re-read the diff.
+
+**Result: `7eabdbe` is not the whole story either.** Both prior blockers were independently
+reproduced as genuinely fixed — the cross-actor erasure via a live HTTP repro seeding a
+summary under a different `actor_id` than the deleter, the untested wiring by no-op'ing three
+call sites in turn and confirming the tests go red then reverting. The corrected root cause
+(recency/activation split, `reinforce()` as the sole writer of `last_accessed_at`) was also
+independently confirmed, not just re-read.
+
+But the verifier's adversarial pass beyond the checklist found something the fix commit didn't
+know about: **`test_a_superseded_row_cannot_absorb_a_new_statement` doesn't actually detect the
+bug it's named for**, in this environment. Removing `find_similar`'s `superseded_at` filter —
+the exact regression the test exists to catch — left it passing 5/5 reruns, because a same-
+embedding tie at the current table size (~74 rows, no HNSW selected) happens to break in the
+live row's favor by ctid order regardless of the filter. The protection is real; the test is
+accidental. This is the same class of finding as D18/D19's "a guard is not verified by testing
+the guard" — a test that passes for a reason other than the one it claims.
+
+The other gap is process, not substance: the full `pytest tests/ -v` (243 tests, ~14 min under
+Voyage rate limiting) was still at 25/243 with 0 failures when the verification window closed.
+The narrower, most M9-relevant subset (33 tests across the three new/changed integration files)
+did run to completion clean. Full-suite confirmation is outstanding, not contradicted.
+
+M9 stays `🔴` — a small, concrete two-item punch list, not a re-open of the substance. See
+`kickoff.md`'s M9 section for the punch list.
+
+**Same-day follow-up.** The same verifier session confirmed the full suite separately:
+`243 passed, 0 failed, 511.57s` — matching the commit's claim exactly, closing punch-list item
+2. Item 1 (the tie-break-dependent test) was fixed directly by the orchestrating session: added
+a direct `find_similar(..., limit=len(rows)+1)` call asserting the superseded row's id is
+absent from the full match set, rather than relying on `limit=1` + ordering. Proven with a
+mutation test — removed the `superseded_at IS NULL` filter, reran, watched the new assertion
+fail with the exact regression it targets, reverted, reran green (13/13 in the file).
+
+**This fix is self-verified only** — per [[verification-always-separate-agent]] that is not
+sufficient to call M9 `✅`. A fresh cold verifier for the fix itself is the next step.
+
 ### D9 — Rate limits are now the dominant constraint, not correctness
 Both W2 agents have been killed twice by session rate limits mid-task. Both times I surveyed
 the on-disk state first and **resumed** rather than cold-restarting, so each agent kept its

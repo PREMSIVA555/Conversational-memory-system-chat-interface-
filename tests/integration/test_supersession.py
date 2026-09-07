@@ -28,7 +28,7 @@ if str(ROOT) not in sys.path:
 
 from graphs.capture_state import Candidate  # noqa: E402
 from store.db import admin_session, session  # noqa: E402
-from store.memories import persist_candidates  # noqa: E402
+from store.memories import find_similar, persist_candidates  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.timeout(180)]
 
@@ -393,6 +393,18 @@ async def test_a_superseded_row_cannot_absorb_a_new_statement(subject):
     Without it the user's newest statement is silently discarded onto a row that
     is no longer live, and the value they just moved away from stays current.
     Nothing errors and nothing in the panel explains it.
+
+    A SECOND COLD VERIFIER THEN PROVED THIS TEST DOESN'T HAVE TEETH EITHER.
+    They removed the `superseded_at IS NULL` filter — the exact regression this
+    test exists to catch — and it still passed, 5/5 reruns. At this table's size
+    (~74 rows, seq scan rather than HNSW) `ORDER BY embedding <=> vector` breaks
+    an exact-distance tie by physical row order, which happens to put the live
+    row first regardless of the filter. The `limit=1` call this test drives
+    through `persist_candidates` can win by luck on tie order, not on the
+    filter. So the direct assertion below calls `find_similar` itself with a
+    limit that cannot be satisfied by the live row alone, and checks the
+    superseded row's id is absent from the *set* of matches — a claim tie order
+    cannot make true by accident.
     """
     shared = _vector(60)
 
@@ -422,6 +434,24 @@ async def test_a_superseded_row_cannot_absorb_a_new_statement(subject):
     assert len(live) == 1, f"exactly one value may be live: {live}"
     assert live[0]["content"] == "The user prefers Java.", (
         "the user switched back to Java and the store still says c++"
+    )
+
+    # Order-independent check: ask find_similar for every row this embedding
+    # could match (there are exactly two rows with `shared`'s embedding — the
+    # original Java row, now superseded, and the newly-inserted one) and
+    # assert the superseded one is absent from the *set*, not merely not
+    # first. This cannot pass by tie-break luck the way limit=1 can.
+    rows = await _rows(subject)
+    superseded_ids = {r["id"] for r in rows if r["superseded_at"] is not None}
+    assert superseded_ids, "fixture invariant: at least one row must be superseded"
+
+    async with admin_session() as conn:
+        matches = await find_similar(conn, subject, shared, limit=len(rows) + 1)
+
+    matched_ids = {row["id"] for row in matches}
+    assert not (matched_ids & superseded_ids), (
+        "find_similar returned a superseded row as a dedup target: "
+        f"{matched_ids & superseded_ids}"
     )
 
 

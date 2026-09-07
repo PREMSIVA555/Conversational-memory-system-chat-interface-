@@ -36,9 +36,120 @@ Definition of Done commands yourself and saw the expected output with your own e
 | M7 | Governance: audit log, curated view, soft-delete, GDPR export | W5 | ✅ | independent agent — 9/9 DoD, 15 tests; 5 defects closed |
 | M6 | Next.js real-time chat UI + memory management panel | W6 | ✅ | independent agent — **failed once** (a ticked test that did not exist), fixed, passed re-verification. Its 5 should-fix findings were closed AFTER that pass and are unverified — see below |
 | M8 | Distributed decay job, reflection agent, evals vs. M3 baseline | W6 | ✅ | independent agent — **10/10 on the fourth pass**, after failing 8/10, 8/10, 9/10; 3 blockers + 9 defects closed |
+| M9 | *(inserted, reactive)* Fix a reported production bug: contradictory preferences and deleted facts both kept reaching the model | W7 | 📋 | second cold pass on `7eabdbe` confirmed both prior blockers fixed + full suite 243/243; found one test lacked teeth, fixed same-day (self-verified only) — **awaiting a fresh cold pass on the fix before ✅** |
 
 *Rows are ordered by execution wave, not by milestone number — M2.5 and M4 run before M5,
-and M7 runs before M6 so the memory panel wires real endpoints instead of mocks.*
+and M7 runs before M6 so the memory panel wires real endpoints instead of mocks. M9 was not
+part of the original 8-milestone plan — it is reactive bug-fix work opened after a user
+report, so it has no `IMPLEMENTATION_PLAN.md` section or numbered DoD; its "Definition of
+Done" is reconstructed below from its four commit messages.*
+
+### M9 — not in the original plan: a reported bug, fixed in four parts, one round from clean
+
+**The report:** a user stated three programming-language preferences over two days (Python,
+then Java, then C++) and the assistant kept answering in the *oldest* one. Separately, a user
+deleted two stated preferences and the assistant kept citing them anyway — because a nightly
+reflection summary had folded them in, and deleting the source rows never touched the summary
+that quoted them.
+
+**Root causes, as actually diagnosed (one of the four commit messages had a wrong root cause,
+corrected in the fix commit — see below):**
+
+1. **Recency and "read recency" were the same signal.** Retrieval itself wrote
+   `last_accessed_at` was the *originally claimed* mechanism — the fix commit later proved
+   this false by running the real retrieval paths and finding neither contains an UPDATE. The
+   real mechanism: `reinforce()` in the **capture** path stamped the column every time a
+   restated fact was captured, and all three competing preferences had been restated. Fixed by
+   splitting the ranking formula into `recency(created_at)` + `activation(last_accessed_at)`
+   with recency weighted 2.5x, enforced by an import-time assertion.
+2. **No concept of "this replaces that."** The store was an append-only log with no way to
+   express supersession. Fixed with a closed attribute registry (`capture/attributes.py`) —
+   only a small allowlist of single-valued slots (e.g. preferred language) can supersede;
+   everything else is left alone so semantically-similar-but-not-actually-conflicting facts
+   (e.g. two foods someone likes) are never silently destroyed. Superseded rows leave
+   retrieval but stay visible in the curated list/export — distinguished from deletion via a
+   separate `superseded_at` column.
+3. **Deleting a fact didn't invalidate the summary quoting it.** `mark_summary_stale()` now
+   fires from DELETE, PATCH, and supersession, before the mutation, in the caller's own
+   transaction; a nightly rebuild reconstructs a fresh summary from whatever sources survive.
+4. **The assistant's own replies were being captured as new memories.** Capture reads both
+   halves of a turn, so a summary telling the model "the user prefers Java and Python" could
+   get echoed back into the reply and re-captured as two brand-new rows — regenerating a fact
+   the user had just deleted, 90 seconds after deleting it. Fixed with three provenance rules:
+   an `assistant_note` may not fill a slot (can't supersede a real preference), may not
+   resurrect a tombstoned fact, and may not reinforce (can't manufacture frequency).
+
+**The one cold verification pass, and what it caught (`7eabdbe`):** items 1, 2 and 4 would
+have passed as-is. Item 3 **failed**:
+
+- **Cross-actor cascade silently defeated an erasure.** Both `memories` RLS policies scope on
+  `subject_id` **and** `actor_id`, but `ensure_owned` (the delete's authorization check) scopes
+  on `subject_id` alone. A summary written under a different `actor_id` — a background job's —
+  was invisible to `mark_summary_stale`'s UPDATE, which matched zero rows and returned `[]`,
+  indistinguishable from "no summary existed." The delete API returned 200, the audit log
+  recorded a clean erasure, and the fact stayed retrievable. Fixed: invalidation now runs as
+  the owner (subject-scoped only, so RLS cannot hide the subject's own summary from their own
+  erasure), in its own transaction **before** the mutation — an invalidation failure now aborts
+  the delete rather than silently succeeding.
+- **The production wiring had zero test coverage.** Every one of 102 tests reached
+  `mark_summary_stale` through a local test shortcut, not through the real `DELETE`/`PATCH`
+  endpoints — meaning the feature's only two real entry points could have been deleted from
+  `api/memories.py` without failing a single test. Also caught two other unguarded call sites
+  the same way: `find_similar`'s supersession filter, and the supersession→stale trigger. All
+  three now have tests that go through the real endpoints/paths.
+- **A previously-recorded root cause was wrong.** Corrected in `config.py`, `features.py` (x2),
+  `ranking.py`, and `ranking_fixtures.py` rather than quietly rewritten — see item 1 above.
+
+Suite after fixes: 243 passed. **Not yet independently re-verified.**
+
+**Carried-forward open items, from the fix commit's own list, not yet acted on:**
+- The scheduled reflection rebuild is gated on a cluster-size predicate unrelated to
+  staleness, so it never fires for the shape that caused the original report.
+- No backfill — the originally reported incident still reproduces against live/existing data.
+- A background job now writes `deleted_at`, which is stated to contradict migration `0007`'s
+  invariant about who is allowed to set that column.
+- `employer`/`job_title` are suspected wrong in the `SINGLE_VALUED` registry, and the slot key
+  doesn't carry an entity (so e.g. two different employers couldn't both be tracked correctly).
+- Staleness (from item 3) is exposed nowhere in the API payloads, while supersession (item 2)
+  is — an inconsistent surface for two closely related concepts.
+
+**The cold verification of `7eabdbe` itself, run 2026-09-07:** independently reproduced both
+prior blockers as genuinely fixed — not by re-reading code, but by forcing the scenarios live.
+The cross-actor erasure hole: seeded a summary under a *different* `actor_id` than the one
+deleting its source over the real HTTP API (not the test fixture), confirmed the summary's
+`stale_at` was actually set. The untested wiring: no-op'd each of three guarded call sites in
+turn (`delete_memory`, `patch_memory`, `supersede_slot`) and confirmed the relevant tests went
+red, then reverted (`git diff` clean afterward). Also independently confirmed the corrected
+root cause (mutated a copy of `retrieve/config.py` with inverted weights → raised as claimed;
+grepped for writers of `last_accessed_at` → only `reinforce()`). Items 4 (entity-slot
+supersession) and 5 (provenance rules) both passed their full test files against live
+retrieval. All five carried-forward open items above were independently confirmed still open
+and accurately described — none silently already fixed.
+
+**Two things kept this at `🔴` rather than `✅` after the first re-verification pass:**
+
+1. **A guard's test didn't actually have teeth in this environment.**
+   `test_a_superseded_row_cannot_absorb_a_new_statement` is supposed to catch a missing
+   `AND superseded_at IS NULL` filter in `find_similar`. The verifier removed that filter and
+   the test **still passed 5/5 reruns** — contradicting the original commit's own measured
+   claim. Root cause: at the current table size (~74 rows, no HNSW index selected by the
+   planner), a same-embedding tie between the retired and live rows breaks by physical/ctid
+   order, which happens to favor the live row regardless of the filter. Real protection existed
+   by accident; the test didn't prove it.
+2. **`pytest tests/ -v` was not run to completion** at first. The narrower, most-relevant
+   subset (33 M9 integration tests) had passed 33/33; the full suite was confirmed to
+   **243/243 passed, 0 failed** in a follow-up message from the same verifier session
+   (`511.57s`, no flakes, matching the commit's claimed count exactly).
+
+**Both closed same-day.** The test now calls `find_similar` directly with a limit that returns
+every row sharing the embedding, and asserts the superseded row's id is absent from that *set*
+— a claim tie-break order cannot satisfy by accident, unlike the old `limit=1` end-to-end
+check. Proven with a mutation test: removed `find_similar`'s `superseded_at IS NULL` filter,
+reran just this test, watched it **fail** (`AssertionError: find_similar returned a superseded
+row as a dedup target`), then reverted the filter (confirmed via `git diff` clean) and reran —
+green, 13/13 in the file. This was self-verified by the same session that made the change, so
+per [[verification-always-separate-agent]] it is **not** sufficient on its own — a fresh cold
+verifier is the next step before this can be called `✅`.
 
 ### M8's cold verification: 8 of 10, and what it caught
 
