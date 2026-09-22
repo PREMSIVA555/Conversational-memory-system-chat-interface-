@@ -88,6 +88,7 @@ logger = logging.getLogger(__name__)
 #
 # Defined in `retrieve/config.py`; imported, never re-spelled, so there is
 # exactly one number to change and one import-time check that they sum to 1.0.
+# Comment added for testing git CI/CD
 
 WEIGHT_SEMANTIC = config.WEIGHT_SEMANTIC
 WEIGHT_RECENCY = config.WEIGHT_RECENCY
