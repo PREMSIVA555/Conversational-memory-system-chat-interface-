@@ -1,0 +1,19 @@
+{
+  "fixture_version": "p00-memory-incident-v1",
+  "data_classification": "synthetic-only",
+  "query": "Which programming language do I prefer?",
+  "keyword_query": "prefers",
+  "old": {"text": "The user prefers Java.", "source": "user_preference"},
+  "new": {"text": "The user prefers C++.", "source": "user_preference", "attribute": "default_programming_language"},
+  "cases": [
+    {"id": "legacy_null_attribute", "source_order": ["old", "new"], "completion_order": ["old", "new"], "old_attribute": null},
+    {"id": "typed_control", "source_order": ["old", "new"], "completion_order": ["old", "new"], "old_attribute": "default_programming_language"},
+    {"id": "inverted_completion", "source_order": ["old", "new"], "completion_order": ["new", "old"], "old_attribute": "default_programming_language"}
+  ],
+  "limitations": [
+    "Extraction outputs and source order are scripted inputs, not live model results or accepted_user_events.",
+    "Orthogonal synthetic embeddings isolate supersession from semantic similarity.",
+    "The original customer's source rows, inputs and provider configuration are unavailable.",
+    "No live extraction, response-model answer, erasure/restore compliance, or bank functionality is tested."
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "phase": "P02",
+  "status": "approved-and-closed",
+  "approved_by": "mprem",
+  "authorization": "approved proceed",
+  "recorded_at": "2026-10-19T16:18:48.252442+00:00",
+  "tasks": {
+    "T02.1": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p02_check.py evidence/migrations/p02-schema-genesis-01/preference-plan --task T02.1",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.1-acceptance-42aefe31-bc1f-4e00-abe0-2cf45343ad2d.json",
+            "hash": "3133425af64f26b4906a66dd5933bc83acb0d004ec7bfc066d1b7073d2000f98",
+            "source_hash": "ab79dce4c8741ed746f6934fbeb4496ec434ae77dd1c5cd0ef5ae001a7856c3a",
+            "config_hash": "e49400140337991d5d0b27b525a6111b2c961fc83aaa9c5e9630f1c37858be32",
+            "observed_at": "2026-10-18T17:04:43.291Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.1-independent-review-eaeb8487-548f-4b99-bef5-5e525ede9ad7.json",
+            "hash": "3d54b5bfa09524b2c019608c69f4b885e73d35cfc064be1d9086e3fb0f96b984",
+            "source_hash": "ab79dce4c8741ed746f6934fbeb4496ec434ae77dd1c5cd0ef5ae001a7856c3a",
+            "config_hash": "e49400140337991d5d0b27b525a6111b2c961fc83aaa9c5e9630f1c37858be32",
+            "observed_at": "2026-10-18T17:20:27.483Z"
+          }
+        }
+      ]
+    },
+    "T02.2": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p02_check.py evidence/reliability/p02-consumer-genesis-01/consumer --task T02.2",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.2-acceptance-597c04b3-4cef-48c6-8d91-52737a617611.json",
+            "hash": "ba331b3ee03a2bb08a122b5d1653c2d38741b03f9bb6ebef6d2ae06a23f7483f",
+            "source_hash": "83a992a629a9165ed4a512edf6d4d27b31a627b071d441161a00ed90da7d4b7c",
+            "config_hash": "533097014d3430e1b25550ddba082828469ebc101d83a269fd1c1c4b3a1016f0",
+            "observed_at": "2026-10-18T17:28:02.641Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.2-independent-review-a9fb8fba-8767-41da-9800-ead0d8d4b7c2.json",
+            "hash": "01bfd0c77569c1e1d829e2869d50bb86378b625d6486640ac062da61821306a4",
+            "source_hash": "83a992a629a9165ed4a512edf6d4d27b31a627b071d441161a00ed90da7d4b7c",
+            "config_hash": "533097014d3430e1b25550ddba082828469ebc101d83a269fd1c1c4b3a1016f0",
+            "observed_at": "2026-10-18T17:33:11.262Z"
+          }
+        }
+      ]
+    },
+    "T02.3": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p02_check.py evidence/memory/p02-preferences-genesis-02/preference-cases --task T02.3",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.3-acceptance-9c176e8d-e883-4f3c-a4c9-c0d901b5d99f.json",
+            "hash": "b3c062d040051880935d6d4790b66b10d059c799308cea428dc2cc320bbd9877",
+            "source_hash": "ed11da9eab2e4e40dc5e0a81b5dc826a6677a85cf2b440cc88f5e936c124f012",
+            "config_hash": "ea3cb7a99fef92e219600d64394e4e7f3bae65d5f0708ff0de4544cee6da3efa",
+            "observed_at": "2026-10-18T17:47:57.405Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.3-independent-review-95f46deb-d0b9-4d7c-82e4-0d3f26f5b89f.json",
+            "hash": "d891e29fb7ff51b075946784ceaeff7b7e411d2f860f0e5bf2dea96ebab4686c",
+            "source_hash": "ed11da9eab2e4e40dc5e0a81b5dc826a6677a85cf2b440cc88f5e936c124f012",
+            "config_hash": "ea3cb7a99fef92e219600d64394e4e7f3bae65d5f0708ff0de4544cee6da3efa",
+            "observed_at": "2026-10-19T05:07:27.812Z"
+          }
+        }
+      ]
+    },
+    "T02.4": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p02_check.py evidence/memory/p02-context-erasure-genesis-01/context-and-erasure --task T02.4",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.4-acceptance-976e8bfa-b818-48f1-9f2d-7e40e7205563.json",
+            "hash": "8ba9e52b0e4a4225bde271ef42a968252b3e2366c85c3521ad0829a0f5cb251a",
+            "source_hash": "571140c824ad0429fe640a3ae169b7b6fc288a5706d007d30aac169e0c046678",
+            "config_hash": "9263403bb0deec5c8d57abc30dd53f435e769d4af3969f91006dd73a46ecd835",
+            "observed_at": "2026-10-19T05:34:03.136Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.4-independent-review-faa6fb46-efc5-41ab-aafc-5defd437e28b.json",
+            "hash": "fee3f6a8e272456916bf0a9990397830fc5f62d4309d730aae9824168841834f",
+            "source_hash": "571140c824ad0429fe640a3ae169b7b6fc288a5706d007d30aac169e0c046678",
+            "config_hash": "9263403bb0deec5c8d57abc30dd53f435e769d4af3969f91006dd73a46ecd835",
+            "observed_at": "2026-10-19T13:27:30.011Z"
+          }
+        }
+      ]
+    },
+    "T02.5": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p02_check.py evidence/migrations/p02-cutover-genesis-02/cutover --task T02.5",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.5-acceptance-dab36d59-0e72-4d72-aaa2-e9a249f3b1c1.json",
+            "hash": "2e16fff533929aac26a48e842329adb0bd615ea0dc81ee58898b6bc4f72b3a18",
+            "source_hash": "db426852f099f02f19cf17bbe713e0d7aea6586bc34749d70cae5624a5952bb9",
+            "config_hash": "d9aba1358a58cf5b426256f1c008f1e705a0e1b99b7dcf891f3bdcd642a09302",
+            "observed_at": "2026-10-19T13:48:29.712Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T02.5-independent-review-33f6a583-9383-49d5-86ff-5c708a4df5ba.json",
+            "hash": "a06065bd1bc21f55d770fc41ac5e3150aa1f280de03366c51cc99a0e1dc7bf03",
+            "source_hash": "db426852f099f02f19cf17bbe713e0d7aea6586bc34749d70cae5624a5952bb9",
+            "config_hash": "d9aba1358a58cf5b426256f1c008f1e705a0e1b99b7dcf891f3bdcd642a09302",
+            "observed_at": "2026-10-19T16:16:22.646Z"
+          }
+        }
+      ]
+    }
+  },
+  "independent_closure_audit": {
+    "path": ".genesis/evidence/P02-closure-audit.json",
+    "sha256": "a03a08eb0be49bac0254db5b58ccadae1bd9c784cea50039be00173f87837435"
+  },
+  "phase_evidence": ".genesis/evidence/T02.5-verification.json",
+  "final_native_checks": 160,
+  "independent_behavioral_result": {
+    "passed": 12,
+    "partial": 2,
+    "failed": 0,
+    "blocked": 0
+  },
+  "next_phase_status": "P03 authorized; T03.1 first bounded implementation; T03.2-T03.4 queued; P04+ excluded",
+  "limitations": [
+    "Luna cases7/14 partial for restart interface; separate root real API process restart passed, no Docker/PostgreSQL/Redis restart claim.",
+    "Actual original legacy81rows unchanged; zero protected rows. Positive backfill uses isolated synthetic fixtures only.",
+    "P00 original live incident remains not-reproduced.",
+    "Approval applies to reviewed P02 results, not future P03 implementation or tests.",
+    "Earlier failed/incomplete attempts and historical pending-review receipts retained."
+  ]
+}

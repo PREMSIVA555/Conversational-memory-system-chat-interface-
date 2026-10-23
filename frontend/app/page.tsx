@@ -10,7 +10,8 @@
  */
 
 import ChatView from "@/components/ChatView";
+import BankingView from "@/components/BankingView";
 
 export default function HomeRoute() {
-  return <ChatView />;
+  return process.env.APP_PROFILE === "legacy-local" ? <ChatView /> : <BankingView />;
 }

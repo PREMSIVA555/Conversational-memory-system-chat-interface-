@@ -1,0 +1,108 @@
+{
+  "manifest": {
+    "source_path": "C:/Users/mprem/Documents/Codex/2026-10-17/https-antern-co-evidence-portfolio-https/outputs/banking-implementation-plan/PLAN_READER.html",
+    "source_sha256": "9f59fb49a54ea305387465fb606deca567d8118d7e296f7edee8605559ba70fd",
+    "recorded_at": "2026-10-18T10:26:06.146Z",
+    "scope": "P00 and T00.1-T00.3 only",
+    "reviewed_commit": "e5206789b5914d3c93f989e210bebd497f2e4f47",
+    "observed_planning_commit": "e5206789b5914d3c93f989e210bebd497f2e4f47",
+    "observed_planning_branch": "feat/banking-support-extension",
+    "observed_planning_git_status": "?? .genesis/",
+    "implementation_start_commit": null,
+    "limitations": [
+      "Planning observations only; T00.1 must record the actual implementation-start state.",
+      "No runtime/service/reset/incident/application test checks executed.",
+      "HTML is authoritative; three task records cross-checked against companion backlog JSON."
+    ],
+    "approval": null,
+    "reviewer": null
+  },
+  "phase_text": "P00 — Baseline and evidence skeleton\nEntry:\nNone closed with evidence.\nOutcome:\nKnown source/runtime, isolated synthetic world skeleton and smallest runnable scenario before altering behavior.\nPrimary components:\nPL01 PL04 EV01 BD04\nWork items:\nT00.1, T00.2, T00.3. See\nbacklog\n.\nFirst invariant gates:\nINV29, INV31\nExit criteria:\nBaseline setup/import/service checks recorded; test reset refuses non-test target; two resets reproduce semantic baseline; incident is reproduced with evidence or explicitly not reproduced.\nEvidence produced:\nBaseline manifest; commands/results; source snapshot; first scenario fixture; initial artifact ledger.\nRecovery/rollback:\nNo deployed behavior changes. Preserve original checkout/results; debug only in isolated branch/environment.",
+  "tasks": [
+    {
+      "task_id": "T00.1",
+      "phase": "P00",
+      "title": "Freeze source and record environment",
+      "depends_on": [],
+      "component_ids": [
+        "PL01",
+        "PL04"
+      ],
+      "spec_ids": [
+        "SPEC16"
+      ],
+      "invariant_ids": [
+        "INV31",
+        "INV32"
+      ],
+      "implementation": "Record inspected and actual implementation-start commits, dependency/runtime/service versions; inventory offline vs live tests and package entries. Preserve baseline.",
+      "acceptance": "Fresh environment transcript identifies failures without pretending all tests are offline or already passing.",
+      "evidence_target": "evidence/baseline/<run-id>/manifest.json",
+      "status": "planned-not-started"
+    },
+    {
+      "task_id": "T00.2",
+      "phase": "P00",
+      "title": "Build safe world/reset skeleton",
+      "depends_on": [
+        "T00.1"
+      ],
+      "component_ids": [
+        "BD04",
+        "EV01",
+        "PL01"
+      ],
+      "spec_ids": [
+        "SPEC13"
+      ],
+      "invariant_ids": [
+        "INV29",
+        "INV31"
+      ],
+      "implementation": "Seed minimal two-customer data; isolate DB/schema/Redis/files; expose DomainClock separately; refuse non-test reset.",
+      "acceptance": "Run two resets and contamination/target-guard checks through actual persistence.",
+      "evidence_target": "evidence/world/<run-id>/reset-report.json",
+      "status": "planned-not-started"
+    },
+    {
+      "task_id": "T00.3",
+      "phase": "P00",
+      "title": "Reproduce and characterize memory incident",
+      "depends_on": [
+        "T00.2"
+      ],
+      "component_ids": [
+        "MM02",
+        "MM04",
+        "EV01",
+        "PL04"
+      ],
+      "spec_ids": [
+        "SPEC04",
+        "SPEC06"
+      ],
+      "invariant_ids": [
+        "INV11",
+        "INV14",
+        "INV32"
+      ],
+      "implementation": "Capture actual old/new stored rows, capture completion order, retrieval context and answer. Convert limited legacy attribute-null probe into integration reproduction where possible.",
+      "acceptance": "Record reproduced or not-reproduced; no model blame or live-incident claim from a mocked unit probe.",
+      "evidence_target": "evidence/baseline/<run-id>/memory-repro/",
+      "status": "planned-not-started"
+    }
+  ],
+  "specifications": {
+    "SPEC04": "SPEC04 — Typed ordered preferences\nComponents:\nMM02, MM04, RE01, RE02, UX03\nBehavioral contract:\nClosed keys are preferred_response_language={en,hi} and preferred_response_format={concise,detailed}. All user changes, including panel writes, receive customer sequence from accepted_user_events. Per key/scope atomic conditional UPSERT accepts only a larger source sequence. Panel expected_version is checked before successful acceptance. Include first-write serialization, unique event keys and DELETE tombstones. Pending overlay follows source order and applicable scope; persisted status requires committed projection.\nFailure/recovery contract:\nInvalid provenance/key/value -> reject; stale source -> ignored_stale; stale panel version ->409; extraction failure -> failed/retry status and remove only that pending overlay.\nAcceptance criteria:\nForce older English after newer Hindi, concurrent first inserts, duplicate jobs, DELETE before old SET, competing panel/chat events and failed extraction. Verify projection, output language, version/order and truthful UI state.\nExcluded:\nArbitrary inferred profile fields in typed preferences; worker-completion order as user order; temporary instructions as automatic global updates.",
+    "SPEC06": "SPEC06 — Correction, forgetting and retention\nComponents:\nMM04, SP05, AU03\nBehavioral contract:\nBlock deleted source material and dependent serving paths before acknowledging active erasure. Track direct memory, preference payloads/source spans, vectors, summaries, cache, checkpoints, accepted jobs and restore plans. Preserve minimal ordering tokens without forgotten content. Physical cleanup has separate store-specific status. Assign retention purpose/owner and explicit limits for local and external stores.\nFailure/recovery contract:\nAny required serving invalidation fails -> deletion remains pending/incomplete. Do not claim provider/backups/public copies deleted based on a local tombstone.\nAcceptance criteria:\nSeed direct/derived canaries, delete during backlog and query exact/paraphrase/old value across stores. Stale work cannot resurrect value; separate restore-and-scrub drill proves declared backup handling.\nExcluded:\nLegal compliance claims or a fixed legal retention schedule; real customer content in published artifacts.",
+    "SPEC13": "SPEC13 — Resettable world and scenario harness\nComponents:\nBD04, EV01, PL01\nBehavioral contract:\nDedicated synthetic schema/DB and Redis/file namespace per trial. Pin fixture/tool/policy/source versions; script state changes. DomainClock is separate from security expiry and monotonic budgets. Reset canonical semantic state and verify no contamination. Initial runner calls the same API/service wiring as the demo; deterministic stubs are labeled.\nFailure/recovery contract:\nNon-test reset target -> refuse. Mismatched initial state -> invalid trial; insufficient setup -> blocked, not a passing benchmark.\nAcceptance criteria:\nTwo clean resets match canonical hashes; parallel trials share no mutable state; state changes reproduce by script; regular application role cannot reset fixtures; frozen banking date cannot freeze session expiry.\nExcluded:\nReal customer records, assuming fixed fixtures make model output deterministic, or shortcuts that bypass production authorization.",
+    "SPEC16": "SPEC16 — Delivery, migration and evidence release\nComponents:\nPL01, PL02, PL03, PL04\nBehavioral contract:\nAdditive schema/readers, dry-run legacy classification, explicit ambiguous-row review, stop legacy preference writes after cutover. Pin compatible deps/model config and prove clean install. Rollback flags disable features or revert compatible app, preserve committed events/cases and migrate forward. Each artifact declares own contract, license, audience, actual release links/DOIs and limitations. Publication uses explicitly authorized accounts later.\nFailure/recovery contract:\nSecurity/regression gate failure blocks release. Cannot reproduce baseline -> record not reproduced. Missing credentials/issuer is setup blocked, never silent insecure fallback. Unissued DOI remains absent.\nAcceptance criteria:\nMigration counts/checks and restart/recovery preserved; no duplicate replay on rollback; clean environment demo/evaluator proof; independent reviewer result recorded only when a real person runs it.\nExcluded:\nDeploying/publishing/scheduling in this planning task, destructive legacy table drop, or counting this plan as completed measured portfolio work."
+  },
+  "invariants": {
+    "INV11": "INV11 — Source-order correction\nMust hold:\nOlder accepted update cannot replace newer value for the same key/scope.\nEnforced by:\nCustomer acceptance sequence and conditional projection update\nVerified by:\nInvert job completion and race panel/chat updates\nFirst gate:\nP02.\nWork:\nT00.3, T02.1, T02.3, T02.5, T05.4.\nViolation:\nrelease-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV14": "INV14 — User provenance\nMust hold:\nPreference proposal references actual authorized user source, not assistant/retrieved instruction.\nEnforced by:\naccepted_user_events + source span/key/value validation\nVerified by:\nHistorical/third-person/quoted/injected preference negatives\nFirst gate:\nP02.\nWork:\nT00.3, T02.3.\nViolation:\nrelease-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV29": "INV29 — Isolated repeatable worlds\nMust hold:\nTrials reset to declared semantic world and share no mutable namespaces.\nEnforced by:\nTest-only reset guard + per-trial DB/Redis/files + clock separation\nVerified by:\nParallel resets, contamination probe and canonical hash check\nFirst gate:\nP00.\nWork:\nT00.2, T03.4, T06.1, T07.1.\nViolation:\nrelease-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV31": "INV31 — Traceable evidence\nMust hold:\nEvery reported run has source/data/model/tool/policy/grader/environment/reset identities and retained raw outcomes.\nEnforced by:\nVersioned run manifest validation\nVerified by:\nMissing field/hash mismatch invalidates corresponding claim\nFirst gate:\nP00.\nWork:\nT00.1, T00.2, T06.1, T06.4, T07.1, T07.2, T07.3, T08.1.\nViolation:\nrelease-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV32": "INV32 — Truthful portfolio claims\nMust hold:\nPlanned is not measured; failure needs repro; negative/maintained/independent claims need actual evidence.\nEnforced by:\nArtifact ledger + release checklist + preserved corrections\nVerified by:\nTrace each published statement to source/run/repro and status\nFirst gate:\nP07.\nWork:\nT00.1, T00.3, T06.3, T07.2, T07.3, T07.4, T08.1.\nViolation:\nrelease-blocking; preserve failing evidence and block the affected slice/claim until resolved."
+  }
+}

@@ -1,0 +1,27 @@
+rule_files: [/rules/banking-alerts.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: bank_queue_rejected_total
+        values: '0+1x5'
+      - series: bank_queue_failed_total
+        values: '0+1x5'
+      - series: bank_telemetry_dropped_total
+        values: '0+1x5'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: BankingAccessQueueRejected
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations: {summary: "Banking access queue rejected work"}
+      - eval_time: 2m
+        alertname: BankingAccessQueueFailure
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations: {summary: "Banking queued access failed or was invalidated"}
+      - eval_time: 2m
+        alertname: BankingTelemetryDropped
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations: {summary: "Optional banking telemetry was dropped"}

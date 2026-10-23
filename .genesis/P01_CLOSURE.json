@@ -1,0 +1,122 @@
+{
+  "phase": "P01",
+  "status": "approved-and-closed",
+  "approved_by": "mprem",
+  "authorization": "P01 approved",
+  "recorded_at": "2026-10-18T16:52:45.701963+00:00",
+  "independent_verifier": "/root/p01_security_verifier",
+  "tasks": {
+    "T01.1": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "auth-session",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p01_check.py evidence/security/p01-auth-genesis-02 --task T01.1",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T01.1-auth-session-44e1368e-0e7e-4bb4-bc46-72512d1179c2.json",
+            "hash": "57ce6812c8eedd435ccbac4c22720b8389632957e477f421473dc08a43da0a4c",
+            "source_hash": "09cbd9f38c85369daa8422d50150483e3a20a9035b7931a050cadae8ab4fc483",
+            "config_hash": "fc4c403c065f0c41ecc7f947d718aab0fc0f09f701e59c6cda1be7856b42f93e",
+            "observed_at": "2026-10-18T16:36:07.334Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T01.1-independent-review-079f7ed6-88ca-40cd-8acc-2334f7744aed.json",
+            "hash": "4eccc5348b6d6710819091c6106277839f0f708dfd4dbb4822d35df00b14e7ee",
+            "source_hash": "09cbd9f38c85369daa8422d50150483e3a20a9035b7931a050cadae8ab4fc483",
+            "config_hash": "fc4c403c065f0c41ecc7f947d718aab0fc0f09f701e59c6cda1be7856b42f93e",
+            "observed_at": "2026-10-18T16:49:14.630Z"
+          }
+        }
+      ]
+    },
+    "T01.2": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "roles-rls",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p01_check.py evidence/security/p01-roles-genesis-01 --task T01.2",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T01.2-roles-rls-a1a4dd8b-3768-41b4-a59b-7d0b2c613425.json",
+            "hash": "03b8def5fc919488ea1c40df5425aae7bb00501df957c6eb5f8f6a9d23edb387",
+            "source_hash": "09cbd9f38c85369daa8422d50150483e3a20a9035b7931a050cadae8ab4fc483",
+            "config_hash": "983bca99542dc52c86f347376a219b1051995f0f7ed6d0748a091da61c334d0e",
+            "observed_at": "2026-10-18T16:50:09.952Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T01.2-independent-review-6d855e74-5be8-487c-a60c-03c2bbd7d0e0.json",
+            "hash": "608576494ec9b6b7667d785d50529694f70cb68910120f7869ebd4eca2ead3aa",
+            "source_hash": "09cbd9f38c85369daa8422d50150483e3a20a9035b7931a050cadae8ab4fc483",
+            "config_hash": "983bca99542dc52c86f347376a219b1051995f0f7ed6d0748a091da61c334d0e",
+            "observed_at": "2026-10-18T16:50:40.984Z"
+          }
+        }
+      ]
+    },
+    "T01.3": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "privacy-readiness",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p01_check.py evidence/operations/p01-privacy-genesis-01 --task T01.3",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T01.3-privacy-readiness-590ae4c6-5979-497e-a4af-dd20ebc46957.json",
+            "hash": "68ac426a87ef37f606cb4e2acb480c08320dca1a1c934c116e2db65a4b5a8101",
+            "source_hash": "09cbd9f38c85369daa8422d50150483e3a20a9035b7931a050cadae8ab4fc483",
+            "config_hash": "e38bdf4a436f2d69ef9942921240608a746140144a228c359aacf1ad62466d64",
+            "observed_at": "2026-10-18T16:51:23.144Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T01.3-independent-review-ad909f7c-b49c-4be6-ac22-b5b46bbf650b.json",
+            "hash": "4b8d8dc0d01f7dc7594ccbac5dd4229e6991f4e88c0cd002fa956e6a05dbd396",
+            "source_hash": "09cbd9f38c85369daa8422d50150483e3a20a9035b7931a050cadae8ab4fc483",
+            "config_hash": "e38bdf4a436f2d69ef9942921240608a746140144a228c359aacf1ad62466d64",
+            "observed_at": "2026-10-18T16:51:56.549Z"
+          }
+        }
+      ]
+    }
+  },
+  "phase_evidence": "evidence/security/p01-independent-01/report.json",
+  "review": "evidence/security/p01-independent-01/independent-review.md",
+  "verification_counts": {
+    "T01.1": 18,
+    "T01.2": 7,
+    "T01.3": 15
+  },
+  "next_phase_status": "P02 not started or imported; await user authorization",
+  "limitations": [
+    "Local synthetic customers and development issuer/TLS; no deployed issuer certification.",
+    "No full repository/provider-suite claim, live model call or P02 behavior.",
+    "Tested application telemetry sinks; no arbitrary external proxy/exporter infrastructure claim."
+  ]
+}

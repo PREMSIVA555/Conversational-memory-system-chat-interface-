@@ -1,5 +1,17 @@
 # memory-system
 
+The banking extension now has a P01 authenticated foundation. Start with
+[the P01 runbook](docs/P01_RUNBOOK.md) for its isolated OIDC/Redis/PostgreSQL setup,
+HTTPS browser UI and security checks. Banking defaults to authenticated access;
+the original unauthenticated `/chat` and `/memories` routes are disabled in that
+profile. The banking implementation authority is `PLAN_READER.html`, preserved
+in [the Genesis source mapping](.genesis/sources/P01_SOURCE.md).
+
+The remaining instructions below describe the original memory application.
+That legacy profile requires an explicit loopback-only module launch and is not
+the deployed banking profile. P01 adds identity and ownership foundations;
+bank products, durable turns and support actions belong to subsequent phases.
+
 A persistent conversational-memory layer that sits behind an LLM chat agent — it
 remembers facts about one person across sessions, retrieves the relevant ones,
 and fits them into a bounded prompt block.

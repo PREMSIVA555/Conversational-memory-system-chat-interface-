@@ -11,6 +11,9 @@ global:
   external_labels:
     monitor: memory-system
 
+rule_files:
+  - /etc/prometheus/banking-alerts.yml
+
 scrape_configs:
   - job_name: memory-system-api
     metrics_path: /metrics

@@ -1,0 +1,286 @@
+{
+  "manifest": {
+    "synthetic": true,
+    "embedding_model": "fixture-v1",
+    "dimensions": 3,
+    "expected_documents": 5,
+    "documents": [
+      {
+        "version": "old",
+        "rule": "annual-fee",
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "source": "Synthetic credit card annual fee is INR 100. Fee waiver requires annual spend INR 10000.",
+        "source_hash": "c4703cec95293be5d8d5ed5bf90cbb7db73148bff01f4c0bb56559feff0f7e88",
+        "effective_from": "2025-01-01T00:00:00Z",
+        "effective_until": "2026-01-01T00:00:00Z",
+        "expected_chunks": 2,
+        "chunks": [
+          {
+            "section": "fee",
+            "text": "Synthetic credit card annual fee is INR 100.",
+            "embedding": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "section": "waiver",
+            "text": "Fee waiver requires annual spend INR 10000.",
+            "embedding": [
+              0,
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "version": "v1",
+        "rule": "annual-fee",
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "source": "Synthetic credit card annual fee is INR 100. Fee waiver requires annual spend INR 10000.",
+        "source_hash": "c4703cec95293be5d8d5ed5bf90cbb7db73148bff01f4c0bb56559feff0f7e88",
+        "effective_from": "2026-01-01T00:00:00Z",
+        "effective_until": "2027-01-01T00:00:00Z",
+        "expected_chunks": 2,
+        "chunks": [
+          {
+            "section": "fee",
+            "text": "Synthetic credit card annual fee is INR 100.",
+            "embedding": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "section": "waiver",
+            "text": "Fee waiver requires annual spend INR 10000.",
+            "embedding": [
+              0,
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "version": "loan",
+        "rule": "annual-fee",
+        "product": "loan",
+        "scope": "retail",
+        "locale": "en-IN",
+        "source": "Synthetic credit card annual fee is INR 100. Fee waiver requires annual spend INR 10000.",
+        "source_hash": "c4703cec95293be5d8d5ed5bf90cbb7db73148bff01f4c0bb56559feff0f7e88",
+        "effective_from": "2026-01-01T00:00:00Z",
+        "effective_until": "2027-01-01T00:00:00Z",
+        "expected_chunks": 2,
+        "chunks": [
+          {
+            "section": "fee",
+            "text": "Synthetic credit card annual fee is INR 100.",
+            "embedding": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "section": "waiver",
+            "text": "Fee waiver requires annual spend INR 10000.",
+            "embedding": [
+              0,
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "version": "hi",
+        "rule": "annual-fee",
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "hi-IN",
+        "source": "Synthetic credit card annual fee is INR 100. Fee waiver requires annual spend INR 10000.",
+        "source_hash": "c4703cec95293be5d8d5ed5bf90cbb7db73148bff01f4c0bb56559feff0f7e88",
+        "effective_from": "2026-01-01T00:00:00Z",
+        "effective_until": "2027-01-01T00:00:00Z",
+        "expected_chunks": 2,
+        "chunks": [
+          {
+            "section": "fee",
+            "text": "Synthetic credit card annual fee is INR 100.",
+            "embedding": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "section": "waiver",
+            "text": "Fee waiver requires annual spend INR 10000.",
+            "embedding": [
+              0,
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "version": "future",
+        "rule": "annual-fee",
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "source": "Synthetic credit card annual fee is INR 100. Fee waiver requires annual spend INR 10000.",
+        "source_hash": "c4703cec95293be5d8d5ed5bf90cbb7db73148bff01f4c0bb56559feff0f7e88",
+        "effective_from": "2027-01-01T00:00:00Z",
+        "effective_until": "2028-01-01T00:00:00Z",
+        "expected_chunks": 2,
+        "chunks": [
+          {
+            "section": "fee",
+            "text": "Synthetic credit card annual fee is INR 100.",
+            "embedding": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "section": "waiver",
+            "text": "Fee waiver requires annual spend INR 10000.",
+            "embedding": [
+              0,
+              1,
+              0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "queries": [
+    {
+      "id": "fee",
+      "query": {
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "question": "annual fee",
+        "embedding": [
+          1,
+          0,
+          0
+        ],
+        "embedding_model": "fixture-v1",
+        "at": "2026-06-01T00:00:00Z"
+      },
+      "relevant": [
+        "v1",
+        "fee"
+      ]
+    },
+    {
+      "id": "waiver",
+      "query": {
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "question": "waiver spend",
+        "embedding": [
+          0,
+          1,
+          0
+        ],
+        "embedding_model": "fixture-v1",
+        "at": "2026-06-01T00:00:00Z"
+      },
+      "relevant": [
+        "v1",
+        "waiver"
+      ]
+    },
+    {
+      "id": "historical",
+      "query": {
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "question": "annual fee",
+        "embedding": [
+          1,
+          0,
+          0
+        ],
+        "embedding_model": "fixture-v1",
+        "at": "2025-06-01T00:00:00Z"
+      },
+      "relevant": [
+        "old",
+        "fee"
+      ]
+    },
+    {
+      "id": "future-boundary",
+      "query": {
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "question": "annual fee",
+        "embedding": [
+          1,
+          0,
+          0
+        ],
+        "embedding_model": "fixture-v1",
+        "at": "2027-01-01T00:00:00Z"
+      },
+      "relevant": [
+        "future",
+        "fee"
+      ]
+    },
+    {
+      "id": "wrong-scope",
+      "query": {
+        "product": "credit-card",
+        "scope": "business",
+        "locale": "en-IN",
+        "question": "annual fee",
+        "embedding": [
+          1,
+          0,
+          0
+        ],
+        "embedding_model": "fixture-v1",
+        "at": "2026-06-01T00:00:00Z"
+      },
+      "relevant": null
+    },
+    {
+      "id": "expired",
+      "query": {
+        "product": "credit-card",
+        "scope": "retail",
+        "locale": "en-IN",
+        "question": "annual fee",
+        "embedding": [
+          1,
+          0,
+          0
+        ],
+        "embedding_model": "fixture-v1",
+        "at": "2028-01-01T00:00:00Z"
+      },
+      "relevant": null
+    }
+  ]
+}

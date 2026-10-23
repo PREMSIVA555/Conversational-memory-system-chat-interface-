@@ -593,6 +593,20 @@ async def persist_candidates(
     if not items:
         return []
 
+    # These two keys now have accepted-source ordering in the banking store.
+    # Never fall back to old capture, including when its new-write flag is off.
+    retired = {'preferred_response_language', 'preferred_response_format'}
+    def retired_key(candidate):
+        raw=getattr(candidate,'attribute',None)
+        return isinstance(raw,str) and raw.strip().lower().replace(' ','_').replace('-','_') in retired
+    blocked = [c for c in items if retired_key(c)]
+    items = [c for c in items if not retired_key(c)]
+    blocked_results = [dict(text=getattr(c,'text',''), action='ignored', memory_id=None,
+        reason='banking_preference_writer_retired', dedup_status_at_write=None,
+        dedup_status_from_node=getattr(c,'dedup_status',None)) for c in blocked]
+    if not items:
+        return blocked_results
+
     limit = threshold if threshold is not None else capture_config.dedup_cosine_threshold()
     results: list[dict[str, Any]] = []
 
@@ -849,4 +863,4 @@ async def persist_candidates(
                     }
                 )
 
-    return results
+    return blocked_results + results

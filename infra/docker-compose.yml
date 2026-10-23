@@ -84,6 +84,7 @@ services:
       - "${PROMETHEUS_HOST_PORT:-9090}:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./banking-alerts.yml:/etc/prometheus/banking-alerts.yml:ro
       - promdata:/prometheus
     extra_hosts:
       - "host.docker.internal:host-gateway"

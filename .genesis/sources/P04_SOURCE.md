@@ -1,0 +1,126 @@
+# P04 authoritative source extract
+
+{
+  "manifest": {
+    "source_path": "C:\\Users\\mprem\\Documents\\Codex\\2026-10-17\\https-antern-co-evidence-portfolio-https\\outputs\\banking-implementation-plan\\PLAN_READER.html",
+    "source_sha256": "9f59fb49a54ea305387465fb606deca567d8118d7e296f7edee8605559ba70fd",
+    "recorded_at": "2026-10-21T14:08:23.138091+00:00",
+    "scope": "P04 and T04.1-T04.4; P05+ excluded; original SPEC/INV contracts retained",
+    "authorization": "start working on P04",
+    "limitations": [
+      "Planned contracts, not passing tests or future human approvals."
+    ]
+  },
+  "phase_text": "P04 — Cards, existing loans/EMIs and policy explanations Entry: P03 closed with evidence. Outcome: Extend existing provider/DTOs with card and loan read slices, payment/schedule distinctions and effective policy sources. Primary components: KR01 KR02 KR03 Work items: T04.1, T04.2, T04.3, T04.4. See backlog . First invariant gates: INV08, INV09 Exit criteria: Per-slice oracle tests pass for card daily/credit distinctions, transaction paging, EMI/payment separation, effective policy and unsupported explanation fallback. Evidence produced: Three domain slices with fixtures/traces; labeled retrieval queries; source/version table; policy error and abstention cases. Recovery/rollback: Disable failing domain/retrieval lane; do not serve wrong-scope or partial unsupported policy evidence. Retain earlier account slice.",
+  "tasks": [
+    {
+      "task_id": "T04.1",
+      "phase": "P04",
+      "title": "Add card enquiry slice",
+      "depends_on": [
+        "T03.4"
+      ],
+      "component_ids": [
+        "BD01",
+        "BD02",
+        "UX01",
+        "SP03"
+      ],
+      "spec_ids": [
+        "SPEC07"
+      ],
+      "invariant_ids": [
+        "INV02",
+        "INV07",
+        "INV08"
+      ],
+      "implementation": "Extend provider/tools/UI for owned cards, daily vs credit fields, status and card transactions; no settings mutations.",
+      "acceptance": "Two-card ambiguous suffix, null non-credit fields, declined/pending/posted amounts and all pages.",
+      "evidence_target": "evidence/scenarios/<run-id>/card-slice/",
+      "status": "planned-not-started"
+    },
+    {
+      "task_id": "T04.2",
+      "phase": "P04",
+      "title": "Add existing loan and EMI slice",
+      "depends_on": [
+        "T04.1"
+      ],
+      "component_ids": [
+        "BD01",
+        "BD02",
+        "UX01"
+      ],
+      "spec_ids": [
+        "SPEC07"
+      ],
+      "invariant_ids": [
+        "INV06",
+        "INV07",
+        "INV08"
+      ],
+      "implementation": "Add existing-loan principal/APR/monthly payment, schedule and separate actual payment reads.",
+      "acceptance": "Scheduled-but-unpaid, partial/missing payment, due date, Decimal APR and authorization fixtures.",
+      "evidence_target": "evidence/scenarios/<run-id>/loan-emi-slice/",
+      "status": "planned-not-started"
+    },
+    {
+      "task_id": "T04.3",
+      "phase": "P04",
+      "title": "Implement immutable policy ingestion and retrieval",
+      "depends_on": [
+        "T04.2"
+      ],
+      "component_ids": [
+        "KR01",
+        "KR02"
+      ],
+      "spec_ids": [
+        "SPEC08"
+      ],
+      "invariant_ids": [
+        "INV09"
+      ],
+      "implementation": "Ingest synthetic policy versions/chunks/metadata, atomic activation and eligibility; exact filtered vector/lexical lanes, explicit degraded status.",
+      "acceptance": "Future/expired/overlap/product/locale boundaries, partial ingestion and lane outages; no ineligible serving.",
+      "evidence_target": "evidence/policy/<run-id>/retrieval/",
+      "status": "planned-not-started"
+    },
+    {
+      "task_id": "T04.4",
+      "phase": "P04",
+      "title": "Add grounded explanations and domain regression",
+      "depends_on": [
+        "T04.3"
+      ],
+      "component_ids": [
+        "KR03",
+        "AO03",
+        "EV02"
+      ],
+      "spec_ids": [
+        "SPEC08",
+        "SPEC09"
+      ],
+      "invariant_ids": [
+        "INV09",
+        "INV10"
+      ],
+      "implementation": "Prefer supported rules/templates; bind explanatory claims to applicable evidence and record limitations. Add labeled query/claim fixtures.",
+      "acceptance": "Irrelevant-but-cited and contradicting source fail support criteria; all account/card/loan regressions remain passing.",
+      "evidence_target": "evidence/policy/<run-id>/claim-support/",
+      "status": "planned-not-started"
+    }
+  ],
+  "contracts": {
+    "SPEC07": "SPEC07 — Typed banking enquiry services Components: BD01, BD02, BD04, UX01, SP03 Behavioral contract: Synthetic accounts expose current/available balance distinctly; cards distinguish daily limit, credit limit, available credit and outstanding; transactions have explicit status/date and deterministic cursor order; existing loans expose principal/APR/payment; EMI schedule and actual payments are separate evidence. UUID refs, source version/as_of, currency and integer-string minor units are mandatory. Pin supported currency exponent metadata; enforce ranges, Decimal APR and no mixed-currency sum. Failure/recovery contract: Unknown decline/payment reason remains unknown. Unsupported currency/range -> typed failure. Bank timeout -> unavailable; no stale memory fallback. Resource changes require fresh reads. Acceptance criteria: Compare service DTO and rendered answer to DB oracle for debit/credit, declined/pending/posted/reversed, timestamp ties, all pages, multiple cards, null reason, scheduled-unpaid EMI and large/zero amounts. Supported exponent formatting remains exact. Excluded: Money movement, live bank connections, new loan decisions, limit increases, card-setting changes, travel notices and formal refund/dispute execution.",
+    "SPEC08": "SPEC08 — Policy ingestion, applicability and explanation Components: KR01, KR02, KR03, AO03 Behavioral contract: Immutable versioned synthetic policy documents/chunks carry product/scope/locale/source hash and half-open UTC effective interval. Activate complete sets atomically. Distinguish current versus historical applicability. Exclude ineligible evidence on every serving path. Start exact eligible-vector plus lexical search; measure hybrid before ANN/reranker changes. Record lane degradation. Citations resolve to known version/section, and explanations require claim support rather than reference membership alone. Failure/recovery contract: Missing/conflicting applicable rule or unsupported prose -> limitation, clarification or support. Partial retrieval is allowed only when surviving evidence independently supports the material answer. Acceptance criteria: Test future/expired/overlap/timezone boundary, wrong-product near duplicates, embedding/lexical lane failure, relevant-but-nonentailing citation and incomplete ingestion. Relevance and answer support get separate measurements. Excluded: Open-web policy fallback, automatically adding CRAG/Self-RAG/reranking agents, or treating a citation as proof of correctness.",
+    "SPEC09": "SPEC09 — Bounded planning and answer construction Components: AO01, AO02, AO03, AO04, SP03, RE04 Behavioral contract: One coordinator uses registered enquiry tools and support drafting. Strict tool/plan schema rejects extras and model-created identity. Structured provider errors distinguish unavailable, invalid and no evidence. Typed bank facts are server-rendered; optional explanatory prose is checked and falls back to supported templates/limitations. Trace included sources and usage. All repairs/retries count against common call and monotonic deadline budgets. Persist logical run start/deadline and atomically reserve model/tool attempts against durable counters before dispatch. Reclaim/restart does not reset call/deadline allowance. Derive process-local monotonic remaining budgets from the real execution deadline, never from fixture DomainClock; duplicate in-flight calls may still consume real cost and must be reported. Failure/recovery contract: Unknown capability -> explain unsupported; invalid plan -> at most one bounded repair then clarify/error; insufficient mandatory context -> narrow rather than drop decisive evidence. No loop continues beyond budget. Acceptance criteria: Inject malformed JSON, unknown tools, SQL-like args, merchant/policy injection, wrong numeric draft, unsupported citations, provider emptiness/timeouts and evidence-position perturbations. No invented bank field or consequential execution is shown. Excluded: Model-triggered support execution, multi-agent supervisor by default, private chain-of-thought as an eval requirement.",
+    "INV02": "INV02 — Owned resource on every path Must hold: Only authorized owned rows become tool evidence or responses. Enforced by: Gateway + domain/provider + scoped repository Verified by: Two-customer API/direct-adapter/worker probes; valid owner control First gate: P01. Work: T01.2, T03.1, T04.1. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV06": "INV06 — Current bank authority Must hold: Current balance/payment/case status comes from fresh authorized evidence, not history. Enforced by: Source-aware evidence registry + typed tools Verified by: Conflicting memory and unavailable tool never yield remembered current fact First gate: P03. Work: T03.1, T03.2, T03.4, T04.2, T05.3. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV07": "INV07 — Exact financial representation Must hold: Supported money remains exact through DB, JSON, UI and arithmetic; no implicit FX. Enforced by: bigint/Decimal, integer strings, currency exponent allowlist Verified by: Large/zero amounts, supported exponents, unsupported currency and range cases First gate: P03. Work: T03.1, T03.4, T04.1, T04.2. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV08": "INV08 — Business status truth Must hold: Pending/declined is not posted spend; schedule is not payment evidence. Enforced by: Typed enums and separate payment/schedule queries Verified by: DB-oracle cases across all statuses and pagination First gate: P04. Work: T04.1, T04.2. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV09": "INV09 — Applicable policy only Must hold: Cited policy matches product/scope/locale and requested effective time. Enforced by: Versioned eligibility, atomic activation and conflict handling Verified by: Wrong/future/expired/overlap policy and historical/current question tests First gate: P04. Work: T04.3, T04.4. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV10": "INV10 — Supported displayed claims Must hold: Exact fields match evidence; explanatory claims lacking support become limitation/fallback. Enforced by: Typed rendering + source checks + curated rules; offline claim rubric Verified by: Wrong amounts, relevant-but-invalid citations and contradiction fixtures First gate: P03. Work: T03.2, T03.4, T04.4, T06.3. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved."
+  }
+}

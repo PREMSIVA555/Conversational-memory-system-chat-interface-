@@ -1,0 +1,36 @@
+{
+  "phase": "P00",
+  "status": "approved-and-closed",
+  "approved_by": "mprem",
+  "authorization": "mark p00 approved. move to p01",
+  "recorded_at": "2026-10-18T15:40:10.712204+00:00",
+  "tasks": {
+    "T00.1": "done",
+    "T00.2": "done",
+    "T00.3": "done"
+  },
+  "fresh_executable_receipt": {
+    "path": ".genesis/evidence/T00.3-memory-reproduction-82a5a151-e63d-4038-9b6a-55965a00f24c.json",
+    "hash": "6a69f9b3882461ea293651e77ef85575b8904bbbf8137e27afefb1e338507f16",
+    "source_hash": "dd8e535887174f2dc064704d70c54d7964d6b7fc90e6303979b8ae70a8ca6878",
+    "config_hash": "c3dd07db2af0b0d5ac7da38fa64c2ad0f249b1a5b48ac745dca5bc99d7d54041",
+    "observed_at": "2026-10-18T15:37:47.633Z"
+  },
+  "human_approval_receipt": {
+    "path": ".genesis/evidence/T00.3-independent-review-76becb23-fc97-4c72-8ce3-8907edcb6a99.json",
+    "hash": "d30cc7150bb91662f764b329abcf430a636a0e4731fc789de9e4f0172d68963a",
+    "source_hash": "dd8e535887174f2dc064704d70c54d7964d6b7fc90e6303979b8ae70a8ca6878",
+    "config_hash": "c3dd07db2af0b0d5ac7da38fa64c2ad0f249b1a5b48ac745dca5bc99d7d54041",
+    "observed_at": "2026-10-18T15:38:10.798Z"
+  },
+  "independent_verifier": "/root/p00_closure_verify",
+  "docker_verification": "evidence/world/p00docker20261018f481a492/connection-proof.json",
+  "original_live_incident": "not-reproduced",
+  "limitations": [
+    "T00.3 findings are synthetic service-layer characterization; no live model answer or P02 fix.",
+    "Docker persistence checks and T00.3 fresh evidence are separate runs on their recorded environments.",
+    "Historical T00.1/T00.2 receipts retained; full repository suite has not been certified."
+  ],
+  "next_phase": "P01",
+  "active_task": "T01.1"
+}

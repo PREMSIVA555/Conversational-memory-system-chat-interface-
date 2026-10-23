@@ -1,0 +1,15 @@
+groups:
+  - name: banking-foundation
+    rules:
+      - alert: BankingAccessQueueRejected
+        expr: increase(bank_queue_rejected_total[5m]) > 0
+        labels: {severity: warning}
+        annotations: {summary: "Banking access queue rejected work"}
+      - alert: BankingAccessQueueFailure
+        expr: increase(bank_queue_failed_total[5m]) > 0
+        labels: {severity: warning}
+        annotations: {summary: "Banking queued access failed or was invalidated"}
+      - alert: BankingTelemetryDropped
+        expr: increase(bank_telemetry_dropped_total[5m]) > 0
+        labels: {severity: warning}
+        annotations: {summary: "Optional banking telemetry was dropped"}

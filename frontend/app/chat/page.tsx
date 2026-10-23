@@ -7,9 +7,10 @@
  */
 
 import ChatView from "@/components/ChatView";
+import BankingView from "@/components/BankingView";
 
 export const metadata = { title: "Chat — memory-system" };
 
 export default function ChatRoute() {
-  return <ChatView />;
+  return process.env.APP_PROFILE === "legacy-local" ? <ChatView /> : <BankingView />;
 }

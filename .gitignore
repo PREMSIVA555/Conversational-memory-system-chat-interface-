@@ -41,3 +41,24 @@ Thumbs.db
 .vscode/
 infra/.env.bak*
 .uvicorn.log*
+
+# Generated P00 run evidence is retained locally, outside Genesis source hashes.
+# Canonical receipts remain in .genesis/evidence/.
+/evidence/world/
+/evidence/security/
+/evidence/operations/
+/evidence/migrations/
+/evidence/reliability/
+/evidence/memory/
+/evidence/banking/
+/evidence/agent/
+/evidence/ui/
+/evidence/scenarios/
+/evidence/policy/
+/.genesis/evidence/
+/.genesis/index/
+/.genesis/dashboard.html*
+/output/playwright/
+/.playwright-cli/
+/evidence/baseline/*/memory-repro/
+/evidence/baseline/

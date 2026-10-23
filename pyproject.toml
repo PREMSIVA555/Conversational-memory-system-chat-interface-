@@ -19,6 +19,8 @@ dependencies = [
     "httpx==0.27.2",
     "prometheus-client==0.21.1",
     "python-dotenv==1.0.1",
+    "Authlib==1.8.0",
+    "opentelemetry-sdk==1.40.0",
     # --- M2: capture graph ---------------------------------------------------
     "langgraph==0.2.60",
     "presidio-analyzer==2.2.355",
@@ -49,7 +51,10 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["api", "capture", "graphs", "jobs", "llm", "store"]
+packages = ["api", "auth", "capture", "graphs", "jobs", "llm", "store"]
+
+[tool.setuptools.package-data]
+store = ["migrations/*.sql", "banking_migrations/*.sql"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,177 @@
+{
+  "phase": "P03",
+  "status": "approved-and-closed",
+  "approved_by": "mprem",
+  "authorization": "approved",
+  "recorded_at": "2026-10-21T13:51:55.027721+00:00",
+  "tasks": {
+    "T03.1": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p03_check.py evidence/banking/p03-provider-genesis-01/account-provider --task T03.1",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.1-acceptance-6febc0e7-3d1c-47ff-b236-4b4980e8f721.json",
+            "hash": "2229fb73df83ed2347787d91fc68f74d26eae1136a85e4efa40c302f470131a3",
+            "source_hash": "3efd1dc7e7350659943d8b7637fb23c94b5aa0476a6e03d92e4380637aa8c322",
+            "config_hash": "eca8455e6efe0c0cdc8f4c5d17e47625173ebf0f04e0eb707c38ffcf70e34031",
+            "observed_at": "2026-10-19T16:26:13.021Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.1-independent-review-11810758-f82b-4476-ae88-22a034fd6604.json",
+            "hash": "264887709e1c84583188bfd11928cd48caef2a4ba0430f9124c6f1f3ee15b8cc",
+            "source_hash": "3efd1dc7e7350659943d8b7637fb23c94b5aa0476a6e03d92e4380637aa8c322",
+            "config_hash": "eca8455e6efe0c0cdc8f4c5d17e47625173ebf0f04e0eb707c38ffcf70e34031",
+            "observed_at": "2026-10-19T16:31:20.221Z"
+          }
+        }
+      ]
+    },
+    "T03.2": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p03_check.py evidence/agent/p03-coordinator-genesis-01/account-run --task T03.2",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.2-acceptance-fd8167df-e781-456d-8154-0c945f32de71.json",
+            "hash": "27a7f4a7a021ee81a170cc9c581f3f537474fc10dc87fb8568d9426b65d9366c",
+            "source_hash": "c2e7f2e691a52ec72c06c71a35e0e25f4b5eb7e521f243b54fb4fe760963c153",
+            "config_hash": "305c9dd912fd6696c58d6f6a0279517cc2258683f6fa161527661c00e8c9574d",
+            "observed_at": "2026-10-20T08:12:55.225Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.2-independent-review-10554fbc-16dd-4475-a411-c78b46cae82c.json",
+            "hash": "3d5fea37118005fb920ebcb33f2fc163ea8612db31ed0a74a6628960d0215201",
+            "source_hash": "c2e7f2e691a52ec72c06c71a35e0e25f4b5eb7e521f243b54fb4fe760963c153",
+            "config_hash": "305c9dd912fd6696c58d6f6a0279517cc2258683f6fa161527661c00e8c9574d",
+            "observed_at": "2026-10-20T09:13:08.548Z"
+          }
+        }
+      ]
+    },
+    "T03.3": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p03_check.py evidence/ui/p03-turns-genesis-01/turn-recovery --task T03.3",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.3-acceptance-473e42ae-b57d-4d57-84b0-13bafa6930a5.json",
+            "hash": "cfeb90ed5a12202bcc75304bbb215326f1874161416f5bc9ace695784babb8cf",
+            "source_hash": "24c211991a1e20ae1cc58cdd43b7aa1d7d3170debf44824bd443b0725618f878",
+            "config_hash": "22b12202d71be98cf049cfc44fe70ce93692443a916169ed94557053712b1bb0",
+            "observed_at": "2026-10-20T10:32:13.819Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.3-independent-review-71eb5c2c-5939-46ec-b12a-3c97bd3cff12.json",
+            "hash": "5917debc39de71a16970bc663dfe4600feb494ed990033f0bea904a2f4ce51a6",
+            "source_hash": "24c211991a1e20ae1cc58cdd43b7aa1d7d3170debf44824bd443b0725618f878",
+            "config_hash": "22b12202d71be98cf049cfc44fe70ce93692443a916169ed94557053712b1bb0",
+            "observed_at": "2026-10-21T12:52:36.324Z"
+          }
+        }
+      ]
+    },
+    "T03.4": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p03_slice.py evidence/scenarios/p03-account-slice-genesis-03/account-slice --task T03.4",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.4-acceptance-312533d7-85ef-443a-8604-7e04f10456ee.json",
+            "hash": "694f01ab89e47909b4101429e355a254fccd50886dbd3a97133e6d32c5b3a9d8",
+            "source_hash": "e39490b4a34ac90aabda014ea63d70506dca927b4d9ffb754c9cfc18a6a0d7f3",
+            "config_hash": "0a1abc38ca7d97b8ba4a22a25653d5461bfabcbf44d17b06cfeb4b0baa35cd0e",
+            "observed_at": "2026-10-21T13:22:12.683Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T03.4-independent-review-3f956825-a313-4ea8-b9d3-a871e316fe94.json",
+            "hash": "92766e705d2a85ea55ad12966ebbcddf7fbc7ac8cc36030adcf5f5618e9ce772",
+            "source_hash": "e39490b4a34ac90aabda014ea63d70506dca927b4d9ffb754c9cfc18a6a0d7f3",
+            "config_hash": "0a1abc38ca7d97b8ba4a22a25653d5461bfabcbf44d17b06cfeb4b0baa35cd0e",
+            "observed_at": "2026-10-21T13:50:46.872Z"
+          }
+        }
+      ]
+    }
+  },
+  "final_independent_report": ".genesis/evidence/T03.4-luna-results.md",
+  "final_verification": ".genesis/evidence/T03.4-verification.json",
+  "final_integrity": ".genesis/evidence/T03.4-final-integrity.json",
+  "human_review_receipt": {
+    "path": ".genesis/evidence/T03.4-independent-review-3f956825-a313-4ea8-b9d3-a871e316fe94.json",
+    "hash": "92766e705d2a85ea55ad12966ebbcddf7fbc7ac8cc36030adcf5f5618e9ce772",
+    "source_hash": "e39490b4a34ac90aabda014ea63d70506dca927b4d9ffb754c9cfc18a6a0d7f3",
+    "config_hash": "0a1abc38ca7d97b8ba4a22a25653d5461bfabcbf44d17b06cfeb4b0baa35cd0e",
+    "observed_at": "2026-10-21T13:50:46.872Z"
+  },
+  "approval_snapshot_map": {
+    ".genesis\\T03.4.md": {
+      "snapshot": ".genesis\\evidence\\T03.4-pre-approval-T03.4.md",
+      "sha256": "bb9891c070233537a2c15b0a3110b7b7251b1a957678af3d0b3eca96d91f3730"
+    },
+    ".genesis\\P03.md": {
+      "snapshot": ".genesis\\evidence\\T03.4-pre-approval-P03.md",
+      "sha256": "e2fc2c9f6097b62a9ddf2832c2b9994a644028dccf9f1e0a2c88a9aeaebd73cb"
+    }
+  },
+  "exit_criteria": {
+    "exact_values_selected_product": "Verified against actual isolated SQL authority; large/zero/negative amounts, source versions and dates.",
+    "ambiguity": "Clarification lists owned products; browser account journey checked.",
+    "foreign_unknown_tools": "Foreign/unknown account reads and unregistered/malformed tool plans rejected safely.",
+    "retry_reconnect": "Durable client-key replay/conflict, persisted owner-only status and SSE replay checked.",
+    "failure_safety": "Scripted raw model faults and actual isolated bank SQL lock tested; pre-acceptance timeout fixed and independently rechecked."
+  },
+  "limitations": [
+    "Raw model completion scripted; actual auth/API/worker/SQL and checked evidence, no live model-quality claim.",
+    "Benchmark SDK metadata setup measured separately before acceptance; retained cold-start request expiry is not a performance pass.",
+    "Independent browser check covers account journey; separate preferences panel showed temporary unavailability and was not revalidated.",
+    "Previous T03.3 active-erasure/browser-SSE timing limitations remain historical.",
+    "All historical failures and prior partial verification scopes remain preserved; this approval does not waive them or approve P04+."
+  ],
+  "next_phase": "P04",
+  "next_phase_status": "not-started; no new phase requested in this approval"
+}

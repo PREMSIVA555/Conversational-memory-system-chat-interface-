@@ -1,0 +1,1314 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-21T13:51:55.027721+00:00",
+  "claims": [
+    {
+      "claim_id": "T00.1-P00-OBSERVATION",
+      "task_id": "T00.1",
+      "status": "observed",
+      "statement": "Original source/environment observations and failed setup probes are retained with artifact integrity checks.",
+      "spec_ids": [
+        "SPEC16"
+      ],
+      "invariant_ids": [
+        "INV31",
+        "INV32"
+      ],
+      "component_ids": [
+        "PL01",
+        "PL04"
+      ],
+      "source_run_ids": [
+        "6e4e7ee2-9d4d-4d3b-a178-d0f644107aeb"
+      ],
+      "commands": [
+        "py -3.11 scripts/p00_baseline.py verify evidence/baseline/20261018-p00-initial"
+      ],
+      "source_hash": "16ed0832d31984c9d5f2ba7d60997e227e8b6e65e9859747ada069ea5ca996dd",
+      "environment_hash": "3658e14c6d3228e29e53c2f88c5cef87f32f37f6a12bede24f7bc09007d29fbe",
+      "environment_hash_method": "SHA-256 of sorted compact JSON of Genesis receipt environment",
+      "result_paths": [
+        "evidence/baseline/20261018-p00-initial/manifest.json",
+        ".genesis/evidence/T00.1-baseline-integrity-6e4e7ee2-9d4d-4d3b-a178-d0f644107aeb.json"
+      ],
+      "limitations": [
+        "Initial Python 3.11 environment lacks project dependencies. Docker Linux engine initially unavailable; logs preserve these failures. No application test success claimed."
+      ],
+      "reviewer": null,
+      "timestamp": "2026-10-18T10:33:21.436Z"
+    },
+    {
+      "claim_id": "T00.2-P00-OBSERVATION",
+      "task_id": "T00.2",
+      "status": "observed",
+      "statement": "Six persistence-layer reset/isolation/guard checks passed on the dedicated native test services.",
+      "spec_ids": [
+        "SPEC13"
+      ],
+      "invariant_ids": [
+        "INV29",
+        "INV31"
+      ],
+      "component_ids": [
+        "BD04",
+        "EV01",
+        "PL01"
+      ],
+      "source_run_ids": [
+        "3394f1a2-f049-4b55-ac7d-289db9cf3a81"
+      ],
+      "commands": [
+        ".venv\\Scripts\\python.exe scripts\\p00_check_world.py evidence/world/20261018-p00-native-04"
+      ],
+      "source_hash": "288a2f180f5815ed6a7284d51fcf750c51d03713ef25e1545070a1dc55e3012f",
+      "environment_hash": "3658e14c6d3228e29e53c2f88c5cef87f32f37f6a12bede24f7bc09007d29fbe",
+      "environment_hash_method": "SHA-256 of sorted compact JSON of Genesis receipt environment",
+      "result_paths": [
+        "evidence/world/20261018-p00-native-04/reset-report.json",
+        ".genesis/evidence/T00.2-world-persistence-3394f1a2-f049-4b55-ac7d-289db9cf3a81.json"
+      ],
+      "limitations": [
+        "Dedicated native PostgreSQL 18.4/Memurai Redis-compatible 8.2.7; Docker PG16/Redis7 unavailable. No banking API, authentication/RLS or model validation claimed."
+      ],
+      "reviewer": {
+        "human": "mprem",
+        "reason": "User explicitly stated: I reviewed and approve T00.2. Reviewed artifact: evidence/world/20261018-p00-native-04/reset-report.json; six persistence checks passed.",
+        "observed_at": "2026-10-18T11:46:59.658Z"
+      },
+      "timestamp": "2026-10-18T11:17:06.021Z"
+    },
+    {
+      "claim_id": "T00.3-P00-OBSERVATION",
+      "task_id": "T00.3",
+      "status": "observed",
+      "statement": "Synthetic real-persistence cases expose legacy-null stale retrieval and completion-order overwrite; typed in-order control succeeds. Six seeded report validation checks passed. The original live incident remains not-reproduced.",
+      "spec_ids": [
+        "SPEC04",
+        "SPEC06"
+      ],
+      "invariant_ids": [
+        "INV11",
+        "INV14",
+        "INV32"
+      ],
+      "component_ids": [
+        "MM02",
+        "MM04",
+        "EV01",
+        "PL04"
+      ],
+      "source_run_ids": [
+        "bf4b2d74-4513-4a48-a9a2-1c238d59966d"
+      ],
+      "commands": [
+        ".venv\\Scripts\\python.exe scripts\\p00_reproduce_memory.py capture evidence/baseline/20261018-p00-memory-03/memory-repro && .venv\\Scripts\\python.exe -m unittest discover -s tests/p00 -p test_memory_repro.py -v"
+      ],
+      "source_hash": "65f61b4b8b47322062accf701ee57695dde3072251ef5426dd199caaae6935d9",
+      "environment_hash": "3658e14c6d3228e29e53c2f88c5cef87f32f37f6a12bede24f7bc09007d29fbe",
+      "environment_hash_method": "SHA-256 of sorted compact JSON of Genesis receipt environment",
+      "result_paths": [
+        "evidence/baseline/20261018-p00-memory-03/memory-repro/report.json",
+        ".genesis/evidence/T00.3-memory-reproduction-bf4b2d74-4513-4a48-a9a2-1c238d59966d.json"
+      ],
+      "limitations": [
+        "No original live customer inputs or extraction/provider configuration; no provider calls authorized or necessary for scoped persistence reproduction.",
+        "No P02 behavior or migration fix. Independent review remains pending."
+      ],
+      "reviewer": null,
+      "timestamp": "2026-10-18T11:52:14.834Z"
+    },
+    {
+      "claim_id": "T00.2-P00-DOCKER-INDEPENDENT-OBSERVATION",
+      "task_id": "T00.2",
+      "status": "observed",
+      "statement": "Separate agent ran all six persistence checks on Docker PostgreSQL 16.15 and Redis 7.4.11 using the planned image tags; actual test traffic and host/container identity equality were verified.",
+      "spec_ids": [
+        "SPEC13"
+      ],
+      "invariant_ids": [
+        "INV29",
+        "INV31"
+      ],
+      "component_ids": [
+        "BD04",
+        "EV01",
+        "PL01"
+      ],
+      "source_run_ids": [
+        "p00docker20261018f481a492"
+      ],
+      "commands": [
+        [
+          "D:\\Projects\\Banking Assistant\\banking-memory-agent\\.venv\\Scripts\\python.exe",
+          "D:\\Projects\\Banking Assistant\\banking-memory-agent\\scripts\\p00_check_world.py",
+          "D:\\Projects\\Banking Assistant\\banking-memory-agent\\evidence\\world\\p00docker20261018f481a492\\checks",
+          "--config",
+          "D:\\Projects\\Banking Assistant\\banking-memory-agent\\.genesis\\local\\docker-p00-20261018-verify01\\p00-world.json"
+        ]
+      ],
+      "source_hashes": {
+        "evals/world.py": "1db534757039a9be66f82b700f65e007422a493fc76f866411b3abca7c2a09da",
+        "evals/fixtures/p00_world.json": "b32921d5ff850412181f0f1ce754e6ad9b86b0567a2027bbb485307b9d9fe3b4",
+        "tests/p00/test_world.py": "fb13a4f074fc26323b033d1f0a4ab89fcf0ba5e74ade44f53e2ce76ab3cb8e74",
+        "scripts/p00_check_world.py": "73faf3cee7392624a9ee9c06d763ac5b0a816fafe3dc0ebd0af4b50e0fd072e6",
+        "scripts/p00_services.py": "f70c3c75351f60d367a494dbe4b93b802125679fd191c846b804ca947c5d0d31"
+      },
+      "environment_hash": "a742dbdb126419c7413b3899f2d6f23e0867e8356250ff94ed45890d8b89b04c",
+      "environment_hash_method": "SHA-256 of sorted compact JSON of connection-proof containers including image IDs/digests and port bindings",
+      "result_paths": [
+        "evidence/world/p00docker20261018f481a492/connection-proof.json",
+        "evidence/world/p00docker20261018f481a492/checks/reset-report.json",
+        "evidence/world/p00docker20261018f481a492/independent-review.md",
+        "evidence/world/p00docker20261018f481a492/artifact-hashes.json"
+      ],
+      "limitations": [
+        "Persistence skeleton only; no banking API, authentication/RLS, session expiry or live-model certification.",
+        "Independent technical agent review is not human approval; T00.3 remains pending human review.",
+        "Existing native and memsys services were not reset; isolated test containers retained for inspection."
+      ],
+      "reviewer": {
+        "kind": "independent-agent",
+        "agent": "/root/docker_persistence_verify",
+        "human_approval": false
+      },
+      "timestamp": "2026-10-18T15:11:02.648905+00:00"
+    },
+    {
+      "claim_id": "P00-CLOSURE-APPROVED",
+      "task_id": "T00.3",
+      "status": "observed",
+      "statement": "User explicitly approved P00. Native Genesis recorded T00.3 human review and completion after fresh execution by a separate verifier. P00 tasks are done; P01 T01.1 is active.",
+      "spec_ids": [
+        "SPEC16"
+      ],
+      "invariant_ids": [
+        "INV31",
+        "INV32"
+      ],
+      "source_run_ids": [
+        "82a5a151-e63d-4038-9b6a-55965a00f24c"
+      ],
+      "result_paths": [
+        ".genesis/P00_CLOSURE.json",
+        ".genesis/evidence/T00.3-memory-reproduction-82a5a151-e63d-4038-9b6a-55965a00f24c.json",
+        ".genesis/evidence/T00.3-independent-review-76becb23-fc97-4c72-8ce3-8907edcb6a99.json",
+        "evidence/baseline/20261018-p00-memory-approval-02/memory-repro/report.json"
+      ],
+      "reviewer": {
+        "human": "mprem",
+        "authorization": "mark p00 approved. move to p01",
+        "independent_agent": "/root/p00_closure_verify"
+      },
+      "limitations": [
+        "T00.3 findings are synthetic service-layer characterization; no live model answer or P02 fix.",
+        "Docker persistence checks and T00.3 fresh evidence are separate runs on their recorded environments.",
+        "Historical T00.1/T00.2 receipts retained; full repository suite has not been certified."
+      ],
+      "timestamp": "2026-10-18T15:40:10.712204+00:00"
+    },
+    {
+      "claim_id": "T01.1-P01-INDEPENDENT-OBSERVATION",
+      "task_id": "T01.1",
+      "status": "observed",
+      "statement": "Implementation present and acceptance checks independently passed within the 40-check P01 phase run. Native human approval and phase closure are not claimed.",
+      "spec_ids": [
+        "SPEC01"
+      ],
+      "invariant_ids": [
+        "INV01",
+        "INV24",
+        "INV33"
+      ],
+      "component_ids": [
+        "SP01",
+        "UX02",
+        "PL03"
+      ],
+      "source_run_ids": [
+        "p01-independent-01"
+      ],
+      "commands": [
+        [
+          "D:\\Projects\\Banking Assistant\\banking-memory-agent\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "tests/p01",
+          "-q",
+          "--tb=short",
+          "--timeout=30",
+          "--junitxml=evidence\\security\\p01-independent-01\\checks.xml"
+        ]
+      ],
+      "source_hashes": {
+        ".gitignore": "cfc31015d00dfdcb8c32693cf88af9fcf161f7152576cbad3760f8eee65a6416",
+        "api/foundation.py": "8b1fd8a1c9ff633a4931b5f66aedd76391bafd28e054f7c8e577dc2df4a82cbc",
+        "api/main.py": "ddcb7de04dd73528c6997b9a531d7abd34bb69b6dfc7d7c02f308a31b7dc8254",
+        "api/privacy.py": "b80a1fea1eb9d50302976b4604c30c067fbc19e0cbfa64ddaab9a049443d5a4f",
+        "auth/__init__.py": "a02718128b83e8eabbf2c7da6e1b2482a341391041ed267bf25f13a09580b6e1",
+        "auth/config.py": "54fe3581ac73bf3affbf2a87809051ad732bbbe165bf19e449eb8180aee58bea",
+        "auth/oidc.py": "8836060c1605220ab49c838800d5a9374c2b1fd33e193644b5be00f9a606ad9f",
+        "auth/sessions.py": "10ab4014dbff711ef1c95542d19020d94415e2d7bda7749aa595e516d968b0a4",
+        "frontend/app/chat/page.tsx": "3bf2563b2233256f685f8a26aa15e90d2038a15965282a3eaae53a586dc2b801",
+        "frontend/app/page.tsx": "6ae4fe8bc815b869443fa904934b16d1c23e768b96a01e61da990ec34c8f8bec",
+        "frontend/components/BankingView.tsx": "ec3dc7fdf6016a7b729bd99f3f0ad091e1126db2fb25096902f8047a7b75ea7c",
+        "frontend/next.config.ts": "4795fdf2630a374e5250b09923165a82b1198833ce594e84c4f078ebd784a4d2",
+        "infra/banking-alerts.yml": "93e6524854ccb2ee7cefe2c006ccfe28cfce502a81287a1f2d1cf96e3c7d4c2f",
+        "infra/docker-compose.yml": "0207934e15e30d73dc25f7191eb06fec88741724734e415ec3a227285d08c4f2",
+        "infra/prometheus.yml": "8c8924c3b1d748f3e32a3b9804df18c032827879c33367ad1107e24415796916",
+        "jobs/banking_access.py": "8566aead3aeea132d05ad81f9de78acfcee7ad39c49c80a4ed4db0028adcf894",
+        "jobs/banking_probe.py": "62702b36741cc3743e7d307225463841b9656ed6aa7326de548d8691ca1b8d91",
+        "pyproject.toml": "416ea9db335e52d59e46b7ca0ef1c095ae7dbbd4ebfbd4ffc7db4545b3bfd205",
+        "scripts/p01_check.py": "332edebdd8fd0111f175cd80d7621a61e6c0501cca6c7992d216006009e28950",
+        "scripts/p01_run.py": "bc8134d9cb130287a4fefaa426c2939b6df7a4a2e49eaf8d195c703619ed562f",
+        "scripts/p01_setup.py": "8c3eae987c47becc908f7c28c773f205ceabc2ae4e5313298c53c81db7837835",
+        "store/banking.py": "7c2adf4f852ffdd9d44e13b744211d98b5e8f9f902334bf92cb28216c8d519d8",
+        "store/banking_migrate.py": "4092cd6e8187990c2ddf9684bd3e550ea55dbaa69faa1d3f6ffdadf54de428ed",
+        "store/banking_migrations/0001_foundation.sql": "94a8ba51e2f9356b3153304275878d991d4687d424922029e1f25c6243131e2c",
+        "tests/p01/alerts.yml": "d0ffdf9643ef108035a7c6fc1eef1036cb33b0b46915cca5a03efa3d436f410f",
+        "tests/p01/conftest.py": "41767918df13b343f134a9964fbf28c1b29b631b0cec84c7f92c3cbb2a17ffcf",
+        "tests/p01/test_auth.py": "986b7606e735c157ed476444767ec2723316cc829db5ea7849588642225ba8cd",
+        "tests/p01/test_privacy.py": "bbd44b6729994fedef28ddf9d548ae9abef3a6d1699e06cab8d5b03022b66d0d",
+        "tests/p01/test_roles.py": "4737fb0232101cf59409a6864774c65b70ec761d81b9649ac6bc01a22eff656a"
+      },
+      "environment": {
+        "Authlib": "1.8.0",
+        "psycopg": "3.2.3",
+        "redis": "5.2.1",
+        "opentelemetry-sdk": "1.40.0",
+        "fastapi": "0.115.6"
+      },
+      "environment_hash": "2b5febfc0cf28f098e974f078a083c616b879c53712efa4e15ad84817e601427",
+      "environment_hash_method": "SHA-256 of sorted JSON of runtime identity/role/schema observations after execution",
+      "result_paths": [
+        "evidence/security/p01-independent-01/report.json",
+        "evidence/security/p01-independent-01/independent-review.md",
+        "evidence/security/p01-independent-01/observations/worker-trace.json",
+        "evidence/security/p01-independent-01/observations/sink-scan.json",
+        "output/playwright/p01-independent/browser-result-02.txt"
+      ],
+      "limitations": [
+        "Local self-signed TLS CA, isolated development Keycloak realm; not deployed issuer validation.",
+        "P01 conversation ownership roots only; no bank products, durable turns, preferences or support behavior.",
+        "No human review inferred from executable tests.",
+        "Technical phase run does not bypass queued task dependencies or human review gates.",
+        "98 offline regressions were run before final focused P01 refinements; no full repository/live provider certification."
+      ],
+      "reviewer": {
+        "kind": "independent-agent",
+        "agent": "/root/p01_security_verifier",
+        "human_approval": false
+      },
+      "timestamp": "2026-10-18T16:39:49.453799+00:00",
+      "native_receipt": {
+        "path": ".genesis/evidence/T01.1-auth-session-44e1368e-0e7e-4bb4-bc46-72512d1179c2.json",
+        "hash": "57ce6812c8eedd435ccbac4c22720b8389632957e477f421473dc08a43da0a4c",
+        "source_hash": "09cbd9f38c85369daa8422d50150483e3a20a9035b7931a050cadae8ab4fc483",
+        "config_hash": "fc4c403c065f0c41ecc7f947d718aab0fc0f09f701e59c6cda1be7856b42f93e",
+        "observed_at": "2026-10-18T16:36:07.334Z"
+      }
+    },
+    {
+      "claim_id": "T01.2-P01-INDEPENDENT-OBSERVATION",
+      "task_id": "T01.2",
+      "status": "observed",
+      "statement": "Implementation present and acceptance checks independently passed within the 40-check P01 phase run. Native human approval and phase closure are not claimed.",
+      "spec_ids": [
+        "SPEC02"
+      ],
+      "invariant_ids": [
+        "INV02",
+        "INV03"
+      ],
+      "component_ids": [
+        "SP02",
+        "BD01",
+        "PL01"
+      ],
+      "source_run_ids": [
+        "p01-independent-01"
+      ],
+      "commands": [
+        [
+          "D:\\Projects\\Banking Assistant\\banking-memory-agent\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "tests/p01",
+          "-q",
+          "--tb=short",
+          "--timeout=30",
+          "--junitxml=evidence\\security\\p01-independent-01\\checks.xml"
+        ]
+      ],
+      "source_hashes": {
+        ".gitignore": "cfc31015d00dfdcb8c32693cf88af9fcf161f7152576cbad3760f8eee65a6416",
+        "api/foundation.py": "8b1fd8a1c9ff633a4931b5f66aedd76391bafd28e054f7c8e577dc2df4a82cbc",
+        "api/main.py": "ddcb7de04dd73528c6997b9a531d7abd34bb69b6dfc7d7c02f308a31b7dc8254",
+        "api/privacy.py": "b80a1fea1eb9d50302976b4604c30c067fbc19e0cbfa64ddaab9a049443d5a4f",
+        "auth/__init__.py": "a02718128b83e8eabbf2c7da6e1b2482a341391041ed267bf25f13a09580b6e1",
+        "auth/config.py": "54fe3581ac73bf3affbf2a87809051ad732bbbe165bf19e449eb8180aee58bea",
+        "auth/oidc.py": "8836060c1605220ab49c838800d5a9374c2b1fd33e193644b5be00f9a606ad9f",
+        "auth/sessions.py": "10ab4014dbff711ef1c95542d19020d94415e2d7bda7749aa595e516d968b0a4",
+        "frontend/app/chat/page.tsx": "3bf2563b2233256f685f8a26aa15e90d2038a15965282a3eaae53a586dc2b801",
+        "frontend/app/page.tsx": "6ae4fe8bc815b869443fa904934b16d1c23e768b96a01e61da990ec34c8f8bec",
+        "frontend/components/BankingView.tsx": "ec3dc7fdf6016a7b729bd99f3f0ad091e1126db2fb25096902f8047a7b75ea7c",
+        "frontend/next.config.ts": "4795fdf2630a374e5250b09923165a82b1198833ce594e84c4f078ebd784a4d2",
+        "infra/banking-alerts.yml": "93e6524854ccb2ee7cefe2c006ccfe28cfce502a81287a1f2d1cf96e3c7d4c2f",
+        "infra/docker-compose.yml": "0207934e15e30d73dc25f7191eb06fec88741724734e415ec3a227285d08c4f2",
+        "infra/prometheus.yml": "8c8924c3b1d748f3e32a3b9804df18c032827879c33367ad1107e24415796916",
+        "jobs/banking_access.py": "8566aead3aeea132d05ad81f9de78acfcee7ad39c49c80a4ed4db0028adcf894",
+        "jobs/banking_probe.py": "62702b36741cc3743e7d307225463841b9656ed6aa7326de548d8691ca1b8d91",
+        "pyproject.toml": "416ea9db335e52d59e46b7ca0ef1c095ae7dbbd4ebfbd4ffc7db4545b3bfd205",
+        "scripts/p01_check.py": "332edebdd8fd0111f175cd80d7621a61e6c0501cca6c7992d216006009e28950",
+        "scripts/p01_run.py": "bc8134d9cb130287a4fefaa426c2939b6df7a4a2e49eaf8d195c703619ed562f",
+        "scripts/p01_setup.py": "8c3eae987c47becc908f7c28c773f205ceabc2ae4e5313298c53c81db7837835",
+        "store/banking.py": "7c2adf4f852ffdd9d44e13b744211d98b5e8f9f902334bf92cb28216c8d519d8",
+        "store/banking_migrate.py": "4092cd6e8187990c2ddf9684bd3e550ea55dbaa69faa1d3f6ffdadf54de428ed",
+        "store/banking_migrations/0001_foundation.sql": "94a8ba51e2f9356b3153304275878d991d4687d424922029e1f25c6243131e2c",
+        "tests/p01/alerts.yml": "d0ffdf9643ef108035a7c6fc1eef1036cb33b0b46915cca5a03efa3d436f410f",
+        "tests/p01/conftest.py": "41767918df13b343f134a9964fbf28c1b29b631b0cec84c7f92c3cbb2a17ffcf",
+        "tests/p01/test_auth.py": "986b7606e735c157ed476444767ec2723316cc829db5ea7849588642225ba8cd",
+        "tests/p01/test_privacy.py": "bbd44b6729994fedef28ddf9d548ae9abef3a6d1699e06cab8d5b03022b66d0d",
+        "tests/p01/test_roles.py": "4737fb0232101cf59409a6864774c65b70ec761d81b9649ac6bc01a22eff656a"
+      },
+      "environment": {
+        "Authlib": "1.8.0",
+        "psycopg": "3.2.3",
+        "redis": "5.2.1",
+        "opentelemetry-sdk": "1.40.0",
+        "fastapi": "0.115.6"
+      },
+      "environment_hash": "2b5febfc0cf28f098e974f078a083c616b879c53712efa4e15ad84817e601427",
+      "environment_hash_method": "SHA-256 of sorted JSON of runtime identity/role/schema observations after execution",
+      "result_paths": [
+        "evidence/security/p01-independent-01/report.json",
+        "evidence/security/p01-independent-01/independent-review.md",
+        "evidence/security/p01-independent-01/observations/worker-trace.json",
+        "evidence/security/p01-independent-01/observations/sink-scan.json",
+        "output/playwright/p01-independent/browser-result-02.txt"
+      ],
+      "limitations": [
+        "Local self-signed TLS CA, isolated development Keycloak realm; not deployed issuer validation.",
+        "P01 conversation ownership roots only; no bank products, durable turns, preferences or support behavior.",
+        "No human review inferred from executable tests.",
+        "Technical phase run does not bypass queued task dependencies or human review gates.",
+        "98 offline regressions were run before final focused P01 refinements; no full repository/live provider certification."
+      ],
+      "reviewer": {
+        "kind": "independent-agent",
+        "agent": "/root/p01_security_verifier",
+        "human_approval": false
+      },
+      "timestamp": "2026-10-18T16:39:49.453799+00:00"
+    },
+    {
+      "claim_id": "T01.3-P01-INDEPENDENT-OBSERVATION",
+      "task_id": "T01.3",
+      "status": "observed",
+      "statement": "Implementation present and acceptance checks independently passed within the 40-check P01 phase run. Native human approval and phase closure are not claimed.",
+      "spec_ids": [
+        "SPEC12"
+      ],
+      "invariant_ids": [
+        "INV26",
+        "INV27"
+      ],
+      "component_ids": [
+        "SP05",
+        "OB01",
+        "OB02",
+        "OB03",
+        "PL03"
+      ],
+      "source_run_ids": [
+        "p01-independent-01"
+      ],
+      "commands": [
+        [
+          "D:\\Projects\\Banking Assistant\\banking-memory-agent\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "tests/p01",
+          "-q",
+          "--tb=short",
+          "--timeout=30",
+          "--junitxml=evidence\\security\\p01-independent-01\\checks.xml"
+        ]
+      ],
+      "source_hashes": {
+        ".gitignore": "cfc31015d00dfdcb8c32693cf88af9fcf161f7152576cbad3760f8eee65a6416",
+        "api/foundation.py": "8b1fd8a1c9ff633a4931b5f66aedd76391bafd28e054f7c8e577dc2df4a82cbc",
+        "api/main.py": "ddcb7de04dd73528c6997b9a531d7abd34bb69b6dfc7d7c02f308a31b7dc8254",
+        "api/privacy.py": "b80a1fea1eb9d50302976b4604c30c067fbc19e0cbfa64ddaab9a049443d5a4f",
+        "auth/__init__.py": "a02718128b83e8eabbf2c7da6e1b2482a341391041ed267bf25f13a09580b6e1",
+        "auth/config.py": "54fe3581ac73bf3affbf2a87809051ad732bbbe165bf19e449eb8180aee58bea",
+        "auth/oidc.py": "8836060c1605220ab49c838800d5a9374c2b1fd33e193644b5be00f9a606ad9f",
+        "auth/sessions.py": "10ab4014dbff711ef1c95542d19020d94415e2d7bda7749aa595e516d968b0a4",
+        "frontend/app/chat/page.tsx": "3bf2563b2233256f685f8a26aa15e90d2038a15965282a3eaae53a586dc2b801",
+        "frontend/app/page.tsx": "6ae4fe8bc815b869443fa904934b16d1c23e768b96a01e61da990ec34c8f8bec",
+        "frontend/components/BankingView.tsx": "ec3dc7fdf6016a7b729bd99f3f0ad091e1126db2fb25096902f8047a7b75ea7c",
+        "frontend/next.config.ts": "4795fdf2630a374e5250b09923165a82b1198833ce594e84c4f078ebd784a4d2",
+        "infra/banking-alerts.yml": "93e6524854ccb2ee7cefe2c006ccfe28cfce502a81287a1f2d1cf96e3c7d4c2f",
+        "infra/docker-compose.yml": "0207934e15e30d73dc25f7191eb06fec88741724734e415ec3a227285d08c4f2",
+        "infra/prometheus.yml": "8c8924c3b1d748f3e32a3b9804df18c032827879c33367ad1107e24415796916",
+        "jobs/banking_access.py": "8566aead3aeea132d05ad81f9de78acfcee7ad39c49c80a4ed4db0028adcf894",
+        "jobs/banking_probe.py": "62702b36741cc3743e7d307225463841b9656ed6aa7326de548d8691ca1b8d91",
+        "pyproject.toml": "416ea9db335e52d59e46b7ca0ef1c095ae7dbbd4ebfbd4ffc7db4545b3bfd205",
+        "scripts/p01_check.py": "332edebdd8fd0111f175cd80d7621a61e6c0501cca6c7992d216006009e28950",
+        "scripts/p01_run.py": "bc8134d9cb130287a4fefaa426c2939b6df7a4a2e49eaf8d195c703619ed562f",
+        "scripts/p01_setup.py": "8c3eae987c47becc908f7c28c773f205ceabc2ae4e5313298c53c81db7837835",
+        "store/banking.py": "7c2adf4f852ffdd9d44e13b744211d98b5e8f9f902334bf92cb28216c8d519d8",
+        "store/banking_migrate.py": "4092cd6e8187990c2ddf9684bd3e550ea55dbaa69faa1d3f6ffdadf54de428ed",
+        "store/banking_migrations/0001_foundation.sql": "94a8ba51e2f9356b3153304275878d991d4687d424922029e1f25c6243131e2c",
+        "tests/p01/alerts.yml": "d0ffdf9643ef108035a7c6fc1eef1036cb33b0b46915cca5a03efa3d436f410f",
+        "tests/p01/conftest.py": "41767918df13b343f134a9964fbf28c1b29b631b0cec84c7f92c3cbb2a17ffcf",
+        "tests/p01/test_auth.py": "986b7606e735c157ed476444767ec2723316cc829db5ea7849588642225ba8cd",
+        "tests/p01/test_privacy.py": "bbd44b6729994fedef28ddf9d548ae9abef3a6d1699e06cab8d5b03022b66d0d",
+        "tests/p01/test_roles.py": "4737fb0232101cf59409a6864774c65b70ec761d81b9649ac6bc01a22eff656a"
+      },
+      "environment": {
+        "Authlib": "1.8.0",
+        "psycopg": "3.2.3",
+        "redis": "5.2.1",
+        "opentelemetry-sdk": "1.40.0",
+        "fastapi": "0.115.6"
+      },
+      "environment_hash": "2b5febfc0cf28f098e974f078a083c616b879c53712efa4e15ad84817e601427",
+      "environment_hash_method": "SHA-256 of sorted JSON of runtime identity/role/schema observations after execution",
+      "result_paths": [
+        "evidence/security/p01-independent-01/report.json",
+        "evidence/security/p01-independent-01/independent-review.md",
+        "evidence/security/p01-independent-01/observations/worker-trace.json",
+        "evidence/security/p01-independent-01/observations/sink-scan.json",
+        "output/playwright/p01-independent/browser-result-02.txt"
+      ],
+      "limitations": [
+        "Local self-signed TLS CA, isolated development Keycloak realm; not deployed issuer validation.",
+        "P01 conversation ownership roots only; no bank products, durable turns, preferences or support behavior.",
+        "No human review inferred from executable tests.",
+        "Technical phase run does not bypass queued task dependencies or human review gates.",
+        "98 offline regressions were run before final focused P01 refinements; no full repository/live provider certification."
+      ],
+      "reviewer": {
+        "kind": "independent-agent",
+        "agent": "/root/p01_security_verifier",
+        "human_approval": false
+      },
+      "timestamp": "2026-10-18T16:39:49.453799+00:00"
+    },
+    {
+      "claim_id": "P01-CLOSURE-APPROVED",
+      "phase": "P01",
+      "status": "observed",
+      "statement": "User explicitly approved P01. Native Genesis human reviews were recorded and T01.1/T01.2/T01.3 completed in dependency order with passing executable proofs; successor native gates were rerun by a separate verifier. P02 not started.",
+      "spec_ids": [
+        "SPEC01",
+        "SPEC02",
+        "SPEC12"
+      ],
+      "invariant_ids": [
+        "INV01",
+        "INV02",
+        "INV03",
+        "INV24",
+        "INV26",
+        "INV27",
+        "INV33"
+      ],
+      "result_paths": [
+        ".genesis/P01_CLOSURE.json",
+        ".genesis/evidence/T01.1-auth-session-44e1368e-0e7e-4bb4-bc46-72512d1179c2.json",
+        ".genesis/evidence/T01.1-independent-review-079f7ed6-88ca-40cd-8acc-2334f7744aed.json",
+        ".genesis/evidence/T01.2-roles-rls-a1a4dd8b-3768-41b4-a59b-7d0b2c613425.json",
+        ".genesis/evidence/T01.2-independent-review-6d855e74-5be8-487c-a60c-03c2bbd7d0e0.json",
+        ".genesis/evidence/T01.3-privacy-readiness-590ae4c6-5979-497e-a4af-dd20ebc46957.json",
+        ".genesis/evidence/T01.3-independent-review-ad909f7c-b49c-4be6-ac22-b5b46bbf650b.json"
+      ],
+      "reviewer": {
+        "human": "mprem",
+        "authorization": "P01 approved",
+        "independent_agent": "/root/p01_security_verifier"
+      },
+      "limitations": [
+        "Local synthetic customers and development issuer/TLS; no deployed issuer certification.",
+        "No full repository/provider-suite claim, live model call or P02 behavior.",
+        "Tested application telemetry sinks; no arbitrary external proxy/exporter infrastructure claim."
+      ],
+      "timestamp": "2026-10-18T16:52:45.701963+00:00"
+    },
+    {
+      "claim_id": "T02.1-INDEPENDENT-SCHEMA-VERIFICATION",
+      "task_id": "T02.1",
+      "status": "independently-verified-human-review-pending",
+      "statement": "Separate checker passed native 14-test T02.1 schema gate, four additional probes and all 40 P01 regression tests; actual Docker PostgreSQL16/Redis7 and all five role connections verified. No task/phase approval inferred.",
+      "spec_ids": [
+        "SPEC04",
+        "SPEC11",
+        "SPEC16"
+      ],
+      "invariant_ids": [
+        "INV11",
+        "INV12",
+        "INV15"
+      ],
+      "component_ids": [
+        "MM02",
+        "RE01",
+        "AU03"
+      ],
+      "source_run_ids": [
+        "42aefe31-bc1f-4e00-abe0-2cf45343ad2d"
+      ],
+      "commands": [
+        "node C:/Users/mprem/genesis-kit/tools/genesis.mjs gate . T02.1",
+        ".venv/Scripts/python.exe scripts/p01_check.py evidence/security/p02-p01-regression-01 --task P01"
+      ],
+      "source_hash": "ab79dce4c8741ed746f6934fbeb4496ec434ae77dd1c5cd0ef5ae001a7856c3a",
+      "result_paths": [
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/report.json",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/independent-review.md",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/independent-probes.json",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/migration-counts.json",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/observations/legacy-dry-run.json",
+        "evidence/security/p02-p01-regression-01/report.json",
+        ".genesis/evidence/T02.1-acceptance-42aefe31-bc1f-4e00-abe0-2cf45343ad2d.json"
+      ],
+      "artifact_hashes": {
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/report.json": "73f07ed6bc131b331d9c0d2fa1ce1e794e96e549c3d6574506abc07b90c3cf1d",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/independent-review.md": "654eac9ff7bef42346149f97d534ca8779bc02246b272e8a177f0c76e79d517a",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/independent-probes.json": "04516f9f9cef4d8ac6a740f29fde936535b74c446ba22c1a5ecdea2b2cd52cc6",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/migration-counts.json": "34d28ca675b7d135f8d1483b3ee21e96cbffff6ea5e1e2c460c96b8925558bff",
+        "evidence/migrations/p02-schema-genesis-01/preference-plan/observations/legacy-dry-run.json": "d4de7f431ebc6d9306428a378808fecdd86a737b9625de3b54a2ee0d58608646",
+        "evidence/security/p02-p01-regression-01/report.json": "3cb8e0260417ab8e52a249b77d999c97873728d02a14adda757a0e329f3a4e65",
+        ".genesis/evidence/T02.1-acceptance-42aefe31-bc1f-4e00-abe0-2cf45343ad2d.json": "468469d00263a68620236375f88516bfd26452cf2016a7c16221689a94c47126"
+      },
+      "limitations": [
+        "Migration counts are measured reapply preservation only; no first-install count audit or fresh-install test.",
+        "Legacy classification uses four synthetic rows; production mapping/review/cutover not performed.",
+        "No durable consumer/fenced publication behavior, resolver, extraction, UI status, deletion workflow or cutover claim.",
+        "Redis identity checked; PostgreSQL controls ordering.",
+        "Development harness setup failure retained at evidence/migrations/p02-schema-dev-03/preference-plan/report.json.",
+        "Native human-review gate pending; P02 incomplete."
+      ],
+      "reviewer": "/root/p02_schema_verifier",
+      "maker": "/root/p02_schema_builder",
+      "timestamp": "2026-10-18T17:06:57.081749+00:00"
+    },
+    {
+      "claim_id": "T02.1-USER-APPROVAL",
+      "task_id": "T02.1",
+      "status": "approved-and-completed",
+      "statement": "User explicitly stated approved proceed after the T02.1 result. Native human approval recorded, task completed, T02.2 activated. No future task approval inferred.",
+      "authorization": "approved proceed",
+      "approved_by": "mprem",
+      "result_paths": [
+        ".genesis/evidence/T02.1-acceptance-42aefe31-bc1f-4e00-abe0-2cf45343ad2d.json",
+        ".genesis/evidence/T02.1-independent-review-eaeb8487-548f-4b99-bef5-5e525ede9ad7.json"
+      ],
+      "timestamp": "2026-10-18T17:21:27.641924+00:00"
+    },
+    {
+      "claim_id": "T02.2-INDEPENDENT-CONSUMER-VERIFICATION",
+      "task_id": "T02.2",
+      "status": "independently-verified-human-review-pending",
+      "statement": "Separate checker passed native 30-test T02.2 durable consumer/fencing gate, 14 schema and 40 P01 regression checks, and four independent probe groups. Actual Docker PostgreSQL16/Redis7 and five role connections verified. No human approval or phase completion inferred.",
+      "spec_ids": [
+        "SPEC11"
+      ],
+      "invariant_ids": [
+        "INV21",
+        "INV22"
+      ],
+      "component_ids": [
+        "RE01",
+        "RE02"
+      ],
+      "source_run_ids": [
+        "597c04b3-4cef-48c6-8d91-52737a617611"
+      ],
+      "commands": [
+        "node C:/Users/mprem/genesis-kit/tools/genesis.mjs gate . T02.2",
+        ".venv/Scripts/python.exe scripts/p02_check.py evidence/migrations/p02-schema-regression-after-consumer-01/preference-plan --task T02.1",
+        ".venv/Scripts/python.exe scripts/p01_check.py evidence/security/p02-consumer-p01-regression-01 --task P01"
+      ],
+      "source_hash": "83a992a629a9165ed4a512edf6d4d27b31a627b071d441161a00ed90da7d4b7c",
+      "result_paths": [
+        "evidence/reliability/p02-consumer-genesis-01/consumer/report.json",
+        "evidence/migrations/p02-schema-regression-after-consumer-01/preference-plan/report.json",
+        "evidence/security/p02-consumer-p01-regression-01/report.json",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/independent-review.md",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/independent-probes.json",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/independent-integrity.json",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/migration-counts.json",
+        ".genesis/evidence/T02.2-acceptance-597c04b3-4cef-48c6-8d91-52737a617611.json"
+      ],
+      "artifact_hashes": {
+        "evidence/reliability/p02-consumer-genesis-01/consumer/report.json": "917bbbf9426e087f32b32a19b6456cbd486d6673e154bf857e1d439e26f803ce",
+        "evidence/migrations/p02-schema-regression-after-consumer-01/preference-plan/report.json": "d8dccb4a51d5a7a4ad6a2d573e2f8144a940f3f8f5d09a63c542dbe26eaf6be0",
+        "evidence/security/p02-consumer-p01-regression-01/report.json": "b2f7abbdf6ebf4264f7c4188ccaea3d1f48e905e759518ad03e62b39c5e6da99",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/independent-review.md": "59c099945433d8ff27ed2c404c7d67f168da3f8056dc74669f12271caba7963f",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/independent-probes.json": "d23d4a5aa87f9407793332c8bafba17e7fa8dda4f260561147c0a76b6f06e221",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/independent-integrity.json": "cdd126875a56d4dd7544c0860ca45f81f154423dc7a3bea21cdd7f4d507968dc",
+        "evidence/reliability/p02-consumer-genesis-01/consumer/migration-counts.json": "45b92aeb0401e94c3dc419064d528f97615c82a258c6c8e217fddf4b2659ff50",
+        ".genesis/evidence/T02.2-acceptance-597c04b3-4cef-48c6-8d91-52737a617611.json": "58f95ed471a77448566e697bc9c29e0ed34053a2a7ea4362b71eac7a937b9702"
+      },
+      "development_failure_and_retest": {
+        "failed_run": "evidence/reliability/p02-consumer-dev-01/consumer/report.json",
+        "observed_counts": {
+          "tests": 23,
+          "failures": 17,
+          "errors": 0,
+          "skipped": 0
+        },
+        "cause": "PL/pgSQL ambiguous RETURNING event_id in installed claim function",
+        "fix": "Additive 0005 preserves installed 0004; 0006 closes expiry after blocking terminal writes.",
+        "source_changed_run_retained": "evidence/reliability/p02-consumer-dev-03/consumer/report.json",
+        "successful_maker_retest": "evidence/reliability/p02-consumer-dev-04/consumer/report.json",
+        "independent_retest": "evidence/reliability/p02-consumer-genesis-01/consumer/report.json"
+      },
+      "limitations": [
+        "Effect is allowlisted local acceptance.record v1; no preference extraction/application, UI, serving erasure or cutover.",
+        "Actual childprocess crashes tested; no database/server/power-loss test.",
+        "No external-effect or transport exactly-once guarantee; no always-on worker daemon started.",
+        "Migration count evidence is reapply preservation; no fresh install/production migration audit.",
+        "PostgreSQL is durable outbox authority; Redis identity and P01 session path verified, not a new message broker.",
+        "Human-review gate pending; T02.3+ queued and P02 incomplete.",
+        "P00 original live incident remains not-reproduced."
+      ],
+      "reviewer": "/root/p022_consumer_verifier",
+      "maker": "/root/p022_consumer_builder",
+      "timestamp": "2026-10-18T17:31:08.553207+00:00"
+    },
+    {
+      "claim_id": "T02.2-USER-APPROVAL",
+      "task_id": "T02.2",
+      "status": "approved-and-completed",
+      "statement": "User explicitly stated approved proceed after T02.2 results. Native human approval recorded, task completed, T02.3 activated. No future approval inferred.",
+      "authorization": "approved proceed",
+      "approved_by": "mprem",
+      "result_paths": [
+        ".genesis/evidence/T02.2-acceptance-597c04b3-4cef-48c6-8d91-52737a617611.json",
+        ".genesis/evidence/T02.2-independent-review-a9fb8fba-8767-41da-9800-ead0d8d4b7c2.json"
+      ],
+      "timestamp": "2026-10-18T17:36:24.963491+00:00"
+    },
+    {
+      "claim_id": "T02.3-INDEPENDENT-PREFERENCES-VERIFICATION",
+      "task_id": "T02.3",
+      "status": "independently-verified-human-review-pending",
+      "statement": "Separate verifier passed final native 30 preference checks (12 PostgreSQL/API integration, 15 grammar negatives, 3 resolver fixture checks), 14 schema and 30 consumer regressions, and unchanged P01 rerun40. TypeScript and real browser scope plus lostack/idempotency and realPending-to-Saved checks passed. No human approval inferred.",
+      "spec_ids": [
+        "SPEC04",
+        "SPEC05"
+      ],
+      "invariant_ids": [
+        "INV11",
+        "INV12",
+        "INV13",
+        "INV14",
+        "INV15"
+      ],
+      "component_ids": [
+        "MM02",
+        "UX03"
+      ],
+      "source_run_ids": [
+        "9c176e8d-e883-4f3c-a4c9-c0d901b5d99f"
+      ],
+      "commands": [
+        "node C:/Users/mprem/genesis-kit/tools/genesis.mjs gate . T02.3",
+        ".venv/Scripts/python.exe scripts/p02_check.py evidence/migrations/p023-schema-regression-02/preference-plan --task T02.1",
+        ".venv/Scripts/python.exe scripts/p02_check.py evidence/reliability/p023-consumer-regression-02/consumer --task T02.2",
+        ".venv/Scripts/python.exe scripts/p01_check.py evidence/security/p023-p01-regression-02 --task P01",
+        "node frontend/node_modules/typescript/bin/tsc --noEmit (cwd frontend)"
+      ],
+      "source_hash": "ed11da9eab2e4e40dc5e0a81b5dc826a6677a85cf2b440cc88f5e936c124f012",
+      "result_paths": [
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/report.json",
+        "evidence/migrations/p023-schema-regression-02/preference-plan/report.json",
+        "evidence/reliability/p023-consumer-regression-02/consumer/report.json",
+        "evidence/security/p023-p01-regression-02/report.json",
+        "evidence/security/p023-p01-regression-01/report.json",
+        ".genesis/evidence/T02.3-acceptance-9c176e8d-e883-4f3c-a4c9-c0d901b5d99f.json",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/independent-review.md",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/independent-verification.json",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/frontend-typecheck.txt",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/migration-counts.json",
+        "output/playwright/p023-independent/browser-result.txt",
+        "output/playwright/p023-independent/preferences-verified.png",
+        "output/playwright/p023-independent/unknown-retry-browser-result.txt",
+        "output/playwright/p023-independent/pending-browser-result.txt",
+        "output/playwright/p023-independent/pending-database-snapshot.json",
+        "output/playwright/p023-independent/pending-after-release-browser-result.txt"
+      ],
+      "artifact_hashes": {
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/report.json": "f9a426e77fa55efc1db89ec7155cfe28dbb41d59c067caba5ea445826088ffe6",
+        "evidence/migrations/p023-schema-regression-02/preference-plan/report.json": "1029502806763c597a4a2c5ef336c7d9b58d43176743e9408ce72157dbe8ec3d",
+        "evidence/reliability/p023-consumer-regression-02/consumer/report.json": "1cfc43a2a11a39418ef3eed1931f2e1b775e62f9023150343db3f2e032a1d13e",
+        "evidence/security/p023-p01-regression-02/report.json": "0f5f8a08b5c692d88dc690b42c08efaa33c8086aeacbf67b5015a5a2dbbf6801",
+        "evidence/security/p023-p01-regression-01/report.json": "b4122f006144865bfa410c9463f095fc81728a165f882b4f61e5a82960234dcb",
+        ".genesis/evidence/T02.3-acceptance-9c176e8d-e883-4f3c-a4c9-c0d901b5d99f.json": "2be6d9355eb8ba0a62edb4007cb75c55391e54431359374cb3ebfe9cae101474",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/independent-review.md": "5169880758e97d81d44d1aa1ba4b5187eb81019912e4ecd3f723ede2e7f3e891",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/independent-verification.json": "9727ef45a9da484f92548761c002783aebb9d69027bc23bc322cbf629d9386af",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/frontend-typecheck.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "evidence/memory/p02-preferences-genesis-02/preference-cases/migration-counts.json": "306c4a7b425905d9eb62f8d89ff19166b2e50cff56debfb8cea8d85a2ee84ee3",
+        "output/playwright/p023-independent/browser-result.txt": "fdc5fc803fb9ddb856dfdcc4f2da3169334a9d4d71dd58e5b7e1e36e1c1de825",
+        "output/playwright/p023-independent/preferences-verified.png": "7687377dde0abef2136dc8db80e19453d78660a3dbe0ad629aaa319b8c19fb55",
+        "output/playwright/p023-independent/unknown-retry-browser-result.txt": "34955c246fffcff3c8ca6f44d031d4335a8c484afe2aa09a9c773a868def7e07",
+        "output/playwright/p023-independent/pending-browser-result.txt": "4c6b871ab1928a69fe46caf9559e79edf9e93140291a24e2ab85afc2aa67c359",
+        "output/playwright/p023-independent/pending-database-snapshot.json": "6c50da5aa6bc219eaf7bdb821bad12308333fb6b91646208c3168504e7003dc4",
+        "output/playwright/p023-independent/pending-after-release-browser-result.txt": "ee7a82f67ad501fcfa6d987d414b456e487be85d9750181303a05a6982424096"
+      },
+      "retained_failure": {
+        "report": "evidence/security/p023-p01-regression-01/report.json",
+        "counts": {
+          "tests": 40,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0
+        },
+        "observed": "One-second expiry test stream request returned401 instead of expected initial200.",
+        "retest": "evidence/security/p023-p01-regression-02/report.json",
+        "interpretation": "Unchanged rerun passed; timing-sensitive test remains a limitation, no weakened security/test or proven feature regression cause claimed."
+      },
+      "limitations": [
+        "Narrow explicit user-instruction grammar; no general language understanding/model/provider calls.",
+        "Thirty preference checks mix12 live database/API and18 unit cases; not thirty end-to-end model tests.",
+        "Preference-only UI and explicit sample preview; no banking chat response integration.",
+        "Recovery test omits a callback and rotates session; not an API-process kill or power-loss test. Authenticated reads drive bounded owned recovery; no always-on worker daemon.",
+        "Candidate01 preceded UI acceptance-message wording correction; native02/regressions02 are final frozen source.",
+        "No serving erasure, restore drill, legacy cutover, fresh-install or production migration claim.",
+        "P01 first39/1 failure retained; original P00 live incident remains not-reproduced.",
+        "Human review pending, T02.4/T02.5 queued, P02 incomplete."
+      ],
+      "reviewer": "/root/p023_preferences_verifier",
+      "makers": [
+        "/root/p023_preferences_builder",
+        "/root"
+      ],
+      "timestamp": "2026-10-18T17:54:15.950963+00:00"
+    },
+    {
+      "claim_id": "T02.3-USER-APPROVAL",
+      "task_id": "T02.3",
+      "status": "approved-and-completed",
+      "authorization": "approved proceed with t02.4, Span luna for verification and verfification agent should not see the code or previous context, it can only see the test cases to avoid bias",
+      "statement": "Actual T02.3 approval recorded by native Genesis before completion and T02.4 activation. User requires fresh-context Luna black-box verification without source/history. No future task approval inferred.",
+      "approved_by": "mprem",
+      "result_paths": [
+        ".genesis/evidence/T02.3-acceptance-9c176e8d-e883-4f3c-a4c9-c0d901b5d99f.json",
+        ".genesis/evidence/T02.3-independent-review-95f46deb-d0b9-4d7c-82e4-0d3f26f5b89f.json"
+      ],
+      "timestamp": "2026-10-19T05:10:02.927257+00:00"
+    },
+    {
+      "claim_id": "T02.4-CONTEXT-ERASURE-VERIFIED",
+      "task_id": "T02.4",
+      "status": "independently-blackbox-verified-human-review-pending",
+      "statement": "Working context, governed history/provenance, serving erasure with queued-work fencing and local quarantine restore implemented. Root-run native22 plus schema14/consumer30/preferences30 and unchanged P01rerun40 passed. Luna initial16case report plus six strict supplemental checks recorded; loose initial assertions and failed supplemental grader runs retained with explicit corrections. T02.4 human review pending; T02.5 queued.",
+      "spec_ids": [
+        "SPEC05",
+        "SPEC06"
+      ],
+      "invariant_ids": [
+        "INV13",
+        "INV23",
+        "INV24"
+      ],
+      "result_paths": [
+        "evidence/memory/p02-context-erasure-genesis-01/context-and-erasure/report.json",
+        "evidence/memory/p02-context-erasure-regressions-01/schema/report.json",
+        "evidence/memory/p02-context-erasure-regressions-01/consumer/report.json",
+        "evidence/memory/p02-context-erasure-regressions-01/preferences/report.json",
+        "evidence/security/p02-context-erasure-regressions-01/report.json",
+        "evidence/security/p02-context-erasure-regressions-02/report.json",
+        ".genesis/evidence/T02.4-independent-verification.json",
+        ".genesis/evidence/T02.4-luna-failure-accounting.md",
+        ".genesis/evidence/T02.4-luna-initial-report.json",
+        ".genesis/evidence/T02.4-luna-blackbox_supplement_confirmed_report.json",
+        ".genesis/evidence/T02.4-test-input-freeze.json"
+      ],
+      "artifact_hashes": {
+        "evidence/memory/p02-context-erasure-genesis-01/context-and-erasure/report.json": "1b6f4eba8531d45c738c5435aeb6b1d68341795d9dbeaad9db0b785f6943f5d4",
+        "evidence/memory/p02-context-erasure-regressions-01/schema/report.json": "7d3b24c3cd20bdb1ea04a743f8e53b7f77df07858564a1ca5a19639840ea08f8",
+        "evidence/memory/p02-context-erasure-regressions-01/consumer/report.json": "c840ac1fc3f08358e377af3252b50eee1244539f457fb93246149c78e8f560ad",
+        "evidence/memory/p02-context-erasure-regressions-01/preferences/report.json": "e6ef1c33a6c82038a7e2482e09ed12edad058df2febbc22a0238a8200fcb04e9",
+        "evidence/security/p02-context-erasure-regressions-01/report.json": "f65cfbf4cb12249d1f43fa2a2e72f366ed8a78e528d15f42f1612e81661d1268",
+        "evidence/security/p02-context-erasure-regressions-02/report.json": "fede2caf0279fd5cf4ccdb40c69befcd1f7e365e065d64311ed4d4794af94434",
+        ".genesis/evidence/T02.4-independent-verification.json": "956af431ab4b8acc4d26ffce4d0631f61c3b12a7f3fddc129a2dfb0bd47d402d",
+        ".genesis/evidence/T02.4-luna-failure-accounting.md": "9b821e32321f5bdaf7fdafd80d7a81865af9585101363829eb326f072fa1c88c",
+        ".genesis/evidence/T02.4-luna-initial-report.json": "48694a3a1e20abbe9d7846d5684599e4353c5cc79cf010f18898bc472ea06f5b",
+        ".genesis/evidence/T02.4-luna-blackbox_supplement_confirmed_report.json": "40988f02b6ad1a108eb2ce890cc404acaa58ea3c960d03cd0a84e082c8a253eb",
+        ".genesis/evidence/T02.4-test-input-freeze.json": "2bdcee2673f52afd7513d97e19c16fad5653f135356ca543b0aef66a2eb87eb8"
+      },
+      "root_native_final_counts": {
+        "context_erasure": 22,
+        "schema": 14,
+        "consumer": 30,
+        "preferences": 30,
+        "P01_unchanged_rerun": 40
+      },
+      "retained_P01_failure": {
+        "report": "evidence/security/p02-context-erasure-regressions-01/report.json",
+        "passed": 39,
+        "failed": 1,
+        "observed": "One-second session expired before SSE started (401 vs200); unchanged rerun40passed. Precise environmental cause not established."
+      },
+      "independent_verifier": {
+        "agent": "/root/t024_blind_luna",
+        "model": "gpt-6-luna",
+        "fork_turns": "none",
+        "initial_cases": 16,
+        "strict_supplement": {
+          "passed": 6,
+          "failed": 0,
+          "blocked": 0
+        },
+        "allowed_inputs": "Behavior tests, HTTP contract, synthetic access fixtures and supplementary acceptance clarification; no application source or previous implementation reports.",
+        "enforcement": "Fresh context/instructions; no OS filesystem sandbox claim.",
+        "failure_accounting": ".genesis/evidence/T02.4-luna-failure-accounting.md"
+      },
+      "limitations": [
+        "API-only; no new context/history/forget UI or banking-chat integration.",
+        "Owned conversation selections only; no unbuilt bank product/account selector.",
+        "Lexical history; semantic embeddings disabled. Five derivative kinds are governed PostgreSQL records, not five external engines.",
+        "Active logical row cleanup; quarantine snapshots retained up to request-triggered expiry cleanup. No forensic media wipe, production backup/provider/public deletion claim.",
+        "Transaction-local quarantine fixture restore; not full database backup/recovery.",
+        "Synthetic Redis-backed sessions and controlled expiry fixtures; Luna did not test OIDC, browser flows or wall-clock endurance.",
+        "First proxy run stalled; final Luna behavior verified direct API.",
+        "Earlier failed/weak verifier reports retained; application source unchanged during strict reruns.",
+        "P00 original live incident remains not-reproduced. T02.4 human approval pending, T02.5 queued, P02 incomplete."
+      ],
+      "makers": [
+        "/root/t024_context_builder",
+        "/root"
+      ],
+      "timestamp": "2026-10-19T05:57:15.970311+00:00"
+    },
+    {
+      "claim_id": "T02.4-USER-APPROVAL",
+      "task_id": "T02.4",
+      "status": "approved-and-completed",
+      "authorization": "approved go for t02.5",
+      "approved_by": "mprem",
+      "statement": "Native Genesis recorded actual user approval and completion of T02.4 before T02.5 became active. No future result approval inferred.",
+      "timestamp": "2026-10-19T13:29:35.708487+00:00"
+    },
+    {
+      "claim_id": "T02.5-CUTOVER-VERIFIED",
+      "task_id": "T02.5",
+      "status": "verified-with-declared-limits-human-review-pending",
+      "statement": "Guarded local zero-protected-row cutover preserved81original legacy rows. Positive backfill/ordering/rollback/erasure demonstrated using separate synthetic legacy clone and actual accepted sources. Native160, TypeScript/browser and separate actual API process restart passed; fresh-context Luna12passed/2restartpartials, nofailed/blocked. Human review pending; P02notclosed.",
+      "spec_ids": [
+        "SPEC04",
+        "SPEC16"
+      ],
+      "invariant_ids": [
+        "INV11",
+        "INV15",
+        "INV23"
+      ],
+      "receipt": ".genesis/evidence/T02.5-verification.json",
+      "receipt_hash": "2598dd82f7aa7907e15d688045dc88b4cdab17fa0628a93bee1e5c0af8d35e6b",
+      "result_paths": [
+        "evidence/migrations/p02-cutover-genesis-02/cutover/report.json",
+        "evidence/memory/p02-cutover-regressions-02/schema/report.json",
+        "evidence/memory/p02-cutover-regressions-02/consumer/report.json",
+        "evidence/memory/p02-cutover-regressions-02/preferences/report.json",
+        "evidence/memory/p02-cutover-regressions-02/context-erasure/report.json",
+        "evidence/security/p02-cutover-regressions-03/report.json",
+        ".genesis/evidence/T02.5-acceptance-dab36d59-0e72-4d72-aaa2-e9a249f3b1c1.json",
+        ".genesis/evidence/T02.5-actual-local-cutover.json",
+        ".genesis/evidence/T02.5-isolated-fixture-identity.json",
+        ".genesis/evidence/T02.5-blind-input-freeze.json",
+        ".genesis/evidence/T02.5-luna-final-report.md",
+        ".genesis/evidence/T02.5-luna-final-counts.json",
+        ".genesis/evidence/T02.5-luna-artifacts.json",
+        ".genesis/evidence/T02.5-luna-initial-limited-report.md",
+        ".genesis/evidence/T02.5-luna-expanded-limited-report.md",
+        ".genesis/evidence/T02.5-browser-verification.json",
+        ".genesis/evidence/T02.5-frontend-typecheck.json",
+        ".genesis/evidence/T02.5-api-process-restart.json",
+        ".genesis/evidence/T02.5-final-runtime-state.json",
+        "evidence/memory/p02-cutover-regressions-01/preferences/report.json",
+        "evidence/security/p02-cutover-regressions-02/report.json"
+      ],
+      "artifact_hashes": {
+        "evidence/migrations/p02-cutover-genesis-02/cutover/report.json": "d6c1bdcd477db390125e1df34e89e3eebbb00f07743057a81f2403968e36688b",
+        "evidence/memory/p02-cutover-regressions-02/schema/report.json": "19827bf9c4dda75dbe7fdfea1605ba20d9b1d973d5dab8011fcd497adcd31564",
+        "evidence/memory/p02-cutover-regressions-02/consumer/report.json": "8844041cfa14cc41a366baf0b217e46c44bb4f36b7dd0e0018c560ede5469fb1",
+        "evidence/memory/p02-cutover-regressions-02/preferences/report.json": "467cd49ed8d7d68bd2192f2d7820ae1ead1cd1a6d0792688738b92bc8ad11b48",
+        "evidence/memory/p02-cutover-regressions-02/context-erasure/report.json": "2dc90c2135223f4cbc189ce3c794058b4d38a02cf56352a3ada12e8438e30ff7",
+        "evidence/security/p02-cutover-regressions-03/report.json": "2aeee8088a018852aee6e39ebfe48de2d2bfb56bb768e175e5e3feb0c653eb7f",
+        ".genesis/evidence/T02.5-acceptance-dab36d59-0e72-4d72-aaa2-e9a249f3b1c1.json": "40ee93b77f23b9c8fb34344ab5e4b656e51936c2c47de4fe9e0c0767b0df1898",
+        ".genesis/evidence/T02.5-actual-local-cutover.json": "96d766650799f6c96bda132c40d1ec02019539c73ec1aced8267b800eaa01910",
+        ".genesis/evidence/T02.5-isolated-fixture-identity.json": "d5ee4c1a425e3aa96e103279f8306ec286e47506ca95d680e4ac89c52cb9278f",
+        ".genesis/evidence/T02.5-blind-input-freeze.json": "53415c2000d30816cdccfd35178f3c777c8f12403666ac670e2476ccbf320d8c",
+        ".genesis/evidence/T02.5-luna-final-report.md": "02bd593e20294b9e8166a43b230a002f8f04d46fb80cc850bab799920b66edad",
+        ".genesis/evidence/T02.5-luna-final-counts.json": "8284df12df3c2a33542c0eebaeef5c531cd550f0215cecb4e31bd20a6a076823",
+        ".genesis/evidence/T02.5-luna-artifacts.json": "33bc3ffae4e5fcda2487ead5b99ab5c388c4a172a0c480190d0785053d54c9a7",
+        ".genesis/evidence/T02.5-luna-initial-limited-report.md": "72812bd955822f6e6f1eeffe18b3b786b14695d1f3e96d081f1dcbd4c5042eb5",
+        ".genesis/evidence/T02.5-luna-expanded-limited-report.md": "ca2ef5f125a41eab872b548fc5afd7a3423949776a130a161391d245dcdb1489",
+        ".genesis/evidence/T02.5-browser-verification.json": "57fd4fc2d303a981591d0a20d76fd572e91160bd910f6ff7efe346c4d56a3acc",
+        ".genesis/evidence/T02.5-frontend-typecheck.json": "6811654012ea969f8378f4d38b05451ed6cbf877f05d52c1e5be9adf941a3d4e",
+        ".genesis/evidence/T02.5-api-process-restart.json": "552b6d7e96dcdb9195dc2a371bfde6dbd31bb4d49e608ed83b425c5c037e22ce",
+        ".genesis/evidence/T02.5-final-runtime-state.json": "c3b6dd4af206119e5e9a823a11e56beb336bfa8c449825bd770c8c9118333bfa",
+        "evidence/memory/p02-cutover-regressions-01/preferences/report.json": "e9d731d8dde47288cc1338e1249824d95e070266f3cca07e04142534cbca3a72",
+        "evidence/security/p02-cutover-regressions-02/report.json": "8f23ded2b6427c8fca6fd7610ef432cd8395164a8be121de38ebb95168722606"
+      },
+      "retained_failures": [
+        "Candidate01 preference regression27/3 unitstub querycontract mismatch; original resolver assertions retained in corrected testdouble.",
+        "Initial instruction form rollback enablement corrected beforefinalgate02; finalUIbrowser verifiesallwritecontrols.",
+        "Maker23/1 expectation corrected fromstring toactualworkerlistresult; failure retained.",
+        "P01regression02 worker-process timeout haszero/incompleteXMLcounts; unchangedsame-timeoutregression03passed40.",
+        "Lunainitialinvalid/unsupportedmanifest400, changedreceiptbindingUniqueViolation withunchangedstate, invalidCASversion409, harness/cleanup errors retained. Freshvalidmixedbatchpassed; noobservationrewritten."
+      ],
+      "limitations": [
+        "Originaldataset protectedkeys0: no realcustomerpreferencesbackfilled or inferredowner/order. Positive migrationproofsynthetic.",
+        "Lunaonlytestcases/contracts/access, noOSsandbox or sourceaudit;12passes2partialnot14fullpasses.",
+        "Root actualAPIrestartseparate; no database/Redis/Dockerrestart.",
+        "Legacyguardattestationtrustedprivilegedinstallation, not liveprobeofeveryexternalstore.",
+        "Lexical optionalhistory only; no semanticprovider/fullfinancialchat/currentbankfacts.",
+        "Privatebackupcontainsoriginallegacyrows, excludedfrompublicartifacts; no productionbackup/provider/publiccopydeletionclaim.",
+        "No clean-install/production-scale or humanmigrationreviewclaim.",
+        "P00originalincidentremainsnot-reproduced; humanT02.5reviewpending, P02incomplete, P03+unchanged."
+      ],
+      "reviewer": "/root/t025_blind_luna",
+      "timestamp": "2026-10-19T14:16:34.218028+00:00"
+    },
+    {
+      "claim_id": "P02-APPROVED-CLOSED",
+      "phase": "P02",
+      "status": "approved-and-closed",
+      "statement": "User approved T02.5 and proceeding; all P02 tasks done; independent closure audit verified retained gate/report integrity with declared limits.",
+      "authorization": "approved proceed",
+      "approved_by": "mprem",
+      "recorded_at": "2026-10-19T16:18:48.252442+00:00",
+      "evidence": [
+        ".genesis/P02_CLOSURE.json",
+        ".genesis/evidence/P02-closure-audit.json"
+      ],
+      "limitations": [
+        "Luna cases7/14 partial for restart interface; separate root real API process restart passed, no Docker/PostgreSQL/Redis restart claim.",
+        "Actual original legacy81rows unchanged; zero protected rows. Positive backfill uses isolated synthetic fixtures only.",
+        "P00 original live incident remains not-reproduced.",
+        "Approval applies to reviewed P02 results, not future P03 implementation or tests.",
+        "Earlier failed/incomplete attempts and historical pending-review receipts retained."
+      ]
+    },
+    {
+      "claim_id": "T03.1-PROVIDER-VERIFIED",
+      "task_id": "T03.1",
+      "status": "implemented-verified-human-review-pending",
+      "recorded_at": "2026-10-19T16:29:29.535163+00:00",
+      "statement": "Typed scoped account/transaction provider verified with final196native checks and separate fresh-context Luna12casegroups; human approval pending.",
+      "spec_ids": [
+        "SPEC07"
+      ],
+      "invariant_ids": [
+        "INV02",
+        "INV06",
+        "INV07"
+      ],
+      "evidence": [
+        ".genesis/evidence/T03.1-verification.json",
+        ".genesis/T03.1.md"
+      ],
+      "limitations": [
+        "Backend account/transaction provider only; coordinator, evidence-checked answers and durable user-facing turns/UI recovery remain T03.2-T03.4.",
+        "No real bank, money movement, FX, cards/loans or later phase implementation.",
+        "Luna verified direct provider behavior through private loopback operational harness; no source audit, OIDC/UI journey, memory-conflict answer proof or controlled in-flight revoke race.",
+        "Timeout proof is bounded PostgreSQL lock, not full service/container outage or restart.",
+        "Fresh context and instructions restrict verifier inputs; no OS sandbox claim.",
+        "Initial verifier 7pass/5apparent failures retained; corrected valid-precondition full run12pass and extension12pass. Fixture expire-after-revoke returned500; actual renewed-then-expired provider returned401.",
+        "Actual T03.1 human review remains pending; independent behavior and executable gates do not fabricate approval."
+      ]
+    },
+    {
+      "claim_id": "T03.1-APPROVED",
+      "task_id": "T03.1",
+      "status": "approved-and-done",
+      "authorization": "approved proceed",
+      "approved_by": "mprem",
+      "recorded_at": "2026-10-19T16:33:00.872842+00:00",
+      "statement": "Actual user approval of reviewed T03.1 recorded; T03.2 authorized for implementation. No future result approval inferred.",
+      "evidence": [
+        ".genesis/T03.1.md"
+      ]
+    },
+    {
+      "claim_id": "T03.2-COORDINATOR-VERIFIED",
+      "task_id": "T03.2",
+      "recorded_at": "2026-10-20T08:18:09.298266+00:00",
+      "status": "implemented-verified-with-declared-limits-human-review-pending",
+      "statement": "Bounded scoped coordinator and checked deterministic financial output verified with221finalnativechecks and separate fresh Luna12pass/4partial; actual human approval pending.",
+      "spec_ids": [
+        "SPEC09"
+      ],
+      "invariant_ids": [
+        "INV04",
+        "INV06",
+        "INV10",
+        "INV25"
+      ],
+      "evidence": [
+        ".genesis/evidence/T03.2-verification.json",
+        ".genesis/T03.2.md"
+      ],
+      "limitations": [
+        "Backend coordinator only; public durable-turn API/SSE/UI and P03 journey closure remain T03.3/T03.4; no P04+ work.",
+        "Luna16groups:12pass,4partial,0fail/blocked. Cases2/10 cursor continuation/expiry unavailable through this coordinator fixture; case5 scripted transport cannot establish live model quality; case16 public telemetry/export and arbitrary SQL-function forgery unexposed.",
+        "All model outputs are labeled raw scripted transport responses; no live paid model or model-quality claims. Offline capability metadata is not a live-provider certification.",
+        "Provider faults scoped/injected; no full shared-service/container outage or restart claimed. Object reconstruction/reclaim and fencing tested; no OS/process restart.",
+        "Internal binding is exact request text, customer and session; changed whitespace conflicts. Semantic whitespace folding/public operation canonicalization not claimed.",
+        "Work deadline bounds metadata/model/tool waiting; bounded auth/SQL/response overhead is separate. Canceled background metadata import may finish without any paid dispatch.",
+        "Fresh verifier context/instructions restrict inputs; no OS sandbox or independent source audit.",
+        "Cold14second deadline failure, failed cold-test threshold, Docker setup error, concurrent-count preflight and independent exploratory/precondition corrections retained; final counts exclude candidate runs.",
+        "Actual T03.2 human approval remains pending; no future passing gate/approval inferred."
+      ]
+    },
+    {
+      "claim_id": "T03.2-APPROVED",
+      "task_id": "T03.2",
+      "status": "approved-and-done",
+      "recorded_at": "2026-10-20T09:18:24.714557+00:00",
+      "authorization": "approved proceed",
+      "approved_by": "mprem",
+      "statement": "Actual approval of reviewed T03.2 recorded; independent partials remain declared; T03.3 authorized, not approved in advance.",
+      "evidence": [
+        ".genesis/T03.2.md"
+      ]
+    },
+    {
+      "claim_id": "T03.3-DURABLE-TURNS-VERIFIED",
+      "task_id": "T03.3",
+      "recorded_at": "2026-10-20T10:37:17.053384+00:00",
+      "status": "implemented-verified-with-declared-limits-human-review-pending",
+      "statement": "Durable acceptance/status/SSE and session-safe UI recovery implemented;234 final native tests pass and two fresh Luna contexts verify black-box behavior with declared limits. Actual human review pending.",
+      "spec_ids": [
+        "SPEC03",
+        "SPEC05"
+      ],
+      "invariant_ids": [
+        "INV15",
+        "INV16",
+        "INV24"
+      ],
+      "evidence": [
+        ".genesis/evidence/T03.3-verification.json",
+        ".genesis/evidence/T03.3-independent-matrix.json",
+        ".genesis/T03.3.md"
+      ],
+      "limitations": [
+        "Raw model transport scripted through the actual seam; no live paid model or model-quality certification.",
+        "Fresh instruction-restricted verifier contexts, not an OS sandbox or independent source audit.",
+        "Browser route forwarding buffers SSE; direct HTTP tested persisted incremental events, expiry and replay. Browser incremental SSE timing is not claimed.",
+        "Actual queued/claimed API process restart and SQL lease-generation fencing tested; two simultaneously live coordinators were not independently exercised.",
+        "Independent group12 is partial: pending-source erase and serving exclusion tested; erase during an active model/tool call was not independently reproduced here. No remote backup deletion claim.",
+        "Browser lost acknowledgement proved by dropping a genuine committed202 response, not by inventing a503; earlier helper401/auth/routing/syntax and account mismatch attempts retained.",
+        "Concurrent first arrivals can both report replayed:false while returning the same durable turn ID. Turn identity/status is authoritative.",
+        "Development migration-count/shutdown failures and14 initial HTTP assertion failures retained alongside corrected checks; final counts exclude development candidates.",
+        "A synthetic fixture cookie was accidentally emitted to tool output; it was narrowly revoked and then all fixture sessions invalidated. Retained evidence contains no credential value.",
+        "T03.3 remains active pending actual human review. T03.4 phase-wide journey/closure is queued; P04+ excluded."
+      ]
+    },
+    {
+      "claim_id": "T03.3-APPROVED",
+      "task_id": "T03.3",
+      "recorded_at": "2026-10-21T12:58:02.327997+00:00",
+      "status": "approved-and-done",
+      "approved_by": "mprem",
+      "authorization": "approved, proceed",
+      "statement": "User approved reviewed T03.3 and proceeding; existing technical/verification limits remain historical. T03.4 is authorized, not approved in advance.",
+      "evidence": [
+        ".genesis/evidence/T03.3-approved-advance.json"
+      ]
+    },
+    {
+      "claim_id": "T03.4-VERIFIED",
+      "task_id": "T03.4",
+      "recorded_at": "2026-10-21T13:35:40.337047+00:00",
+      "status": "implemented-verified-pending-human-review",
+      "statement": "13 accepted-turn scenarios plus real pre-acceptance outage check passed;77 pytest checks passed; fresh blind Luna verified15 behavioral groups including real browser account journey with declared limits. Actual user approval remains pending.",
+      "spec_ids": [
+        "SPEC07",
+        "SPEC09",
+        "SPEC13"
+      ],
+      "invariant_ids": [
+        "INV06",
+        "INV07",
+        "INV10",
+        "INV29"
+      ],
+      "evidence": [
+        ".genesis/evidence/T03.4-verification.json",
+        "evidence/scenarios/p03-account-slice-genesis-03/account-slice/report.json",
+        ".genesis/evidence/T03.4-luna-results.md"
+      ],
+      "limitations": [
+        "Raw model completion scripted; actual auth/API/worker/SQL and checked evidence, no live model-quality claim.",
+        "Benchmark SDK metadata setup measured separately before acceptance; retained cold-start request expiry is not a performance pass.",
+        "Independent browser check covers account journey; separate preferences panel showed temporary unavailability and was not revalidated.",
+        "Previous T03.3 active-erasure/browser-SSE timing limitations remain historical.",
+        "Human T03.4 review pending; P03 remains open and P04+ excluded."
+      ]
+    },
+    {
+      "claim_id": "T03.4-APPROVED-P03-CLOSED",
+      "task_id": "T03.4",
+      "recorded_at": "2026-10-21T13:51:55.027721+00:00",
+      "status": "approved-and-done",
+      "approved_by": "mprem",
+      "authorization": "approved",
+      "statement": "Actual user approval recorded through native review gate; T03.4 done and P03 closed with retained verification limits. P04 not started.",
+      "evidence": [
+        ".genesis/evidence/T03.4-approved.json",
+        ".genesis/P03_CLOSURE.json"
+      ]
+    },
+    {
+      "claim_id": "T04.1-VERIFIED",
+      "task_id": "T04.1",
+      "recorded_at": "2026-10-21T15:16:59.557829+00:00",
+      "status": "implemented-verified-pending-human-review",
+      "statement": "Owned card enquiry slice implemented;33 card pytest+234 prior regression pytest and19 card API scenarios passed. Fresh blind Luna independently passed14 behavioral groups including actual browser continuation, mutation non-effects and cursor bindings. No human approval or P04 closure inferred.",
+      "evidence": [
+        "evidence/scenarios/p04-card-genesis-02/card-slice/report.json",
+        ".genesis/evidence/T04.1-regressions.json",
+        ".genesis/evidence/T04.1-luna-manifest.json",
+        ".genesis/evidence/T04.1-typescript.json",
+        ".genesis/evidence/T04.1-demo-cards.json",
+        ".genesis/evidence/T04.1-preservation-after.json",
+        ".genesis/evidence/T04.1-cleanup.json"
+      ],
+      "limitations": [
+        "Raw SDK outputs scripted; auth/API/worker/SQL/checked rendering real. No paid-model or live-bank claim.",
+        "Blind verifier restriction is instructional, not OS isolation; no source audit.",
+        "Browser forwarding buffers SSE; no browser incremental SSE timing claim.",
+        "Original two cold-initial/replacement expiry failures retained. Initial worker readiness now precedes acceptance; cold replacement still consumes unchanged30s deadline. Not certification of two sequential cold starts within30s.",
+        "One corrected13-pass candidate changed source and remains incomplete; final unchanged-source regression passed.",
+        "Previous component reports precede final display-label/recovery-test setup edits; final native and turn reports cover those edits.",
+        "Demo accounts compared exactly before/after rollout; phase-start account checksum serialization was not reconstructed and is not claimed matched. Original81-row legacy hash matched phase start.",
+        "T04.1 native human review pending; T04.2-T04.4 queued; P05+ excluded."
+      ]
+    },
+    {
+      "claim_id": "T04.1-APPROVED",
+      "task_id": "T04.1",
+      "status": "approved-and-done",
+      "authorization": "proceed",
+      "evidence": [
+        ".genesis/evidence/T04.1-approved-advance.json"
+      ]
+    },
+    {
+      "claim_id": "T04.2-VERIFIED",
+      "task_id": "T04.2",
+      "recorded_at": "2026-10-22T04:57:38.986220+00:00",
+      "status": "implemented-verified-pending-human-review",
+      "statement": "Existing loan/EMI read slice implemented;140 unique affected pytest cases and41 actual-login API scenarios passed, including native30-provider/22-API gate. Separate blind Luna passed16 behavioral groups. Local synthetic demo enabled; no human approval or P04 closure inferred.",
+      "evidence": [
+        "evidence/scenarios/p04-loan-genesis-01/loan-emi-slice/report.json",
+        ".genesis/evidence/T04.2-regressions.json",
+        ".genesis/evidence/T04.2-luna-manifest.json",
+        ".genesis/evidence/T04.2-demo-loans.json",
+        ".genesis/evidence/T04.2-preservation-after.json",
+        ".genesis/evidence/T04.2-cleanup.json"
+      ],
+      "limitations": [
+        "Actual auth/API/worker/SQL/UI with scripted raw SDK outputs; no paid model-quality, source audit, OS isolation, production or startup SLA claim.",
+        "Focused P03/P04 regressions, not a whole-repository/P01/P02 rerun. Repeated provider cases counted once.",
+        "Original concurrent80ms timeout-accounting failure preserved; unchanged isolated rerun passed. No budget/assertion changed.",
+        "Failed auth/cursor/wait/script probes, partial reports and usage interruption retained. Final complete report supersedes partial coverage only after real supplemental observations.",
+        "Preference-save UI unavailable in trial; only per-answer language and unchanged public preferences after rejected mutation verified. Browser forwarding buffers SSE; no incremental browser timing claim.",
+        "Synthetic cursor tool-output exposure documented; private API/operator stopped and owned sessions revoked. Normal data/session namespaces untouched.",
+        "T04.2 human review pending; T04.3-T04.4 queued, P05+ excluded."
+      ]
+    },
+    {
+      "claim_id": "T04.2-APPROVED",
+      "task_id": "T04.2",
+      "status": "approved-and-done",
+      "authorization": "approved, proceed",
+      "evidence": [
+        ".genesis/evidence/T04.2-approved-advance.json"
+      ]
+    },
+    {
+      "claim_id": "T04.3-VERIFIED",
+      "task_id": "T04.3",
+      "recorded_at": "2026-10-22T09:50:09.570202+00:00",
+      "status": "implemented-verified-pending-human-review",
+      "statement": "Immutable synthetic policy ingestion, atomic activation and eligible exact vector/lexical retrieval implemented. 85 unique pytest cases, 6 labeled retrieval queries, and fresh blind Luna35/35 checks passed. Human review pending.",
+      "evidence": [
+        "evidence/policy/t043-genesis-04/retrieval/report.json",
+        ".genesis/evidence/T04.3-policy-retrieval-ad946b6c-4c8a-425d-921e-65165f8cb38c.json",
+        ".genesis/evidence/T04.3-regressions.json",
+        ".genesis/evidence/T04.3-luna-report.json",
+        ".genesis/evidence/T04.3-luna-cases.json",
+        ".genesis/evidence/T04.3-local-rollout.json"
+      ],
+      "limitations": [
+        "3D deterministic fixture embeddings, no live model quality or general relevance certification. No answer-support score or generated policy explanation; T04.4 queued.",
+        "Blind source restriction is instructional, not OS isolation or source audit. CLI/internal SQL checks, not policy HTTP/browser flows.",
+        "Earlier native failures and verifier assertion corrections retained/documented; raw initial Luna failed outputs were not retained.",
+        "Focused card/loan regression, not whole-repository verification. No production capacity or startup SLA claim.",
+        "T04.3 human review pending; P05+ excluded."
+      ]
+    },
+    {
+      "claim_id": "T04.3-APPROVED",
+      "task_id": "T04.3",
+      "status": "approved-and-done",
+      "authorization": "approved and proceed",
+      "evidence": [
+        ".genesis/evidence/T04.3-approved-advance.json"
+      ]
+    },
+    {
+      "claim_id": "T04.4-VERIFIED",
+      "task_id": "T04.4",
+      "recorded_at": "2026-10-22T11:55:46.844218+00:00",
+      "status": "implemented-verified-pending-human-review",
+      "statement": "Grounded curated policy templates and checked claims implemented. Final native unchanged-source gate passed181 unique pytest cases,61 API scenarios and10 labeled claim-support cases. Fresh blind Luna completed corrected behavioral checks. Local demo enabled and data preserved. Human approval pending.",
+      "evidence": [
+        "evidence/policy/t044-genesis-03/claim-support/report.json",
+        ".genesis/evidence/T04.4-claim-support-b03fdd1f-481b-4b03-ae15-eb9a7a503872.json",
+        ".genesis/evidence/T04.4-luna-report.json",
+        ".genesis/evidence/T04.4-luna-cases.json",
+        ".genesis/evidence/T04.4-native-attempts.json",
+        ".genesis/evidence/T04.4-local-rollout.json",
+        ".genesis/evidence/T04.4-demo-readback.json",
+        ".genesis/evidence/T04.4-preservation-after.json",
+        ".genesis/evidence/T04.4-typescript.json"
+      ],
+      "limitations": [
+        "Only exact curated INR credit-card annual-fee and waiver clauses supported; no personal eligibility or charge-cause inference.",
+        "Actual auth/API/worker/SQL, raw SDK scripted and no paid calls. No live model/embedding quality, browser policy-flow, source audit, OS isolation, whole-repository or production/SLA claim.",
+        "Independent34 case records include retained initial failures/mismatches; not34/34 final passing tests.13 final behavioral observations include corrected observations.",
+        "First native candidate failed context completeness; an intermediate candidate changed source. Both retained; final third run passed unchanged.",
+        "Demo banking and original legacy data preserved; P03 tests add randomized synthetic owners to configured development DB.",
+        "Human review pending; P04 not closed, P05+ excluded."
+      ]
+    },
+    {
+      "claim_id": "T04.4-APPROVED",
+      "task_id": "T04.4",
+      "status": "approved-and-done",
+      "authorization": "approved",
+      "evidence": [
+        ".genesis/evidence/T04.4-approved-close.json"
+      ]
+    },
+    {
+      "claim_id": "P04-CLOSED",
+      "phase": "P04",
+      "status": "approved-and-closed",
+      "authorization": "approved",
+      "evidence": [
+        ".genesis/P04_CLOSURE.json"
+      ],
+      "limits": "Closure records actual approval and existing evidence, not new test results. P05+ unstarted."
+    }
+  ]
+}

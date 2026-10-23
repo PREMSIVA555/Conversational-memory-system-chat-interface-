@@ -421,3 +421,58 @@ if __name__ == "__main__":
     import json
 
     print(json.dumps(asyncio.run(health()), indent=2))
+
+# Bounded coordinator path: same provider seam, explicit capabilities and raw usage.
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class StructuredCompletion:
+    content: str
+    model: str | None
+    usage: dict[str, int]
+    configured_model: str
+
+
+def completion_capabilities(model: str | None = None) -> dict[str, bool]:
+    resolved = model or resolve_completion_model()
+    if os.environ.get('LLM_STRUCTURED_JSON_ENABLED', 'true').lower() != 'true':
+        return {'structured_json': False}
+    try:
+        params = _litellm().get_supported_openai_params(model=resolved)
+        supported = params is not None and 'response_format' in params
+    except Exception:
+        supported = False
+    return {'structured_json': supported}
+
+
+
+async def bounded_completion_capabilities(*, timeout: float, model: str | None = None) -> dict[str, bool]:
+    """Metadata initialization can block; it cannot extend a logical run deadline.
+
+    Cancellation stops waiting rather than claiming to terminate the library's
+    background import. Capability work never dispatches a paid completion.
+    """
+    async with asyncio.timeout(timeout):
+        return await asyncio.to_thread(completion_capabilities, model)
+
+
+async def structured_completion(messages, *, timeout: float, transport=None) -> StructuredCompletion:
+    """Exactly one transport attempt. Caller durably reserves before entering.
+
+    Test transports implement async acompletion(**kwargs), returning a LiteLLM-shaped
+    object. No alternative model/provider seam is introduced by test injection.
+    """
+    model = resolve_completion_model()
+    if timeout <= 0 or not (await bounded_completion_capabilities(timeout=timeout,model=model))['structured_json']:
+        raise ValueError('Structured planning capability unavailable')
+    client = transport if transport is not None else _litellm()
+    response = await client.acompletion(model=model, messages=list(messages),
+        response_format={'type': 'json_object'}, max_tokens=default_max_tokens(),
+        temperature=0, timeout=timeout, num_retries=0, max_retries=0, drop_params=False)
+    raw = getattr(response, 'usage', None)
+    usage = {}
+    for key in ('prompt_tokens', 'completion_tokens', 'total_tokens'):
+        value = raw.get(key) if isinstance(raw, dict) else getattr(raw, key, None)
+        if type(value) is int and value >= 0: usage[key] = value
+    return StructuredCompletion(response.choices[0].message.content or '',
+        getattr(response, 'model', None), usage, model)

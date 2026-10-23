@@ -1,0 +1,158 @@
+{
+  "phase": "P04",
+  "status": "approved-and-closed",
+  "approved_by": "mprem",
+  "authorization": "approved",
+  "recorded_at": "2026-10-22T13:40:22.238351+00:00",
+  "tasks": {
+    "T04.1": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p04_check.py evidence/scenarios/p04-card-genesis-02/card-slice --task T04.1",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.1-acceptance-95c7329d-4acc-4e54-98ef-6d1f45652c04.json",
+            "hash": "26252df881a8643618ac8881c96148d9b6d0a222c412c9ca672b2b6f96dd9ab5",
+            "source_hash": "52aa49eb79fdbd075e305b2b163dba1c044aa4d37e9769b06d74fb7b4f394327",
+            "config_hash": "b48462412fb9be0fc4629f021aa4b6d6a8cb6acb6974056658f5c4e450b16238",
+            "observed_at": "2026-10-21T15:02:35.833Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.1-independent-review-8ba6da7c-d148-46d2-ad8c-6844fc83ee2b.json",
+            "hash": "5bbe08b3081466a0ee9d44ce28318339231bcfe627b4f9866e9dbc3be4b26545",
+            "source_hash": "52aa49eb79fdbd075e305b2b163dba1c044aa4d37e9769b06d74fb7b4f394327",
+            "config_hash": "b48462412fb9be0fc4629f021aa4b6d6a8cb6acb6974056658f5c4e450b16238",
+            "observed_at": "2026-10-21T15:38:05.686Z"
+          }
+        }
+      ]
+    },
+    "T04.2": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "acceptance",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p042_check.py evidence/scenarios/p04-loan-genesis-01/loan-emi-slice --task T04.2",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.2-acceptance-c46c1e6a-124c-4ad8-8a12-5c41a99c1001.json",
+            "hash": "28278ef0b37f3598334d45585449706f7a5a8e2d108ffabcdb3f82877c3d7165",
+            "source_hash": "57c97ecf1aeccfa843a1e61fdee73707b230323795357d9288c412f4357d7984",
+            "config_hash": "c9804310c435afa2ea36e3bb95beb71b3dc955a1f595adacb95370384b3cd70b",
+            "observed_at": "2026-10-21T15:58:29.768Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.2-independent-review-6deb9261-17ff-4e2f-829e-3e23b62bf4c4.json",
+            "hash": "2103360ec4aa4ff805718fcfb53344d669a7dca038591e0611dd8ec9ebc82712",
+            "source_hash": "57c97ecf1aeccfa843a1e61fdee73707b230323795357d9288c412f4357d7984",
+            "config_hash": "c9804310c435afa2ea36e3bb95beb71b3dc955a1f595adacb95370384b3cd70b",
+            "observed_at": "2026-10-22T05:33:30.352Z"
+          }
+        }
+      ]
+    },
+    "T04.3": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "policy-retrieval",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p043_check.py evidence/policy/t043-genesis-04/retrieval",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.3-policy-retrieval-ad946b6c-4c8a-425d-921e-65165f8cb38c.json",
+            "hash": "c14a7340f2b12a06c86a0110c8d0d56d3a84dd386ca3b0ccd38ab076b69fb5e7",
+            "source_hash": "01976bcedf3c550fa048ca27231b5ac477e4ababd06bfdf3c9c25097f95a6e21",
+            "config_hash": "6732ca0ee201258cc49cbae700774165e3b2ffc26f39ad0c47e7ee9d446431da",
+            "observed_at": "2026-10-22T09:48:55.132Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.3-independent-review-9354402c-7b7b-4f9e-86d8-ab88bfb40574.json",
+            "hash": "2e08c8f14dcebb6dbd2a8d73de1befc8df31bf131faa37efa6607df71209a171",
+            "source_hash": "01976bcedf3c550fa048ca27231b5ac477e4ababd06bfdf3c9c25097f95a6e21",
+            "config_hash": "6732ca0ee201258cc49cbae700774165e3b2ffc26f39ad0c47e7ee9d446431da",
+            "observed_at": "2026-10-22T11:18:44.702Z"
+          }
+        }
+      ]
+    },
+    "T04.4": {
+      "state": "done",
+      "gates": [
+        {
+          "id": "claim-support",
+          "kind": "command",
+          "command": ".venv\\Scripts\\python.exe scripts\\p044_check.py evidence/policy/t044-genesis-03/claim-support",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.4-claim-support-b03fdd1f-481b-4b03-ae15-eb9a7a503872.json",
+            "hash": "6c6af33557c66df15511e379d309e121f969155cf9ee52b06c73954fb42def96",
+            "source_hash": "288fc1dad8e1b5200c84c07437cffcffd41bb520f2749359571fab1bd6a2259a",
+            "config_hash": "c344695653f0bc1e9f86ea4e220bef867bd4c33f895f959c3bc9a294f34fd91d",
+            "observed_at": "2026-10-22T11:53:09.951Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "kind": "review",
+          "command": "",
+          "mandatory": true,
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T04.4-independent-review-deaa1c7b-a94e-4d45-8858-58e7fa806a9d.json",
+            "hash": "3d6249560e390b5808e3a00b90f51f29cf8d97b350817d5e439cc07784e5faeb",
+            "source_hash": "288fc1dad8e1b5200c84c07437cffcffd41bb520f2749359571fab1bd6a2259a",
+            "config_hash": "c344695653f0bc1e9f86ea4e220bef867bd4c33f895f959c3bc9a294f34fd91d",
+            "observed_at": "2026-10-22T13:38:49.772Z"
+          }
+        }
+      ]
+    }
+  },
+  "evidence": [
+    ".genesis/evidence/T04.1-approved-advance.json",
+    ".genesis/evidence/T04.2-approved-advance.json",
+    ".genesis/evidence/T04.3-approved-advance.json",
+    ".genesis/evidence/T04.4-approved-close.json",
+    "evidence/policy/t044-genesis-03/claim-support/report.json",
+    ".genesis/evidence/T04.4-luna-report.json",
+    ".genesis/evidence/T04.4-preservation-after.json",
+    ".genesis/evidence/T04.4-final-integrity.json"
+  ],
+  "limitations": [
+    "Prior verification results and limits remain historical; no new test run or phase-wide independent audit is claimed by this approval bookkeeping.",
+    "Final T04.4 verification:181 distinct pytest cases,61 API scenarios,10 labeled claim-support cases; blind Luna observations include corrected-source tests and retained failed candidates.",
+    "Raw SDK plans scripted; actual auth/API/worker/SQL. No live model/embedding quality, browser policy-flow, OS isolation, source audit, production/SLA or whole-repository claim.",
+    "Policy explanations limited to exact curated synthetic credit-card annual-fee/waiver clauses; no personal eligibility or fee-charge-cause inference.",
+    "P05+ remains unstarted and requires a new instruction."
+  ]
+}

@@ -111,6 +111,17 @@ async def metrics() -> Response:
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
+if os.environ.get("APP_PROFILE", "banking") == "banking":
+    from api.foundation import create_app
+    app = create_app()
+elif os.environ.get("APP_PROFILE") != "legacy-local":
+    raise RuntimeError("Unknown application profile")
+elif __name__ != "__main__":
+    raise RuntimeError("Legacy profile must be started using the loopback-only module entrypoint")
+elif os.environ.get("API_HOST", "127.0.0.1") not in {"127.0.0.1", "localhost"}:
+    raise RuntimeError("Legacy profile is restricted to a loopback bind")
+
+
 if __name__ == "__main__":
     import uvicorn
 
@@ -127,4 +138,5 @@ if __name__ == "__main__":
         host=os.environ.get("API_HOST", "0.0.0.0"),
         port=int(os.environ.get("API_PORT", "8000")),
         reload=False,
+        access_log=False,  # Callback URLs contain authorization codes; never log query strings.
     )

@@ -1,0 +1,164 @@
+{
+  "version": "p04-card-slice-v1",
+  "domain_time": "2026-01-15T12:00:00+00:00",
+  "customers": [
+    "11111111-1111-4111-8111-111111111111",
+    "22222222-2222-4222-8222-222222222222"
+  ],
+  "accounts": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "owner": 0,
+      "name": "Synthetic savings",
+      "currency": "INR",
+      "current": "9007199254740993",
+      "available": "12000000"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000002",
+      "owner": 0,
+      "name": "Synthetic current",
+      "currency": "INR",
+      "current": "0",
+      "available": "-1"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000003",
+      "owner": 1,
+      "name": "Foreign synthetic savings",
+      "currency": "USD",
+      "current": "8700000",
+      "available": "8500000"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "account": 0,
+      "amount": "-700",
+      "status": "declined",
+      "date": "2026-01-14",
+      "reason": null
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000002",
+      "account": 0,
+      "amount": "0",
+      "status": "pending",
+      "date": "2026-01-14",
+      "reason": null
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000003",
+      "account": 0,
+      "amount": "9007199254740993",
+      "status": "posted",
+      "date": "2026-01-15",
+      "reason": null
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000004",
+      "account": 0,
+      "amount": "-1",
+      "status": "reversed",
+      "date": "2026-01-15",
+      "reason": null
+    }
+  ],
+  "cards": [
+    {
+      "id": "30000000-0000-4000-8000-000000000001",
+      "owner": 0,
+      "name": "Synthetic debit",
+      "last_four": "1111",
+      "kind": "debit",
+      "status": "active",
+      "currency": "INR",
+      "daily": "150000",
+      "credit": null,
+      "available": null,
+      "outstanding": null
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000002",
+      "owner": 0,
+      "name": "Synthetic credit",
+      "last_four": "1111",
+      "kind": "credit",
+      "status": "blocked",
+      "currency": "INR",
+      "daily": "250000",
+      "credit": "9007199254740993",
+      "available": "9007199254740000",
+      "outstanding": "993"
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000003",
+      "owner": 1,
+      "name": "Foreign card",
+      "last_four": "1111",
+      "kind": "credit",
+      "status": "active",
+      "currency": "USD",
+      "daily": "10000",
+      "credit": "1000000",
+      "available": "900000",
+      "outstanding": "100000"
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000004",
+      "owner": 0,
+      "name": "Synthetic yen debit",
+      "last_four": "2222",
+      "kind": "debit",
+      "status": "expired",
+      "currency": "JPY",
+      "daily": "0",
+      "credit": null,
+      "available": null,
+      "outstanding": null
+    }
+  ],
+  "card_transactions": [
+    {
+      "id": "40000000-0000-4000-8000-000000000001",
+      "card": 1,
+      "amount": "-700",
+      "status": "declined",
+      "occurred_at": "2026-01-14T10:00:00+00:00",
+      "reason": null
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000002",
+      "card": 1,
+      "amount": "0",
+      "status": "pending",
+      "occurred_at": "2026-01-14T10:00:00+00:00",
+      "reason": null
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000003",
+      "card": 1,
+      "amount": "9007199254740993",
+      "status": "posted",
+      "occurred_at": "2026-01-15T00:00:00+00:00",
+      "reason": null
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000004",
+      "card": 1,
+      "amount": "-1",
+      "status": "reversed",
+      "occurred_at": "2026-01-15T23:59:59+00:00",
+      "reason": null
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000005",
+      "card": 1,
+      "amount": "300",
+      "status": "posted",
+      "occurred_at": "2026-01-16T00:00:00+00:00",
+      "reason": null
+    }
+  ]
+}

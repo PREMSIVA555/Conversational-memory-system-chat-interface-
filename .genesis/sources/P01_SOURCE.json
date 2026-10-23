@@ -1,0 +1,102 @@
+{
+  "manifest": {
+    "source_path": "C:/Users/mprem/Documents/Codex/2026-10-17/https-antern-co-evidence-portfolio-https/outputs/banking-implementation-plan/PLAN_READER.html",
+    "source_sha256": "9f59fb49a54ea305387465fb606deca567d8118d7e296f7edee8605559ba70fd",
+    "recorded_at": "2026-10-18T15:38:02.310285+00:00",
+    "scope": "P01 and T01.1-T01.3 only; original SPEC/INV terminology retained",
+    "limitations": [
+      "Requirements and planned acceptance contracts, not implementation or passing test evidence.",
+      "Task records cross-checked against authoritative HTML."
+    ]
+  },
+  "phase_text": "P01 — Authenticated and observable foundation\nEntry: P00 closed with evidence.\nOutcome: Authenticated principal, constrained DB access, safe telemetry and validated environment before banking data is exposed.\nPrimary components: SP01 SP02 SP05 OB01 OB02 OB03 PL03\nWork items: T01.1, T01.2, T01.3. See backlog.\nFirst invariant gates: INV01, INV02, INV03, INV24, INV26, INV27, INV33\nExit criteria: Positive owner access and all relevant negative identity/ownership/CSRF/pool tests pass; actual roles verified; secret canaries absent from tested sinks; unsafe legacy routes disabled.\nEvidence produced: Threat model; role/grant inspection; API isolation results; first correlated trace; redaction evidence; environment runbook.\nRecovery/rollback: Disable banking routes on failed auth/role/readiness checks. Never fall back to client-selected identity.",
+  "tasks": [
+    {
+      "task_id": "T01.1",
+      "phase": "P01",
+      "title": "Wire OIDC and opaque server sessions",
+      "depends_on": [
+        "T00.3"
+      ],
+      "component_ids": [
+        "SP01",
+        "UX02",
+        "PL03"
+      ],
+      "spec_ids": [
+        "SPEC01"
+      ],
+      "invariant_ids": [
+        "INV01",
+        "INV24",
+        "INV33"
+      ],
+      "implementation": "Configure issuer/client secrets, callback lifecycle, session rotation/expiry, CSRF/origin; remove client identity authority and disable legacy deployed route.",
+      "acceptance": "Valid login plus callback/session/CSRF/queued-after-logout negatives.",
+      "evidence_target": "evidence/security/<run-id>/auth/",
+      "status": "planned-not-started"
+    },
+    {
+      "task_id": "T01.2",
+      "phase": "P01",
+      "title": "Provision roles, owner schema and RLS",
+      "depends_on": [
+        "T01.1"
+      ],
+      "component_ids": [
+        "SP02",
+        "BD01",
+        "PL01"
+      ],
+      "spec_ids": [
+        "SPEC02"
+      ],
+      "invariant_ids": [
+        "INV02",
+        "INV03"
+      ],
+      "implementation": "Create internal identity links/customer sequence root, owner-consistent keys/FKs, runtime/worker/dispatcher/migrator grants and trusted transaction context.",
+      "acceptance": "Role inspection, missing-context and reused-pool two-customer tests; owner access still works.",
+      "evidence_target": "evidence/security/<run-id>/roles-and-rls/",
+      "status": "planned-not-started"
+    },
+    {
+      "task_id": "T01.3",
+      "phase": "P01",
+      "title": "Add privacy and operational seams",
+      "depends_on": [
+        "T01.2"
+      ],
+      "component_ids": [
+        "SP05",
+        "OB01",
+        "OB02",
+        "OB03",
+        "PL03"
+      ],
+      "spec_ids": [
+        "SPEC12"
+      ],
+      "invariant_ids": [
+        "INV26",
+        "INV27"
+      ],
+      "implementation": "Introduce metadata allowlists/redaction before model/export, linked spans, bounded metric dimensions and health/readiness configuration.",
+      "acceptance": "Synthetic secrets in exceptions/payloads are absent from every enabled sink; auth readiness fails closed.",
+      "evidence_target": "evidence/operations/<run-id>/redaction-and-tracing/",
+      "status": "planned-not-started"
+    }
+  ],
+  "records": {
+    "SPEC01": "SPEC01 — Authentication and browser session\nComponents: SP01, UX02, PL03\nBehavioral contract: Use configured OIDC code flow with PKCE S256 and vetted callback/token validation. Map issuer/subject to internal customer. Redis stores opaque rotated sessions; __Host-bank_sid is Secure, HttpOnly, SameSite=Lax, Path=/, without Domain. All mutation routes check CSRF token and allowed Origin. Deployed banking profile disables legacy unauthenticated chat. Session expiry is checked at API entry and before queued banking access; logout clears browser working state.\nFailure/recovery contract: Invalid or expired identity -> 401; invalid CSRF/origin -> 403; required auth store unavailable -> access closed, 503. Never select customer from a request field.\nAcceptance criteria: Good login accesses only owned resources. Invalid issuer/audience/signature/state/nonce, callback replay, old session after rotation/logout, and cross-site mutation are rejected. Test long SSE expiry and queued access after logout.\nExcluded: Building an identity provider, storing passwords, or unsigned development authentication in deployed banking profiles.",
+    "SPEC02": "SPEC02 — Authorization, resource identity and database roles\nComponents: SP02, SP03, BD01, PL01\nBehavioral contract: Principal is server-created and carried in RequestContext. Gateway and domain/provider service authorize each resource. Display masks resolve within owned lists and ambiguity produces authorized choices. Runtime roles are nonowner, NOSUPERUSER, NOBYPASSRLS with no privileged role membership. RLS uses trusted transaction-local customer context and write checks; composite owner FKs prevent mismatched children. Restrict dispatcher, worker and migrator separately.\nFailure/recovery contract: Missing or foreign resource -> non-enumerating 404; missing tenant context -> deny. Unknown operation/schema -> typed reject before provider access.\nAcceptance criteria: Exercise API, direct provider, worker and real pooled DB paths with two customers. Valid owner succeeds; foreign UUID, missing context, stale pooled context, spoofed headers/body, arbitrary SQL/tool names do not expose evidence or execute a write.\nExcluded: Guaranteeing isolation after complete application/DB-credential compromise; customer masks as canonical IDs; broad admin sessions in request handlers.",
+    "SPEC12": "SPEC12 — Audit, telemetry, privacy and runtime configuration\nComponents: AU01, AU02, AU03, OB01, OB02, OB03, SP05, PL03\nBehavioral contract: Action success audit shares local support transaction and runtime cannot edit/delete it. Redacted JSON logs and OTel linked spans use metadata allowlists; no raw bank facts/secrets/prompts by default. Metrics use bounded route/tool/status labels, no customer/request IDs. Propagate trace IDs across outbox as correlation only. Validate issuer/secrets/environment at startup; separate liveness from dependency readiness. Govern synthetic eval traces separately.\nFailure/recovery contract: Mandatory audit failure rolls back support; optional exporter failure drops/buffers bounded telemetry with diagnostic counter. Unknown price -> cost unavailable. Missing auth config/store closes banking access.\nAcceptance criteria: Synthetic secret canaries never export in tested sinks; forged trace cannot authorize; spans link across process hop; queue/dead-letter alerts exercised; bad environment fails safely; runtime audit update/delete denied.\nExcluded: Tamper-proof audit against DBA compromise, uptime inferred from CI YAML, or raw sensitive labels/content everywhere for convenience.",
+    "INV01": "INV01 — Server-established identity\nMust hold: No HTTP/model-supplied customer/actor field confers authority.\nEnforced by: SessionService + strict DTO rejection + issuer mapping\nVerified by: Forged header/query/body, token/issuer/session negatives\nFirst gate: P01. Work: T01.1. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV02": "INV02 — Owned resource on every path\nMust hold: Only authorized owned rows become tool evidence or responses.\nEnforced by: Gateway + domain/provider + scoped repository\nVerified by: Two-customer API/direct-adapter/worker probes; valid owner control\nFirst gate: P01. Work: T01.2, T03.1, T04.1. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV03": "INV03 — RLS role and context\nMust hold: Runtime is nonowner, non-superuser, NOBYPASSRLS; missing tenant context denies.\nEnforced by: Role provisioning + transaction-local trusted context + RLS USING/WITH CHECK\nVerified by: Inspect actual roles and pooled-context reuse; no admin request path\nFirst gate: P01. Work: T01.2. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV24": "INV24 — Session context isolation\nMust hold: Selections/proposals/cache/in-flight UI responses cannot cross customers or reuse invalid sessions.\nEnforced by: Scoped keys, state reset and response-generation guard\nVerified by: Logout A/login B with delayed A response and old pending proposal\nFirst gate: P01. Work: T01.1, T02.4, T03.3, T05.1. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV26": "INV26 — Safe public errors\nMust hold: Errors do not expose foreign existence, secrets, SQL parameters or stack traces.\nEnforced by: Safe error mapping and pre-export allowlist\nVerified by: Compare foreign/missing error and synthetic-secret exception handling\nFirst gate: P01. Work: T01.3. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV27": "INV27 — Minimized telemetry\nMust hold: No forbidden sensitive payloads or unbounded identities in operational telemetry.\nEnforced by: Allowlist attributes/redaction; bounded metric dimensions\nVerified by: Canary scans across logs/traces/exporters; cardinality assertions\nFirst gate: P01. Work: T01.3, T06.4. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved.",
+    "INV33": "INV33 — Mutation browser protection\nMust hold: Cookie-authenticated mutation routes require valid CSRF and allowed Origin.\nEnforced by: API middleware plus route contract checks\nVerified by: Cross-site requests, absent/bad CSRF and direct API bypass negatives\nFirst gate: P01. Work: T01.1. Violation: release-blocking; preserve failing evidence and block the affected slice/claim until resolved."
+  }
+}
