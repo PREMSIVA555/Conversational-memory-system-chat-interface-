@@ -1309,6 +1309,78 @@
         ".genesis/P04_CLOSURE.json"
       ],
       "limits": "Closure records actual approval and existing evidence, not new test results. P05+ unstarted."
+    },
+    {
+      "claim_id": "TH01.1-H01-VERIFIED-REVIEW-PENDING",
+      "task_id": "TH01.1",
+      "status": "observed",
+      "statement": "Final unchanged-source native gate and independent behavioral checks completed; actual human approval remains pending.",
+      "spec_ids": [
+        "SPEC08",
+        "SPEC09",
+        "SPEC12"
+      ],
+      "invariant_ids": [
+        "INV09",
+        "INV10",
+        "INV25",
+        "INV26",
+        "INV27"
+      ],
+      "component_ids": [],
+      "source_run_ids": [
+        "d130864a-3437-414f-b5d4-c6fc074b547d"
+      ],
+      "commands": [
+        "\".venv\\Scripts\\python.exe\" scripts/h01_check.py"
+      ],
+      "source_hash": "ef503ce863ba9a5b0a39bbf90b33908e23a9d0389771762a3baa0cdf04cd1bfb",
+      "result_paths": [
+        ".genesis/H01_REVIEW.json",
+        ".genesis/evidence/TH01.1-regression-d130864a-3437-414f-b5d4-c6fc074b547d.json",
+        "evidence/policy/h01-a467ad94e43b4ea5893557fc76aa65df/report.json",
+        ".genesis/evidence/H01-policy-verifier.json",
+        ".genesis/evidence/H01-privacy-verifier.json"
+      ],
+      "limitations": [
+        "Raw application SDK replies scripted; no live model quality or performance claim.",
+        "English NER is defense in depth; multilingual names and history/nested-context coverage not certified.",
+        "Behavior-only independent agents; no source audit or OS isolation claim.",
+        "Raw evidence paths remain local and ignored by Git."
+      ],
+      "reviewer": null,
+      "timestamp": "2026-10-23T17:25:13.331686+00:00"
+    },
+    {
+      "claim_id": "H01-APPROVED-CLOSED",
+      "task_id": "TH01.1",
+      "status": "observed",
+      "statement": "User instructed commit and push after the H01 review packet. Native review approval and task completion recorded. H01 closed; P05+ unstarted.",
+      "spec_ids": [
+        "SPEC08",
+        "SPEC09",
+        "SPEC12"
+      ],
+      "invariant_ids": [
+        "INV09",
+        "INV10",
+        "INV25",
+        "INV26",
+        "INV27"
+      ],
+      "source_run_ids": [],
+      "result_paths": [
+        ".genesis/H01_CLOSURE.json",
+        ".genesis/evidence/TH01.1-independent-review-5d0bfa5c-960d-498e-9796-512acafdd43e.json"
+      ],
+      "limitations": [
+        "Raw application SDK replies scripted; no live model quality or performance claim.",
+        "English NER is defense in depth; multilingual names and history/nested-context coverage not certified.",
+        "Behavior-only independent agents; no source audit or OS isolation claim.",
+        "Raw evidence paths remain local and ignored by Git."
+      ],
+      "reviewer": "mprem",
+      "timestamp": "2026-10-23T17:58:59.006958+00:00"
     }
   ]
 }

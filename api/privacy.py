@@ -1,8 +1,10 @@
 """Allowlisted operational metadata and a pre-model secret minimization seam."""
 import json
+import importlib.util
 import logging
 import os
 import re
+from pathlib import Path
 from collections import deque
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter, SpanExportResult
@@ -59,13 +61,67 @@ def event(name, route='unknown', method='GET', outcome='error'):
 
 
 def model_input(text):
-    """Explicit future model boundary, never an authorization mechanism."""
-    for key, value in os.environ.items():
-        if any(part in key for part in ('PASSWORD','SECRET','API_KEY','TOKEN')) and value:
-            text = text.replace(value, '[REDACTED]')
+    """Local defense in depth before model dispatch; never authorization.
+
+    Names use installed English NER plus explicit name labels. This cannot
+    promise all names/languages. Scanner failure raises without raw payloads.
+    """
+    secrets={value for key,value in os.environ.items()
+        if value and any(part in key.upper() for part in ('PASSWORD','SECRET','API_KEY','TOKEN'))}
+    for value in sorted(secrets,key=len,reverse=True):
+        text = text.replace(value, '[REDACTED]')
+    text = text.replace('\u200b','').replace('\ufeff','')
+    # Normalize common pasted numeric separators before local recognizers.
+    text = re.sub(r'(?<=\d)[\u2010-\u2015\u2212](?=\d)', '-', text)
     text = re.sub(r'(?i)bearer\s+[\w.\-]+', '[REDACTED]', text)
     text = re.sub(r'[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}', '[REDACTED]', text)
-    text = re.sub(r'\b(?:\d[ -]?){12,19}\b', '[REDACTED]', text)
+    # Mask typed planning tokens by offset, not a reversible placeholder sent
+    # to the model. Secret matching above still wins over these exceptions.
+    protected=[]
+    for pattern in (
+        r'(?i)\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b',
+        r'\b\d{4}-\d{2}-\d{2}(?:T[\d:.]+(?:Z|[+-]\d{2}:\d{2})?)?',
+        r'\b(?:INR|USD|EUR|GBP|JPY|KWD)\s+-?\d+(?:\.\d+)?\b',
+        r'(?i)\bamount(?:\s+(?:of|is))?\s*[:=]?\s*-?\d+(?:\.\d+)?\b',
+    ):
+        protected.extend((m.start(),m.end()) for m in re.finditer(pattern,text))
+    chars=list(text)
+    for start,end in protected:chars[start:end]=' '* (end-start)
+    masked=''.join(chars)
+    spans=[]
+    for pattern in (
+        r'(?<!\w)(?:\d[\s-]?){11,18}\d(?!\w)',
+        r'(?<!\w)\d{3}[-.\s]?\d{2}[-.\s]?\d{4}(?!\w)',
+        r'(?<!\w)(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{5}[\s.-]\d{5})(?!\w)',
+        r'(?i)\b(?:my name is|name\s*:)\s+[^\W\d_]+(?:[ \t]+[^\W\d_]+){0,3}',
+    ):
+        spans.extend((m.start(),m.end()) for m in re.finditer(pattern,masked))
+    try:
+        from capture.pii import get_engines, TARGET_ENTITIES, spacy_model_name
+        model=spacy_model_name()
+        # Presidio may try downloading a missing spaCy model. Requests must
+        # fail closed instead of installing software in a background thread.
+        if not Path(model).is_dir() and importlib.util.find_spec(model) is None:
+            raise ValueError('Local privacy model missing')
+        results=get_engines()['analyzer'].analyze(text=masked,language='en',
+            entities=TARGET_ENTITIES+['PERSON'],score_threshold=.4)
+        spans.extend((r.start,r.end) for r in results)
+    except Exception:
+        raise ValueError('Local privacy scan unavailable') from None
+    # A recognizer may span across a masked token: redact the surrounding
+    # characters but preserve only the deliberately masked token itself.
+    redact=[False]*len(text)
+    for start,end in spans:
+        for index in range(start,end):redact[index]=True
+    for start,end in protected:
+        for index in range(start,end):redact[index]=False
+    parts=[];inside=False
+    for char,remove in zip(text,redact):
+        if remove:
+            if not inside:parts.append('[REDACTED]')
+        else:parts.append(char)
+        inside=remove
+    text=''.join(parts)
     return text
 
 

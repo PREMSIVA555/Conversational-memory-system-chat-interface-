@@ -1,0 +1,40 @@
+{
+  "phase": "H01",
+  "task": "TH01.1",
+  "status": "approved-and-closed",
+  "approval": {
+    "human": "mprem",
+    "instruction": "commit and push.",
+    "recorded_at": "2026-10-23T17:58:59.006958+00:00",
+    "native_receipt": ".genesis/evidence/TH01.1-independent-review-5d0bfa5c-960d-498e-9796-512acafdd43e.json"
+  },
+  "native_receipt": ".genesis/evidence/TH01.1-regression-d130864a-3437-414f-b5d4-c6fc074b547d.json",
+  "report": "evidence/policy/h01-a467ad94e43b4ea5893557fc76aa65df/report.json",
+  "pytest_cases": 222,
+  "api_scenarios": 67,
+  "claim_rubric_cases": 10,
+  "policy_verifier": {
+    "requested_model": "gpt-6.1-sol",
+    "unique_cases": 48,
+    "completed_observations": 50,
+    "report": ".genesis/evidence/H01-policy-verifier.json"
+  },
+  "privacy_verifier": {
+    "requested_model": "gpt-6-astra",
+    "distinct_cases": 14,
+    "scoped_passes": 13,
+    "coverage_limit_cases": 1,
+    "report": ".genesis/evidence/H01-privacy-verifier.json"
+  },
+  "source_unchanged": true,
+  "P04_preserved": true,
+  "P05_started": false,
+  "limits": [
+    "Raw application SDK replies scripted; no live model quality or performance claim.",
+    "English NER is defense in depth; multilingual names and history/nested-context coverage not certified.",
+    "Behavior-only independent agents; no source audit or OS isolation claim.",
+    "Raw evidence paths remain local and ignored by Git."
+  ],
+  "recorded_at": "2026-10-23T17:25:13.331686+00:00",
+  "post_verification_documentation": "After native completion, README phase status and canonical Genesis closure records updated only. Application/test files remain identical to the passing run; raw evidence is local and ignored."
+}

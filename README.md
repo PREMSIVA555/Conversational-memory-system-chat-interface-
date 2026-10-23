@@ -1,25 +1,29 @@
 # memory-system
 
-The banking extension now has a P01 authenticated foundation. Start with
+The banking extension has approved P00–P04 work: authenticated ownership,
+durable turns, preferences, account/card/loan enquiries and bounded synthetic
+policy explanations. [H01 hardening](.genesis/H01.md) is approved and closed;
+its checks and detection limits are recorded separately from the approved P04.
+Start with
 [the P01 runbook](docs/P01_RUNBOOK.md) for its isolated OIDC/Redis/PostgreSQL setup,
 HTTPS browser UI and security checks. Banking defaults to authenticated access;
 the original unauthenticated `/chat` and `/memories` routes are disabled in that
 profile. The banking implementation authority is `PLAN_READER.html`, preserved
-in [the Genesis source mapping](.genesis/sources/P01_SOURCE.md).
+in [the Genesis source mapping](.genesis/sources/P04_SOURCE.md). Use
+[KICKOFF](.genesis/KICKOFF.md) for the current task and approval state.
 
 The remaining instructions below describe the original memory application.
 That legacy profile requires an explicit loopback-only module launch and is not
-the deployed banking profile. P01 adds identity and ownership foundations;
-bank products, durable turns and support actions belong to subsequent phases.
+the deployed banking profile. Support-action phases P05+ have not started.
 
 A persistent conversational-memory layer that sits behind an LLM chat agent — it
 remembers facts about one person across sessions, retrieves the relevant ones,
 and fits them into a bounded prompt block.
 
-Built milestone by milestone against [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md),
-which is the single source of truth for scope, tests, and sign-off.
+The original memory application follows [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+The banking extension follows the separate authority and Genesis mapping above.
 
-**Current state: M1 complete** — container stack, schema with HNSW + GIN + RLS,
+**Historical M1 baseline** — container stack, schema with HNSW + GIN + RLS,
 FastAPI `/health` and `/metrics`, and the LiteLLM provider seam.
 
 ---
