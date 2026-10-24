@@ -23,11 +23,19 @@ class Selection(Closed):
 class Instructions(Closed):
     language: Literal['en','hi'] | None=None
     format: Literal['concise','detailed'] | None=None
+class ResourceSelection(Closed):
+    kind: Literal['account','card','loan']
+    id: str
+    version: str=Field(pattern=r'^[1-9][0-9]{0,18}$')
+    _canonical=field_validator('id')(Selection.canonical.__func__)
 class TurnRequest(Closed):
     client_turn_id: str
     text: str=Field(min_length=1,max_length=8000)
     selection: Selection | None=None
     instructions: Instructions | None=None
+    workspace: bool=False
+    resource_selection: ResourceSelection | None=None
+    action: Literal['balance','transactions','card_details','loan_details','schedule','payments','products','help'] | None=None
     _canonical=field_validator('client_turn_id')(Selection.canonical.__func__)
     @field_validator('text')
     @classmethod
@@ -44,12 +52,17 @@ def public(row,*,replayed=False):
         status_url=f'/api/v1/conversations/{cid}/turns/{tid}',events_url=f'/api/v1/conversations/{cid}/turns/{tid}/events')
 
 class Turns:
-    def __init__(self,database,*,run_seconds=10):self.database=database;self.run_seconds=run_seconds
+    def __init__(self,database,*,run_seconds=10,workspace_enabled=False):self.database=database;self.run_seconds=run_seconds;self.workspace_enabled=workspace_enabled
     async def accept(self,context,cid,body):
         await self.database.conversation(context,cid)
         cid=str(UUID(cid))
         operation=dict(conversation_id=cid,text=body.text,selection=body.selection.model_dump() if body.selection else None,
                        instructions=body.instructions.model_dump(exclude_none=True) if body.instructions else {})
+        if body.workspace:
+            if not self.workspace_enabled:raise HTTPException(503)
+            operation.update(workspace=True,resource_selection=body.resource_selection.model_dump() if body.resource_selection else None,action=body.action)
+        elif body.resource_selection or body.action:raise HTTPException(422)
+        if body.selection and body.resource_selection:raise HTTPException(422)
         fingerprint=hashlib.sha256(json.dumps(operation,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
         async with self.database.session(context) as c:
             existing=await (await c.execute('SELECT id,fingerprint,session_binding FROM banking.turns WHERE client_turn_id=%s',(body.client_turn_id,))).fetchone()
@@ -60,6 +73,9 @@ class Turns:
         preferences=await Preferences(self.database).read(context,cid)
         effective={k:v['value'] for k,v in preferences['effective'].items()}
         coordinator_request=body.text
+        if body.resource_selection:
+            from store.banking_workspace import validate_selection
+            await validate_selection(self.database,context,operation['resource_selection'])
         if body.selection:
             # Version and ownership checked on acceptance and again before execution.
             try:

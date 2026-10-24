@@ -82,7 +82,8 @@ class EmptyRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
 
-def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_seconds=10,turn_worker_paused=False,cards_enabled=None,loans_enabled=None,policies_enabled=None):
+def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_seconds=10,turn_worker_paused=False,cards_enabled=None,loans_enabled=None,policies_enabled=None,workspace_enabled=None):
+    if workspace_enabled is None:workspace_enabled=os.getenv('BANK_WORKSPACE_ENABLED','false').lower()=='true'
     if turns_enabled is None:turns_enabled=os.getenv('BANK_TURNS_ENABLED','false').lower()=='true'
     configure_security_logging()
     telemetry = Telemetry()
@@ -203,8 +204,20 @@ def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_
     async def current(context=Depends(principal)):
         return {'customer_id':context.customer_id,'csrf_token':context.csrf,'expires_at':context.expires_at}
 
+    async def clear_resource_context(context):
+        if not workspace_enabled:return
+        # Redis revocation/rotation must remain available during a bank DB
+        # outage. Failed SQL cleanup is inaccessible under the revoked binding
+        # and expires; it must not keep an accepting login alive.
+        try:
+            from store.banking_preferences import binding
+            async with asyncio.timeout(1):
+                async with database.session(context) as c:await c.execute('SELECT banking.clear_workspace(%s)',(binding(context),))
+        except Exception:event('failure')
+
     @app.post('/api/v1/auth/rotate')
     async def rotate(body:EmptyRequest,context=Depends(mutation)):
+        await clear_resource_context(context)
         token=await sessions.rotate(context)
         response=JSONResponse({'status':'rotated'})
         cookie(response,SID_COOKIE,token,settings.session_seconds)
@@ -212,6 +225,7 @@ def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_
 
     @app.post('/api/v1/auth/logout')
     async def logout(body:EmptyRequest,context=Depends(mutation)):
+        await clear_resource_context(context)
         await sessions.revoke(context)
         response=JSONResponse({'status':'logged-out'},headers={'Clear-Site-Data':'"cache", "storage"'})
         cookie(response,SID_COOKIE,'',0)
@@ -246,7 +260,7 @@ def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_
     from api.context_memory import install as install_context_memory
     install_context_memory(app,database,principal,mutation)
     from api.turns import install as install_turns
-    install_turns(app,database,principal,mutation,enabled=turns_enabled,run_seconds=turn_run_seconds)
+    install_turns(app,database,principal,mutation,enabled=turns_enabled,run_seconds=turn_run_seconds,workspace_enabled=workspace_enabled)
     if database:
         from store.banking_provider import AccountProvider
         from jobs.banking_turns import TurnWorker
@@ -256,4 +270,6 @@ def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_
             policies_enabled=os.getenv('BANK_POLICIES_ENABLED','false').lower()=='true' if policies_enabled is None else policies_enabled)
         app.state.turn_worker=TurnWorker(database,provider,model_transport,run_seconds=turn_run_seconds)
         app.state.turn_worker.paused=turn_worker_paused
+        from api.workspace import install as install_workspace
+        install_workspace(app,database,provider,settings,principal,mutation,enabled=workspace_enabled)
     return app

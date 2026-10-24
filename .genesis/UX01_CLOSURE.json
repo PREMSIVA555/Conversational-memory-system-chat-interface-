@@ -1,0 +1,67 @@
+{
+  "phase": "UX01",
+  "task": "TUX01",
+  "status": "approved-and-closed",
+  "approved_by": "mprem",
+  "approval_quote": "all good, what next",
+  "recorded_at": "2026-10-24T12:36:43.931163+00:00",
+  "spec_ids": [
+    "SPEC05",
+    "SPEC07",
+    "SPEC09"
+  ],
+  "native_gates": [
+    {
+      "id": "ux-regression",
+      "kind": "command",
+      "command": "python scripts/ux_check.py",
+      "mandatory": true,
+      "status": "pass",
+      "evidence": {
+        "path": ".genesis/evidence/TUX01-ux-regression-ad120667-fe0f-4b56-9495-08d6e0c60904.json",
+        "hash": "137e012368d8b82edd2bf2a0cd1cf4e30e98f996140d7bf47d7479ae497e386f",
+        "source_hash": "072cfb5bb6146fb457bcb61011e2d80fe48382085f147ad5b2106a20ae2619d6",
+        "config_hash": "58265e9fc3868c939ff5659e86c0a3254520de8feb84c510b45b0dc65c6e6ea3",
+        "observed_at": "2026-10-24T12:35:13.918Z"
+      }
+    },
+    {
+      "id": "independent-review",
+      "kind": "review",
+      "command": "",
+      "mandatory": true,
+      "status": "pass",
+      "evidence": {
+        "path": ".genesis/evidence/TUX01-independent-review-9e86556e-fc08-4ac6-99f1-4d2c8f5ff8a1.json",
+        "hash": "27f323336d09ccce57c929652916b06539423fa8382898ee7a91489a1544b70e",
+        "source_hash": "072cfb5bb6146fb457bcb61011e2d80fe48382085f147ad5b2106a20ae2619d6",
+        "config_hash": "58265e9fc3868c939ff5659e86c0a3254520de8feb84c510b45b0dc65c6e6ea3",
+        "observed_at": "2026-10-24T12:35:42.944Z"
+      }
+    }
+  ],
+  "validation": {
+    "native_pytest": 133,
+    "native_failures": 0,
+    "typescript_exit": 0,
+    "real_oidc_browser_checks": 18,
+    "focused_synthetic_http_scroll_checks": 9,
+    "independent_reports": [
+      "UX01-independent-verifier.json",
+      "UX01-independent-language-verifier.json",
+      "UX01-final-followup-verifier.json",
+      "UX01-context-retention-verifier.json",
+      "UX01-logout-outage-verifier.json",
+      "UX01-scroll-independent.json"
+    ],
+    "independent_scope": "Fresh behavioral checks; no source audit or OS-enforced isolation claim; reports overlap.",
+    "real_oidc_browser_scope": "18-check full workspace journey predates the later scroll correction; final scroll behavior was separately retested with9 synthetic-HTTP UI checks and independent real-login desktop/mobile checks."
+  },
+  "limitations": [
+    "Actual live evaluation21 attempts exceeded authorized20; no retroactive waiver or budget compliance claimed. Further paid review transport blocked.",
+    "Selective wording uses audited framing/action selection; broad naturalness, native IME, production load and full accessibility certification remain unclaimed.",
+    "Raw evidence/runtime configuration/screenshots remain local and ignored; commit contains canonical pointers and safe documentation."
+  ],
+  "next": "Resume preserved P05 by integrating T05.1 previews into the approved workspace and verifying the combined result. T05.1 human approval remains pending before T05.2 atomic confirmed case submission.",
+  "p05_source_branch": "feat/banking-support-extension"
+}

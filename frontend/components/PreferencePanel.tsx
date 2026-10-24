@@ -20,10 +20,10 @@ const label = (value: string | null) => ({ en: "English", hi: "Hindi", concise: 
 const scopeLabel = (scope: string) => scope === "global" ? "All conversations" : scope.startsWith("conversation:") ? "This conversation" : scope.startsWith("response:") ? "This response only" : "Default";
 const statusLabel = (status: string) => ({ pending: "Pending", persisted: "Saved", temporary: "This response only", ignored_stale: "Superseded", failed: "Failed", default: "Default" }[status] ?? status);
 
-export default function PreferencePanel({ session, conversations, onExpired, isCurrentSession }: {
-  session: Session; conversations: Conversation[]; onExpired: () => void; isCurrentSession?: (session: Session) => boolean;
+export default function PreferencePanel({ session, conversations, onExpired, isCurrentSession, activeConversation }: {
+  session: Session; conversations: Conversation[]; onExpired: () => void; isCurrentSession?: (session: Session) => boolean; activeConversation?: string;
 }) {
-  const [conversation, setConversation] = useState("");
+  const [conversation, setConversation] = useState(activeConversation ?? "");
   const [scope, setScope] = useState<"global" | "conversation">("global");
   const [language, setLanguage] = useState("en");
   const [format, setFormat] = useState("concise");
@@ -165,7 +165,7 @@ export default function PreferencePanel({ session, conversations, onExpired, isC
   return <section aria-labelledby="preference-heading" style={{ marginTop: "2rem", borderTop: "1px solid #bbb", paddingTop: "1rem" }}>
     <h2 id="preference-heading">Response preferences</h2>
     {snapshot?.rollout?.new_writes_enabled === false && <p role="status">Preference changes are temporarily unavailable. Your saved settings remain available.</p>}
-    <label>Active conversation{" "}<select aria-label="Active conversation" value={conversation} disabled={busy || checking} onChange={(event) => {
+    {!activeConversation && <label>Active conversation{" "}<select aria-label="Active conversation" value={conversation} disabled={busy || checking} onChange={(event) => {
       responsePreview.current = null;
       setSnapshot(null);
       setConversation(event.target.value);
@@ -174,7 +174,7 @@ export default function PreferencePanel({ session, conversations, onExpired, isC
     }}>
       <option value="">No conversation selected</option>
       {conversations.map((item, index) => <option key={item.id} value={item.id}>Conversation {index + 1}</option>)}
-    </select></label>
+    </select></label>}
     {readError && <p role="alert">{readError}</p>}
     {error && <p role="alert">{error}</p>}
     {message && <p role="status">{message}</p>}

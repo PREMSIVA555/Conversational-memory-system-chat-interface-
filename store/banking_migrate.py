@@ -9,7 +9,7 @@ def apply(conn, roles, *, through='0001'):
     for name in roles.values():
         if not re.fullmatch(r"[a-z][a-z0-9_]{0,60}", name):
             raise ValueError("Unsafe database role name")
-    if through not in ('0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027'):
+    if through not in ('0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0029'):
         raise ValueError('Unknown banking migration target')
     if through >= '0002':
         with conn.transaction():

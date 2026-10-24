@@ -1,0 +1,43 @@
+# UX01 workspace: behavior, operation and limits
+
+This amendment starts at approved H01 `557d142`, on `codex/banking-ux`. Pending T05.1 remains in the original checkout. UX01 does not enable support submission or financial mutations. Approval, commit/push and resuming P05 remain pending user review.
+
+## Data and execution
+
+`api/workspace.py` exposes authenticated account/card/loan pages, automatic chat preparation and chat-message acceptance. `store/banking_workspace.py` uses the existing RLS providers. Each category loads independently with pages of20 and explicit unavailable states. Accounts/loans use stored names; only cards display actual last-four digits. UUIDs remain request references, not account numbers.
+
+`resource_selection={kind,id,version}` is additive to the old account `selection` shape. Acceptance and execution verify ownership/version. Session-scoped server context retains an active product and at most20 latest result references for15minutes. Source sequence prevents late older results from replacing newer context. Clarifications publish a null marker rather than accidentally retaining an old category. Erasure removes dependent context; session rotation/logout clear mappings. A follow-up always re-reads bank data. Context never authorizes a foreign read or turns remembered amounts into current evidence.
+
+Greetings, scope questions, policy reads and same-product details retain the latest displayed list; selecting a different product/category replaces it. Erasure dependency chains are also bounded at20 sources; after that conservative limit, select the product explicitly again. New migration0029 is checked out with LF via `.gitattributes` so new recorded bytes stay stable across Windows worktrees. During a bank DB outage, session revocation still succeeds: optional SQL cleanup is time-bounded/best-effort, and any remaining row is inaccessible under its revoked binding and logically expires. A later login cannot inherit it.
+
+`graphs/workspace.py` handles bounded local intents and checked blocks, sharing `RunStore` deadlines, persisted reservations and source-fenced publication with the existing worker. Greetings, product discovery/taps and ordinary balance/history requests require no model. More unusual requests may use the existing minimized structured planner. Policy questions retain H01 locale/scope/time binding. Optional SDK errors preserve a checked answer; planning errors terminate safely instead of repeatedly reclaiming the lease.
+
+The optional wording model selects audited conversational framing and an offered follow-up action. It receives the read operation/status/block kinds and available phrases/actions, not authority to rewrite balances or payment/policy conclusions. Invalid JSON, altered amounts, invented causes, eligibility promises or extra claims fail closed. **This is deliberately constrained framing, not free-form generated financial explanation.** The checked renderer remains the explanation authority. English/Hindi are supported; source names, ISO dates, currency codes and status tokens may remain literal. Some existing Settings labels remain English.
+
+`WorkspaceChat.tsx` retains the original pending request ID across unknown acknowledgement/reload, checks session generation before rendering delayed replies, and merges source-backed turn/preference history. The visible chat uses durable status polling (1.8seconds), not unchecked financial token streaming. Existing SSE endpoints and durable replay remain available. Preferences use the existing entire-message typed grammar and durable receipts; Saved means persisted. Response-only commands retain the existing event-scoped preview semantics rather than becoming a permanent next-chat setting.
+
+Chat scrolling follows reader intent: identical history refreshes never trigger a scroll. Changed content follows only while the reader is within64pixels of the bottom; scrolling up preserves the reading position. Sending an explicit new question resumes following the latest turn. `node scripts/ux_scroll_check.cjs` checks this in the actual UI with synthetic HTTP fixtures, including mobile and incoming/updated replies; it is separate from real OIDC/bank-data browser evidence.
+
+## Local operation
+
+Use the existing private `.genesis/local/p01/runtime.env`, private `infra/.env` and existing Docker services. Do not reset the demo to try this UI. Feature flags: `BANK_WORKSPACE_ENABLED=true`, plus existing turns/cards/loans/policies flags. The default workspace feature flag is false until deliberately enabled.
+
+Install only the additive UX migration with `python scripts/ux_upgrade.py`. If an existing Windows checkout has mixed newline bytes, supply `--recorded-migrations <original-checkout>/store/banking_migrations`. This verifies each original recorded hash and equality after newline normalization. It never rewrites earlier migration files/checksums or reapplies pending0028. Different SQL content aborts. Ordinary `banking_migrate.apply` retains its strict checksum behavior.
+
+Run a single compatible worker version per `BANK_NAMESPACE`. The review API is on127.0.0.1:8001, the HTTPS frontend onlocalhost:3443. The earlier baseline API/frontend were stopped after verified process inspection; their source checkout remains intact. To roll back the runtime, stop the verified UX API/frontend processes, then use the original checkout's existing launcher. No down migration or resource deletion is required.
+
+On this Windows machine, a dependency junction across D: and C: prevented Next bundling. A private same-drive build copy under `.genesis/local/ux-ui` contains byte-matched tracked frontend files and its own locked dependencies. `scripts/ux_check.py` verifies source equality before typechecking that copy. This directory and runtime credentials are ignored, not shipped as alternate application source.
+
+**Live evaluation is closed.** The local review API injects a transport that refuses paid calls. Checked actions still work; optional wording falls back and model-dependent policy/unusual-language planning can return unavailable. Re-enabling paid evaluation requires a new user-authorized allowance. The configured model was non-Astra; no Astra was used.
+
+## Verification and honest limits
+
+`python scripts/ux_check.py` runs the guarded Docker-backed UX/P04/oracle regressions and TypeScript check. It does not certify human review or dispatch paid models. `node scripts/ux_browser_check.cjs` exercises real local OIDC/UI/API with private fixture credentials and concise conversation settings. It is a normal-demo browser operator, not a bank-data mock. It intentionally creates conversations/preferences and signs out its sessions; it does not change financial rows. Tests that need data mutation use guarded trial databases.
+
+The independent non-Astra verifier received a fresh behavioral contract and operator only, without application/test source or maker results. It found selection-priority, friendly-name, stale-category and underscore-policy-routing defects; fixes were independently retested. Its reports distinguish instructional isolation from an OS sandbox. Scripted SDK dispatch counts are not paid calls.
+
+The user authorized20 live attempts. The counted evaluator reserved20:18 configuration failures before a provider answer and2 successful English/Hindi framing calls. A still-running old worker then claimed one real-browser UX turn and made another successful model call. **The true total is21, exceeding the authorized limit by1.** This mistake is retained in `UX01-live-overrun.json`; the old worker was stopped and further review transport blocked. The overrun is not presented as compliance with the budget.
+
+Two successful counted wording samples measured approximately1.0second model time and1.5–1.7seconds end-to-end. These are warm local samples, not an SLA or demonstrated improvement. Cold SDK/scanner setup produced safe fallback in earlier scripted runs; the independent operator now warms nonpaid metadata/scanner setup before short-deadline behavioral checks. Product/provider, checked-answer and wording timings remain separate in local receipts. Broad naturalness/task-completion quality is not established by two successful live samples. Native Hindi IME, full accessibility certification and production load behavior remain uncertified.
+
+See [manual journeys](MANUAL_TEST_SCENARIOS.md#12-ux01--click-based-workspace-journeys) and [.genesis/UX01.md](../.genesis/UX01.md) for the current review/evidence status. Raw run receipts/screenshots are retained locally under ignored evidence/output directories; links are retrieval pointers, not a claim those files are committed.

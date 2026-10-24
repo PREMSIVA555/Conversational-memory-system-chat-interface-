@@ -6,8 +6,8 @@ from fastapi import Depends,HTTPException,Request
 from fastapi.responses import StreamingResponse
 from store.banking_turns import Turns,TurnRequest
 
-def install(app,database,principal,mutation,*,enabled=True,run_seconds=10):
-    turns=Turns(database,run_seconds=run_seconds);app.state.turns=turns
+def install(app,database,principal,mutation,*,enabled=True,run_seconds=10,workspace_enabled=False):
+    turns=Turns(database,run_seconds=run_seconds,workspace_enabled=workspace_enabled);app.state.turns=turns
     app.state.turn_acceptance_enabled=enabled
     base='/api/v1/conversations/{conversation_id}/turns'
     @app.post(base,status_code=202)

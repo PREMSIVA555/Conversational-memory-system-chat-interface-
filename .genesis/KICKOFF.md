@@ -6,7 +6,7 @@
 - phase/status: verify/ready
 - active task: none
 - blocker: none
-- next action: H01 approved and closed. Await user instruction before starting subsequent work.
+- next action: Review completed work and choose the next bounded outcome.
 - phase instruction: Work only on the active bounded task. Check `genesis query . impact PATH` before editing shared code.
 
 ## Resume

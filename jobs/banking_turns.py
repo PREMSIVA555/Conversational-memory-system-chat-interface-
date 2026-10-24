@@ -33,7 +33,8 @@ class TurnWorker:
         async with self.database.worker.connection() as c:
             async with c.transaction():
                 await c.execute("SELECT set_config('bank.customer_id',%s,true)",(str(row['customer_id']),))
-                return (await (await c.execute('SELECT banking.finish_turn(%s,%s,%s) AS ok',(row['id'],row['generation'],Jsonb(result)))).fetchone())['ok']
+                method='finish_workspace_turn' if row['request'].get('workspace') else 'finish_turn'
+                return (await (await c.execute(f'SELECT banking.{method}(%s,%s,%s) AS ok',(row['id'],row['generation'],Jsonb(result)))).fetchone())['ok']
     async def one(self):
         async with self.database.worker.connection() as c:
             row=await (await c.execute('SELECT * FROM banking.claim_turn(%s)',(self.database.sessions.settings.namespace,))).fetchone()
@@ -71,7 +72,11 @@ class TurnWorker:
                     value=await self.provider.get_account(context,selection['account_id'])
                     if value.source.version!=selection['version']:
                         result=dict(status='unavailable',text='The selected account changed. Please select it again.',evidence=[])
-                if result is None:
+                if result is None and row['request'].get('workspace'):
+                    from graphs.workspace import WorkspaceCoordinator
+                    request={**row['request'],'text':source['payload']['text']}
+                    result=await WorkspaceCoordinator(self.database,SourceScopedProvider(self.database,self.provider,row['source_id']),self.transport,run_seconds=self.coordinator.run_seconds).run(context,row,request)
+                elif result is None:
                     prefs=row['request']['preferences'];instructions=row['request']['instructions']
                     coordinator=AccountCoordinator(self.database,SourceScopedProvider(self.database,self.provider,row['source_id']),self.transport,run_seconds=self.coordinator.run_seconds)
                     result=await coordinator.run(context,str(row['run_id']),coordinator_request,
