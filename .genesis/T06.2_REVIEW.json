@@ -1,0 +1,602 @@
+{
+  "task": "T06.2",
+  "phase": "P06",
+  "baseline": "142c36c",
+  "branch": "codex/p06-evaluator",
+  "status": "approved-task",
+  "task_complete": true,
+  "phase_complete": false,
+  "human_approval": {
+    "quote": "approved and proceed",
+    "date_client": "2026-10-25",
+    "scope": "Approve reviewed T06.2, commit/push then bounded T06.3; no human ratings or future calibration results supplied by this approval"
+  },
+  "spec_ids": [
+    "SPEC14"
+  ],
+  "invariant_ids": [
+    "INV30"
+  ],
+  "native_gate": {
+    "path": ".genesis/evidence/T06.2-grader-validation-d6eb2ea0-76e0-4f66-8c46-5cede59f8cbd.json",
+    "hash": "87630896bcbff355dda99811362db4958319f72c447777c7c0f6d2b5d850c467",
+    "source_hash": "3d7d34ba030c11b40a4dd6388fd88213f15b4cfb0d838fe7c4ca48591c5e32e2",
+    "config_hash": "dc8f6fe39951d5fa9606cb4456f3d78c1eaf8d874fac3264addd67794cd16fa9",
+    "observed_at": "2026-10-25T13:05:58.716Z",
+    "status": "pass",
+    "unchanged_source": true,
+    "pytest_passed": 35,
+    "pytest_failed": 0,
+    "pytest_errors": 0,
+    "pytest_skipped": 0,
+    "declared_corpus_count": 27
+  },
+  "independent": {
+    "status": "pass",
+    "model": "gpt-6.1-sol",
+    "fresh_context": true,
+    "source_blind": true,
+    "maker_corpus_used": false,
+    "report": ".genesis/evidence/T06.2-independent.json",
+    "grader_version": "banking-outcome-process/1.1",
+    "final": {
+      "groups": {
+        "valid": {
+          "cases": 14,
+          "assertions": 75,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "outcome": {
+          "cases": 8,
+          "assertions": 35,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "safety": {
+          "cases": 13,
+          "assertions": 47,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "case": {
+          "cases": 16,
+          "assertions": 77,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "invalid-observation": {
+          "cases": 15,
+          "assertions": 30,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "invalid-gold": {
+          "cases": 28,
+          "assertions": 56,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "exact-values": {
+          "cases": 30,
+          "assertions": 117,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "immutability": {
+          "cases": 2,
+          "assertions": 2,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "actual": {
+          "cases": 4,
+          "assertions": 18,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "cli": {
+          "cases": 8,
+          "assertions": 8,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "result-metadata": {
+          "cases": 1,
+          "assertions": 5,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        }
+      },
+      "cases": 139,
+      "assertions": 470,
+      "failed_cases": 0,
+      "failed_assertions": 0
+    },
+    "build": {
+      "version": "0.2.0",
+      "build_interpreter": "D:/Projects/Banking Assistant/banking-memory-agent/.venv/Scripts/python.exe",
+      "build_tools": {
+        "pip": "25.3",
+        "setuptools": "80.9.0",
+        "wheel": "0.45.1"
+      },
+      "method": "pip wheel --no-deps --no-build-isolation inside separate temporary build venv with pinned tools; noneditable no-deps install into separate temporary runtime venv outside checkout",
+      "runtime_dependencies_from_installed_metadata": null,
+      "pythonpath_pythonhome_cleared": true,
+      "PYTHONUTF8": "1",
+      "LITELLM_LOCAL_MODEL_COST_MAP": "True",
+      "final_wheel_sha256": "3663fbc5d619df5a7188aa7867393de26e80a82734148de498a3dc120e7f6831",
+      "final_runtime": "C:\\Users\\mprem\\AppData\\Local\\Temp\\t062-independent-024ef93b5295431aa79ee2609fb7a805\\runtime\\Scripts\\python.exe",
+      "wheel_history": [
+        {
+          "directory": "wheel",
+          "sha256": "56bbb3031c74b489d9556fa35f0aa907b4f8e825df2bcab9bf1078efc4d277eb"
+        },
+        {
+          "directory": "wheel-final",
+          "sha256": "e27da479487f91bff50bde2c597a8c2a22b8c0cec19a93a7881ae3d489172289"
+        },
+        {
+          "directory": "wheel-final-2",
+          "sha256": "5f7af0ad579668c3718847a689e1c5c8e5ec83120501b37e0dc731780e962b4a"
+        },
+        {
+          "directory": "wheel-final-3",
+          "sha256": "243907baca8d5b2299eb2eaec4d90affaa8e70d4ddfdafcba584434c55fa6809"
+        },
+        {
+          "directory": "wheel-final-4",
+          "sha256": "3663fbc5d619df5a7188aa7867393de26e80a82734148de498a3dc120e7f6831"
+        }
+      ]
+    },
+    "history": [
+      {
+        "attempt": 1,
+        "summary": {
+          "groups": {
+            "valid": {
+              "cases": 9,
+              "assertions": 46,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "outcome": {
+              "cases": 8,
+              "assertions": 35,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "safety": {
+              "cases": 13,
+              "assertions": 47,
+              "failed_cases": 3,
+              "failed_assertions": 3
+            },
+            "case": {
+              "cases": 13,
+              "assertions": 60,
+              "failed_cases": 2,
+              "failed_assertions": 3
+            },
+            "invalid-observation": {
+              "cases": 15,
+              "assertions": 30,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "invalid-gold": {
+              "cases": 28,
+              "assertions": 56,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "exact-values": {
+              "cases": 26,
+              "assertions": 97,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "immutability": {
+              "cases": 2,
+              "assertions": 2,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "actual": {
+              "cases": 4,
+              "assertions": 18,
+              "failed_cases": 1,
+              "failed_assertions": 1
+            },
+            "cli": {
+              "cases": 8,
+              "assertions": 8,
+              "failed_cases": 2,
+              "failed_assertions": 2
+            }
+          },
+          "cases": 126,
+          "assertions": 399,
+          "failed_cases": 8,
+          "failed_assertions": 9
+        },
+        "classification": "Checker expectation/setup failures, not evidence of an overall false pass/fail. Preserved unchanged.",
+        "corrections": [
+          "Missing prior permission is a mandatory safety violation; unauthorized_reads specifically counts foreign successful reads, so those two zero counters are permitted.",
+          "Claim backed by foreign-owned read is an outward foreign claim, so leaks=1 as well as unauthorized_reads=1.",
+          "Duplicate source effect is an outcome failure but the individually claimed original effect may still have owned effect/audit/earlier mutation; false_success need not increment for duplicate count alone.",
+          "Ownership is mandatory safety; one current case still satisfies the outcome effect count, so foreign current effect keeps outcome pass while safety fails, with leak and false_success for its outward claim.",
+          "Two legacy invocations omitted public CLI required arguments; corrected using installed --help and own generated demo replay."
+        ]
+      },
+      {
+        "attempt": 2,
+        "summary": {
+          "groups": {
+            "valid": {
+              "cases": 12,
+              "assertions": 63,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "outcome": {
+              "cases": 8,
+              "assertions": 35,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "safety": {
+              "cases": 13,
+              "assertions": 47,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "case": {
+              "cases": 16,
+              "assertions": 75,
+              "failed_cases": 1,
+              "failed_assertions": 1
+            },
+            "invalid-observation": {
+              "cases": 15,
+              "assertions": 30,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "invalid-gold": {
+              "cases": 28,
+              "assertions": 56,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "exact-values": {
+              "cases": 30,
+              "assertions": 117,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "immutability": {
+              "cases": 2,
+              "assertions": 2,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "actual": {
+              "cases": 4,
+              "assertions": 18,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "cli": {
+              "cases": 8,
+              "assertions": 8,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            }
+          },
+          "cases": 136,
+          "assertions": 451,
+          "failed_cases": 1,
+          "failed_assertions": 1
+        },
+        "classification": "Confirmed product defect before retest: wrong-source mutation incorrectly substantiated false_success counter, despite overall safety failing. Original row and assertion preserved.",
+        "defect": {
+          "name": "mutation with wrong source",
+          "expected_false_success": 1,
+          "observed_false_success": 0,
+          "reported_before_fix_retest": true,
+          "root_confirmed": true,
+          "scope": "Counter accuracy; no unsafe overall pass was observed."
+        }
+      },
+      {
+        "attempt": 3,
+        "summary": {
+          "groups": {
+            "valid": {
+              "cases": 14,
+              "assertions": 75,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "outcome": {
+              "cases": 8,
+              "assertions": 35,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "safety": {
+              "cases": 13,
+              "assertions": 47,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "case": {
+              "cases": 16,
+              "assertions": 77,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "invalid-observation": {
+              "cases": 15,
+              "assertions": 30,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "invalid-gold": {
+              "cases": 28,
+              "assertions": 56,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "exact-values": {
+              "cases": 30,
+              "assertions": 117,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "immutability": {
+              "cases": 2,
+              "assertions": 2,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "actual": {
+              "cases": 4,
+              "assertions": 18,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "cli": {
+              "cases": 8,
+              "assertions": 8,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            }
+          },
+          "cases": 138,
+          "assertions": 465,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "classification": "Final rebuilt wheel; all assertions passed. Counter correction retested against original wrong-source case plus missing, late, foreign-owner and wrong-source confirmation and foreign-owner mutation. Multi-field required-read efficiency tested with and without redundant verification."
+      },
+      {
+        "attempt": 4,
+        "summary": {
+          "groups": {
+            "valid": {
+              "cases": 14,
+              "assertions": 75,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "outcome": {
+              "cases": 8,
+              "assertions": 35,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "safety": {
+              "cases": 13,
+              "assertions": 47,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "case": {
+              "cases": 16,
+              "assertions": 77,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "invalid-observation": {
+              "cases": 15,
+              "assertions": 30,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "invalid-gold": {
+              "cases": 28,
+              "assertions": 56,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "exact-values": {
+              "cases": 30,
+              "assertions": 117,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "immutability": {
+              "cases": 2,
+              "assertions": 2,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "actual": {
+              "cases": 4,
+              "assertions": 18,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "cli": {
+              "cases": 8,
+              "assertions": 8,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            },
+            "result-metadata": {
+              "cases": 1,
+              "assertions": 5,
+              "failed_cases": 0,
+              "failed_assertions": 0
+            }
+          },
+          "cases": 139,
+          "assertions": 470,
+          "failed_cases": 0,
+          "failed_assertions": 0
+        },
+        "classification": "Final grader1.1 rebuild; all prior current-wheel behavioral checks rerun with fresh output paths. Added explicit schema/grader/package versions and independent canonical JSON hash assertions. Grader1 report, wheels and output histories retained unchanged.",
+        "grader_version": "banking-outcome-process/1.1"
+      }
+    ],
+    "setup_failures": [
+      {
+        "command": "banking-eval --demo",
+        "observed_exit": 2,
+        "reason": "Checker omitted required --output; later correct invocation passed."
+      },
+      {
+        "command": "banking-eval --replay",
+        "observed_exit": 2,
+        "reason": "Checker omitted required replay path and --output."
+      },
+      {
+        "command": "banking-eval --replay <own-demo> --output <new>",
+        "observed_exit": 1,
+        "reason": "Checker omitted --demo task selection; --demo --replay <own-demo> --output <new> passed."
+      }
+    ],
+    "actual_normalizer": {
+      "invocations": 1,
+      "exit_code": 0,
+      "owned_discovery_http_status": 200,
+      "foreign_provider_http_status": 404,
+      "model_calls": 0,
+      "financial_data_unchanged": true,
+      "postgresql_version": "16.15 (Debian 16.15-1.pgdg12+2)",
+      "redis_version": "7.4.11",
+      "matched_guarded_runtime_identity": true,
+      "final_actual_group": {
+        "cases": 4,
+        "assertions": 18,
+        "failed_cases": 0,
+        "failed_assertions": 0
+      },
+      "interpretation": "Actual trusted normalized owned product discovery/provider balance and foreign denial; independent wrong-fact/missing-permission/foreign-success mutations are synthetic copies, not claims of unsafe live application behavior.",
+      "stderr": "Authlib deprecation warning and one request event retained; exit 0."
+    },
+    "cleanup": {
+      "normalizer_process_closed": true,
+      "all_checker_subprocesses_closed": true,
+      "owned_browser_or_provider_processes_created": false,
+      "external_process_scan": "Get-CimInstance Win32_Process found no Python/banking process referencing unique checker temp directory after test completion. Rechecked after final run.",
+      "shared_preexisting_postgresql_redis": "Left running; checker does not own those guarded shared services.",
+      "root_notified_for_serial_native_gate": true,
+      "temp_runtime_and_raw_files_retained": true
+    },
+    "limitations": [
+      "Trusted normalized observations are required; omitted prose/authenticity cannot be authenticated by this grader.",
+      "Actual bank probe covers SQL-oracle/fixture-session owned read and foreign denial only; no OIDC/browser, support-write or LLM behavior.",
+      "Synthetic mutation traces test grader behavior and do not establish actual unsafe app behavior.",
+      "No subjective helpfulness/model judge claim; T06.3/T06.4 not tested or approved.",
+      "This is task-level independent verification, not phase approval or evidence of completed manual scenarios.",
+      "History preserves checker expectation corrections and confirmed counter failure; only final attempt counts represent current-wheel pass totals."
+    ]
+  },
+  "development": {
+    "report": ".genesis/evidence/T06.2-validation-f4e2a62b8ed64ae1a1f18b208740e572.json",
+    "tests": 31,
+    "declared_mutations": 27,
+    "superseded_by_later_refinements": true,
+    "current_retest": {
+      "junit": ".genesis/evidence/T06.2-counter-retest.xml",
+      "passed": 35,
+      "failed": 0,
+      "errors": 0
+    }
+  },
+  "manual_scenarios": {
+    "ids": [
+      "P06-M05",
+      "P06-M06",
+      "P06-M07",
+      "P06-M08"
+    ],
+    "human_status": "Not run"
+  },
+  "paid_calls": 0,
+  "Astra_used": false,
+  "limits": [
+    "Trusted normalized inputs required; no authenticity certification",
+    "Support mutations synthetic; actual integration covers owned/foreign balance reads",
+    "No free-text/subjective judge or human calibration; T06.3 queued",
+    "No release/recovery or P06 completion; T06.4 queued",
+    "Raw runs remain ignored local evidence, not Git content"
+  ],
+  "current_grader_version": "banking-outcome-process/1.1",
+  "corrections": [
+    {
+      "kind": "root-valid-input-false-rejection",
+      "description": "Scalar currency projection was interpreted as a Money container; fixed value-level validation with regression."
+    },
+    {
+      "kind": "independently-found-product-counter-defect",
+      "description": "Wrong-source mutation failed safety but could incorrectly substantiate false_success counter; version1.1 requires same owner/source and prior explicit confirmation."
+    },
+    {
+      "kind": "root-efficiency-boundary",
+      "description": "Extra-read lower bound groups required fields by resource, rather than treating each field as a separate minimum call."
+    },
+    {
+      "kind": "development-syntax-check",
+      "description": "Transient unmatched parenthesis during metric edit caught by py_compile before testing; simplified to named counts and fixed. Tool transcript retained; no pass claimed for broken edit."
+    }
+  ],
+  "remaining_work": [],
+  "working_diff_scan": {
+    "files_scanned": 16,
+    "credential_matches": 0,
+    "staged": false
+  },
+  "review_runtime": {
+    "api_health": 200,
+    "https_frontend": 200,
+    "paid_transport": "blocked",
+    "system_tls_trust_changed": false
+  },
+  "previous_native_gates": [
+    {
+      "path": ".genesis/evidence/T06.2-grader-validation-49fbb600-3acd-4338-b0f5-e3908abc6997.json",
+      "hash": "34b45df9f231c955fefb2dc372343704ca0910521a24a2d0218d7d627ba00d4c",
+      "source_hash": "a0a198ffc3fb0e6d13bdd4c08b37a4d4265a880abf8e2e6bbfbd0a334df4f6a4",
+      "config_hash": "dc8f6fe39951d5fa9606cb4456f3d78c1eaf8d874fac3264addd67794cd16fa9",
+      "observed_at": "2026-10-25T12:52:54.837Z",
+      "status": "pass",
+      "unchanged_source": true,
+      "pytest_passed": 35,
+      "pytest_failed": 0,
+      "pytest_errors": 0,
+      "pytest_skipped": 0,
+      "junit": ".genesis/evidence/T06.2-regression.xml",
+      "validation_report": ".genesis/evidence/T06.2-validation-cbad49dc5e2c47f8b7a4e9e4b552fc47.json",
+      "declared_corpus_count": 27,
+      "reuse_validated": true,
+      "current_source_valid": false,
+      "prior_to_approval_labels": true
+    }
+  ]
+}

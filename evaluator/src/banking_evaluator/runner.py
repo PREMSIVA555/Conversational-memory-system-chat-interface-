@@ -38,5 +38,5 @@ def run(task, adapter):
         grade = Grade('unknown', 'Operator/infrastructure failed; no success claim')
     return RunManifest(run_id,datetime.now(timezone.utc).isoformat(),task.id,digest(asdict(task)),
         dict(name=adapter.name,kind=adapter.kind),{**identities,'grader':grade.grader_version},reset,
-        dict(python=platform.python_version(),platform=platform.platform(),evaluator='0.1.0'),
+        dict(python=platform.python_version(),platform=platform.platform(),evaluator='0.2.0'),
         ObservableTrace(events),FinalState(state),grade,raw,digest(raw) if raw is not None else None,error)
