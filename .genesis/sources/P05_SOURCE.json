@@ -1,0 +1,16 @@
+{
+  "manifest": {
+    "source_path": "C:\\Users\\mprem\\Documents\\Codex\\2026-10-17\\https-antern-co-evidence-portfolio-https\\outputs\\banking-implementation-plan\\PLAN_READER.html",
+    "source_sha256": "9f59fb49a54ea305387465fb606deca567d8118d7e296f7edee8605559ba70fd",
+    "scope": "Resume T05.1 workspace integration only; T05.2 follows actual approval, later phases unchanged",
+    "authorization": "User: start ... immediate next task T05.1 workspace integration",
+    "recorded_at": "2026-10-24T14:11:48.403397+00:00",
+    "preserved_migration_sha256": "a5524ae716c6d351d3da5aec7fba6a3c232776984c8926307cc0209ca5f53692"
+  },
+  "planned_tasks": [
+    " T05.1 · Create support draft and preview state machine  P05 · depends on T04.4 · planned  UX03, BD03, SP04  SPEC10, INV05, INV24   Implementation  Persist immutable owned session-bound proposal, payload hash/expiry, editable preview creates new version and cancels old; dedicated confirmation path.  Acceptance gate  Expired/cancelled/edited/cross-session preview cannot execute; model registry cannot confirm.  Evidence target  evidence/support/<run-id>/proposal/  ",
+    " T05.2 · Implement atomic confirm and stable replay  P05 · depends on T05.1 · planned  BD03, RE03, AU01, AU02  SPEC10, SPEC11, INV17, INV18, INV19, INV28   Implementation  Single DB transaction for case/proposal/audit/receipt/outbox; unique source/proposal and same-key hash semantics; replay access checks.  Acceptance gate  Double submit, different keys/payload, audit insert failure and after-replay-expiry uniqueness.  Evidence target  evidence/support/<run-id>/confirm-atomicity/  ",
+    " T05.3 · Implement unknown-outcome UI and continuity  P05 · depends on T05.2 · planned  UX01, UX03, RE03, BD03  SPEC10, INV06, INV20   Implementation  Expose authenticated operation/proposal reconciliation and truthful checking state; fresh case status next session, admin/fixture-only status advance.  Acceptance gate  Connection loss around commit resolves original case; never mint new key automatically; old receipt does not become current status.  Evidence target  evidence/support/<run-id>/reconciliation/  ",
+    " T05.4 · Execute complete designed journey with faults  P05 · depends on T05.3 · planned  EV01, UX01, MM02, BD03, AU01  SPEC10, SPEC13, INV11, INV17, INV18, INV20   Implementation  Convert original 30-step dry run to executable synthetic scenario: card decline, clarification, language correction, support confirmation, retry and next-day follow-up.  Acceptance gate  One owned case/audit, Hindi survives older English, next-day fresh status, no unauthorized or invented evidence.  Evidence target  evidence/scenarios/<run-id>/complete-journey/  "
+  ]
+}

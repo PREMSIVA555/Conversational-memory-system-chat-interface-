@@ -1,0 +1,99 @@
+{
+  "task": "T05.1",
+  "phase": "P05",
+  "status": "approved-task",
+  "recorded_at": "2026-10-24T14:51:27.337776+00:00",
+  "branch": "codex/p05-workspace",
+  "approved_baseline": "2a9f200cbce857663081a8e29d4c9d79b2487fff",
+  "spec_ids": [
+    "SPEC10"
+  ],
+  "invariant_ids": [
+    "INV05",
+    "INV24"
+  ],
+  "human_approval": {
+    "quote": "approved, proceed",
+    "date": "2026-10-25",
+    "scope": "T05.1 workspace integration; proceed T05.2"
+  },
+  "phase_complete": false,
+  "commit_push": "Approved T05.1 task checkpoint; P05 remains partial",
+  "native_gate": {
+    "path": ".genesis/evidence/T05.1-proposal-regression-96493191-6713-457b-8305-ff3f32e68dc6.json",
+    "hash": "e312f457a973ea4ea9a67aa95f3cbd9f21cf150c237de3e9e4dd379e8ddee15f",
+    "source_hash": "142cb9f503d5bfbfca9fbdc250c2748ca83afe8f8e852103ad3fcb0d44618111",
+    "config_hash": "33262148df30e5b1ef0a0195f1ee2cace1c3f799fd61e1ece3506588969f10ce",
+    "observed_at": "2026-10-24T14:50:04.437Z",
+    "unchanged_source": true,
+    "pytest_passed": 156,
+    "pytest_failures": 0,
+    "pytest_errors": 0,
+    "pytest_skipped": 0,
+    "typescript_exit": 0,
+    "junit": ".genesis/evidence/T05.1-workspace-regression.xml"
+  },
+  "independent_backend": {
+    "report": ".genesis/evidence/T05.1-workspace-independent.json",
+    "counts": {
+      "top_level_steps": 213,
+      "leaf_actions": 237,
+      "checks": 214,
+      "passed": 214,
+      "failed": 0,
+      "note": "Actions/assertions are not unique end-to-end scenarios. Expanded coverage includes ten create/erase and ten edit/erase races, plus original workspace edit/erase race."
+    },
+    "erasure_races": 21,
+    "fresh_behavioral_context": true,
+    "implementation_tests_operator_source_maker_results_read": false,
+    "Astra_used": false
+  },
+  "independent_ui": {
+    "report": ".genesis/evidence/T05.1-workspace-ui-independent.json",
+    "counts": {
+      "checks": 19,
+      "passed": 19,
+      "failed": 0,
+      "synthetic_preview_chains_created": 3,
+      "preview_versions_created": 4
+    },
+    "actual_OIDC_HTTPS_API": true,
+    "created_drafts_cancelled": true
+  },
+  "maker_browser": {
+    "report": ".genesis/evidence/T05.1-workspace-browser.json",
+    "passed": 16,
+    "errors": 0,
+    "faults": [
+      "Injected expired GET response; actual DB expiry is tested separately in guarded worlds",
+      "Dropped acknowledgement only after actual201 persisted",
+      "Injected empty/unavailable category pages and split actual owned account page into two UI pages; no financial data changed"
+    ],
+    "limits": [
+      "No real case submission or financial mutation",
+      "Expired UI status is an injected GET response; actual clock/erasure/ownership are separately verified in guarded SQL/HTTP worlds",
+      "Lost/delayed response faults retain actual persisted mutations",
+      "Native touch/IME and full accessibility certification are not claimed",
+      "Final delayed A draft remains session-inaccessible and expires normally; no direct SQL cleanup or demo reset"
+    ]
+  },
+  "retained_failures": [
+    ".genesis/evidence/T05.1-workspace-independent-first-failure.json",
+    ".genesis/evidence/T05.1-workspace-browser-selector-failure.json",
+    ".genesis/evidence/T05.1-workspace-browser-category-harness-failure.json"
+  ],
+  "correction": "Real independent edit/erasure retention race corrected in additive0030 using shared customer lock; real pre0030 residue repair test passed;0028 bytes and0029 preserved.",
+  "local_upgrade": ".genesis/evidence/T05.1-workspace-demo-upgrade.json",
+  "paid_provider_requests": 0,
+  "paid_transport": "blocked; UX01 historical21/20 overrun preserved; mixed scripted operator can count a blocked SDK invocation",
+  "manual_guide": "docs/MANUAL_TEST_SCENARIOS.md P05-M01 through P05-M08; human runs Not run",
+  "limits": [
+    "Behavioral independence is instructional, not an OS sandbox or source audit",
+    "No real case submission or financial mutation",
+    "Expired/empty/unavailable/pagination browser faults are labelled; actual expiry/ownership/erasure use guarded private Docker worlds",
+    "No production SLA, full accessibility or native IME certification",
+    "Raw receipts/screenshots retained locally and ignored, not claimed committed",
+    "Original pending P05 checkout and earlier review evidence preserved"
+  ],
+  "next": "Actual human review/approval of T05.1 before T05.2 atomic confirmed case creation; later tasks queued."
+}

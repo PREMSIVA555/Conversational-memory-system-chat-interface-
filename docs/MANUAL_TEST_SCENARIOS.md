@@ -19,13 +19,13 @@ Last updated: **2026-10-24, Asia/Calcutta**. This is the cumulative guide for te
 | P05 / T05.2–T05.4 | Queued | Atomic case submission, replay, uncertain-outcome recovery and complete support journey |
 | P06–P08 | Not started | Reusable evaluator, release comparisons and later maintenance |
 
-Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) is developed from the approved H01 baseline in branch `codex/banking-ux`. Pending T05.1 code and receipts remain in the original `feat/banking-support-extension` checkout; support previews are not part of this UX review runtime. The P05 rows above describe that preserved checkout, not UX approval.
+Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) was approved and pushed as `2a9f200`. T05.1 workspace integration develops on `codex/p05-workspace` from that approved baseline; the original `feat/banking-support-extension` checkout and its receipts remain preserved. T05.1 approved 2026-10-25; P05 is incomplete.
 
-T05.1's native gate passed 15 tests. Its independent verifier passed 90 behavioral assertions plus 21 environment/preservation assertions across seven scenario runs. A separate 75-test regression run had 73 passes and two timing failures; both failed checks passed a targeted rerun. This is not a claim of a single all-green 75-test run. Its browser check used intercepted API replies; API/persistence checks were separate. Historical receipts do not count as your manual results.
+Historical pre-UX T05.1: native gate15 passes; independent90 behavioral plus21 environment assertions; a75-test run had73 passes/two timing failures, both passed targeted reruns. That earlier browser used intercepted replies. Current integration has separate real OIDC/UI/API checks and a fresh non-Astra backend retest with214 passing assertions after an erasure-race correction. See the current [P05 review](../.genesis/P05.md) for final gate/browser results and limits. None of these automated results count as your manual runs.
 
 ## 2. Before you test
 
-1. Open **https://localhost:3443/**. Use the existing local setup; do not run setup/reset scripts just to test. If the service is down, follow the existing [runbook](P01_RUNBOOK.md) and current Genesis handoff. T05.1 previews need migration 0028 and `BANK_SUPPORT_ENABLED=true`; the latest review launcher enables this only in its local process, so a different restart can disable it.
+1. Open **https://localhost:3443/**. Use the existing local setup; do not run setup/reset scripts just to test. If the service is down, follow the existing [runbook](P01_RUNBOOK.md) and current Genesis handoff. T05.1 previews need migrations0028/0029/0030 and `BANK_SUPPORT_ENABLED=true`; the latest review launcher enables this only in its local process, so a different restart can disable it. Paid evaluation remains closed; use product buttons and local Help rather than model-dependent questions.
 2. Use the fictional users **customer-a** and **customer-b**. Their passwords are stored privately in `.genesis/local/p01/config.json`, under `users`. Do not paste passwords into this document or chat questions.
 3. Use a normal browser for A and a separate private window/profile for B. Two tabs in one profile share login cookies and do not represent two independent sessions.
 4. The UX workspace prepares a conversation automatically. Use **New chat** for another. Open **Settings** for preferences, or send `Reply in English for this conversation` and `Be concise for this conversation`. No conversation dropdown or typed account number is needed. Restore conversation preferences after checks.
@@ -241,7 +241,7 @@ These are task-level review scenarios. P05 is not complete. No scenario below ex
 ### P05-M01 — save an exact preview
 
 - **User/setup:** A; use a finished question created in the current login. Prefer the savings balance question from P03-M02.
-- **Steps:** Click **Support request preview** below the question. Choose **General**. Enter `Synthetic test: please review my declined card transaction.` Click **Save preview**.
+- **Steps:** Click the savings product's **Balance** action, wait for the answer, then click **Get help with this**. Its account should already be selected by name. Choose **General** for this scenario. Enter `Synthetic test: please review my declined card transaction.` Click **Save preview**.
 - **Expected:** Status **pending**, **Version 1**, topic general, exact saved issue text and an expiry approximately 15 minutes after creation. The UI states **Case submission is not available yet.** Refresh the saved preview and verify the same ID/version/text through the browser Network response if needed.
 - **Fail if:** It claims a case was opened, or shows different saved text/source.
 - **Cleanup:** Keep it pending for P05-M02.
@@ -255,10 +255,10 @@ These are task-level review scenarios. P05 is not complete. No scenario below ex
 
 ### P05-M03 — owned versus foreign resource
 
-- **Steps:** On a new current-session question, open the preview, choose **Card**, enter A's card reference `c01dd160-ca56-5853-965a-bba60f7dca28`, add a synthetic issue and save. On another new question, try B's card reference `1fba3089-3ecc-5bce-94fb-9ecedbaa0b84` while still signed in as A.
-- **Expected:** A's owned reference saves and appears exactly in the preview. B's reference is rejected with a safe error, without B's card details or an accepted preview.
+- **Steps:** As A, send `Help`, open **Get help with this**, choose **Card**, and select an owned card by type and actual last four digits. Add `Synthetic card support issue` and save. Sign out, sign in as B in another browser profile, and inspect the card chooser. Precise foreign-reference rejection requires the guarded developer ownership probes; do not edit the normal demo database.
+- **Expected:** Only the current customer's products appear; the saved preview shows the chosen friendly card label. No full reference needs typing. A forged foreign-reference API request is rejected without revealing the other customer's details. A friendly chooser alone does not prove the backend ownership check.
 - **Fail if:** Changing the reference allows a cross-customer proposal.
-- **Cleanup:** Cancel the owned preview. Use General without a resource reference for non-resource issues.
+- **Cleanup:** Cancel the owned preview before signing out. Use General for issues without a specific product.
 
 ### P05-M04 — expiry
 
@@ -273,6 +273,30 @@ These are task-level review scenarios. P05 is not complete. No scenario below ex
 - **Expected:** Old session UI clears. The old proposal is inaccessible in the new session (API **404**), even though A is the same customer. B also cannot access it. A new question in the new login can create a new preview.
 - **Fail if:** The new session can read/edit/confirm the old preview. Merely hiding the old UI does not prove the API check; note whether you performed it.
 - **Cleanup:** Use a new current-session question. Do not copy cookies or CSRF values into the results sheet.
+
+### P05-M06 — reload and uncertain save recovery
+
+- **User/setup:** A, fresh current-session `Help` answer; open its editor and choose General.
+- **Steps:** Save `Synthetic persistence check`, reload the page, reopen **Get help with this** under that same answer. For a precise lost acknowledgement, run the browser operator's labelled fault; it drops the response only after the real server persisted201.
+- **Expected:** Reload reuses the chat and restores the same text/version. An uncertain save freezes mutation controls and asks for refresh. Refresh retrieves the existing version rather than issuing a second create.
+- **Fail if:** Reload creates another preview or retry silently duplicates it.
+- **Cleanup/limits:** Cancel the preview. Ordinary offline mode before submission does not prove a post-commit lost acknowledgement. Manual result: **Not run**.
+
+### P05-M07 — source-bound selection, Hindi and mobile
+
+- **User/setup:** A, valid current login; use product buttons for two different owned products.
+- **Steps:** View an account balance, then card transactions. Open **Get help with this** on the earlier account answer. Verify that account is selected. Set Hindi in Settings, send `मदद`, open its support editor, choose General and save `सिंथेटिक सहायता अनुरोध`. Repeat at a390px-wide viewport.
+- **Expected:** Earlier answer keeps its own product, independently of the latest chat selection. Hindi controls and saved text remain readable; the editor fits the screen and keyboard focus is usable. Saved text is plain text, including any markup. No UUID appears as an account number.
+- **Fail if:** The earlier account answer silently selects the newer card, or controls overflow/hide the issue text.
+- **Cleanup/limits:** Cancel pending previews and restore language. Native touch/IME and comprehensive accessibility require separate checks. Manual result: **Not run**.
+
+### P05-M08 — source erasure and delayed responses (developer assisted)
+
+- **User/setup:** Guarded private test world only; do not erase normal-demo sources to reproduce a race.
+- **Steps:** Run the P05 source-erasure concurrency cases and independent operator. Race create/edit against erasure; inspect both HTTP results and residual proposal rows. The real-browser operator also delays an actual saved response until after sign-out.
+- **Expected:** No proposal payload survives source erasure, whether mutation returns201 or404. Later read/latest/edit/confirm cannot recover it. A delayed response never restores signed-out UI. No case writer or financial mutation occurs.
+- **Fail if:** A hidden-but-persisted orphan remains, or old-session text reappears.
+- **Cleanup/limits:** Guarded worlds clean their own data. Browser-created drafts are synthetic and expire normally; cancelled/history rows are not erased by ordinary cancel. Automated evidence is separate from manual status **Not run**.
 
 ## 9. Developer-only checks and known gaps
 

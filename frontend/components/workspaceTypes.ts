@@ -8,7 +8,7 @@ export type Product = { id: string; display_name: string; kind?: string; last_fo
 export type Resource = { kind: Kind; id: string; version: string };
 export type Action = { label: string; action?: string; resource_selection?: Resource | null; text?: string };
 export type Block = { kind: string; title: string; data: Record<string, unknown> };
-export type Result = { text: string; intro?: string; message_kind?: string; status: string; blocks?: Block[]; actions?: Action[]; next_question?: string };
+export type Result = { text: string; intro?: string; message_kind?: string; status: string; blocks?: Block[]; actions?: Action[]; next_question?: string; workspace?: { resource: (Resource & { label?: string }) | null } };
 export type Turn = { turn_id: string; client_turn_id: string; accepted_at: string; status: string; user_text?: string; text?: string; result: Result | null };
 export type ProductPage = { status: string; items: Product[]; complete: boolean; next_cursor: string | null; elapsed_ms?: number };
 

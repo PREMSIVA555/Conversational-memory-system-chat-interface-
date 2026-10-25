@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import FinancialBlocks from "./FinancialBlocks";
+import SupportPanel from "./SupportPanel";
 import { Action, Resource, Session, Turn } from "./workspaceTypes";
 
 type MessageRequest = { client_turn_id: string; text: string; workspace: true; action?: string; resource_selection?: Resource };
@@ -89,6 +90,7 @@ export default function WorkspaceChat({ session, conversationId, hi, isCurrentSe
             <FinancialBlocks blocks={turn.result.blocks ?? []} hi={hi} />
             <div className="follow-up-actions">{turn.result.actions?.map((a, i) => <button key={i} disabled={disabled} onClick={() => choose(a)}>{a.label}</button>)}
             {turn.result.next_question && <button disabled={disabled} onClick={() => choose({ label: hi ? "अगला पेज" : "Load next page", text: turn.result!.next_question })}>{hi ? "अगला पेज" : "Load next page"}</button>}</div>
+            {!["greeting", "clarification"].includes(turn.result.message_kind ?? "") && <SupportPanel turnId={turn.turn_id} session={session} isCurrentSession={isCurrentSession} onExpired={onExpired} selected={turn.result.workspace?.resource} hi={hi} />}
           </> : <p className="thinking" role="status">{turn?.status === "running" ? (hi ? "जानकारी देख रहे हैं…" : "Checking your information…") : (hi ? "प्रश्न मिल गया है…" : "Your question is queued…")}</p>}
         </div></div>
       </div>)}

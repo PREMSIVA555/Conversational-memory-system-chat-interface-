@@ -1,6 +1,6 @@
 # UX01 workspace: behavior, operation and limits
 
-This amendment starts at approved H01 `557d142`, on `codex/banking-ux`. Pending T05.1 remains in the original checkout. UX01 does not enable support submission or financial mutations. Approval, commit/push and resuming P05 remain pending user review.
+UX01 started at approved H01 `557d142` and was approved, committed and pushed as `2a9f200` on `codex/banking-ux`. T05.1 workspace integration now develops separately on `codex/p05-workspace`; the original pending P05 checkout and its evidence remain preserved. T05.1 was approved on2026-10-25. Neither slice enables case submission or financial mutations.
 
 ## Data and execution
 
@@ -31,6 +31,16 @@ On this Windows machine, a dependency junction across D: and C: prevented Next b
 **Live evaluation is closed.** The local review API injects a transport that refuses paid calls. Checked actions still work; optional wording falls back and model-dependent policy/unusual-language planning can return unavailable. Re-enabling paid evaluation requires a new user-authorized allowance. The configured model was non-Astra; no Astra was used.
 
 ## Verification and honest limits
+
+### T05.1 workspace integration (pending review)
+
+Completed banking answers offer **Get help with this**. The support editor selects the source answer's owned product, or lets the customer choose General/account/card/loan and a friendly owned product from paginated APIs. No account UUID entry is required. General has no resource. The server rechecks ownership on every preview read/write; the displayed friendly name is outside the immutable hashed payload.
+
+Save persists an exact normalized description as a pending immutable preview. Editing cancels the old version and inserts a new one atomically. Cancel and server-clock expiry disable editing. Refresh restores persisted state; an uncertain mutation acknowledgement blocks another write until refresh. Delayed responses cannot restore a previous login's editor. Preview polling occurs only while its editor is open and does not continuously scroll the chat. No LLM writes the issue text and there is no submit-case button. The dedicated confirm endpoint returns503 for a valid draft until T05.2 implements atomic case/audit/replay persistence.
+
+Enable `BANK_SUPPORT_ENABLED=true` only after migrations0028 and0030 are installed, with approved UX migration0029 also present.0028 is preserved byte-for-byte.0030 fixes an independently discovered source-erasure race by sharing the erasure customer lock, and repairs any residual erased-source previews. Runtime gains no customer/turn UPDATE privilege. `python scripts/p051_upgrade.py --recorded-migrations <original-checkout>/store/banking_migrations` validates actual Docker identity, prior migration hashes and unchanged financial-table hashes; it does not reset the demo. The local review launcher enables support through a process override, not a committed secret/configuration change.
+
+`python scripts/p051_check.py` runs guarded P05/UX/P04/account regressions plus byte-matched UI typechecking. `node scripts/p051_workspace_browser.cjs` exercises real OIDC/HTTPS support persistence with synthetic descriptions, plus explicitly labelled dropped/delayed acknowledgement and expired-status UI faults. Actual expiry, ownership and source-erasure races use private SQL/HTTP worlds. The separate fresh non-Astra checker receives only behavioral instructions and operator access, not source/tests/maker results. Reports and failures remain local under `.genesis/evidence/T05.1-workspace-*`; expected manual journeys are in P05-M01–M08 of the guide. These checks do not approve T05.1 or complete P05.
 
 `python scripts/ux_check.py` runs the guarded Docker-backed UX/P04/oracle regressions and TypeScript check. It does not certify human review or dispatch paid models. `node scripts/ux_browser_check.cjs` exercises real local OIDC/UI/API with private fixture credentials and concise conversation settings. It is a normal-demo browser operator, not a bank-data mock. It intentionally creates conversations/preferences and signs out its sessions; it does not change financial rows. Tests that need data mutation use guarded trial databases.
 

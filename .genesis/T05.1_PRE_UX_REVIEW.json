@@ -1,0 +1,90 @@
+{
+  "task": "T05.1",
+  "phase": "P05",
+  "status": "ready-for-human-review",
+  "recorded_at": "2026-10-23T18:25:55.692105+00:00",
+  "spec_ids": [
+    "SPEC10"
+  ],
+  "invariant_ids": [
+    "INV05",
+    "INV24"
+  ],
+  "human_approval": null,
+  "native_gate": {
+    "path": ".genesis/evidence/T05.1-proposal-regression-1dc8ef35-f1bb-4628-93ce-a9837aace4dd.json",
+    "source_hash": "3715220cfe6baed484c8ab8b71977de79a0661c5c5db5669f7f7c69a9b18c891",
+    "unchanged_source": true,
+    "pytest_passed": 15
+  },
+  "regressions": {
+    "distinct_tests": 75,
+    "first_attempt": {
+      "passed": 73,
+      "failed": 2,
+      "receipt": ".genesis/evidence/T05.1-foundation-regression.xml"
+    },
+    "targeted_rerun": {
+      "passed": 2,
+      "failed": 0,
+      "receipt": ".genesis/evidence/T05.1-timing-rerun.xml",
+      "conditions": "LITELLM_LOCAL_MODEL_COST_MAP=True and lower concurrent load; original deadlines and assertions unchanged"
+    },
+    "limitation": "Not a single all-green 75-test run; timing failures retained, no SLA claim"
+  },
+  "independent_verifier": {
+    "agent": "/root/t051_state_verifier",
+    "requested_model": "gpt-6-astra",
+    "reason": "Adversarial ownership, session binding and concurrent state transitions",
+    "context": "fresh; contract and operator interface only; no implementation/tests/fixture/operator source or maker results",
+    "report": ".genesis/evidence/T05.1-independent-verifier.json",
+    "scenario_runs": 7,
+    "behavioral_assertions": 90,
+    "environment_preservation_assertions": 21,
+    "verdict": "PASS",
+    "isolation": "instructional, not OS sandbox"
+  },
+  "frontend": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "cwd": "frontend",
+      "exit_code": 0
+    },
+    "browser": {
+      "scope": "Real browser, mocked API responses; save/edit/cancel and plain-text markup display",
+      "fixture": ".genesis/local/t051-ui-mock.js",
+      "screenshot": "output/playwright/element-2026-10-23T18-24-34-546Z.png",
+      "limitations": [
+        "No live browser-to-database journey",
+        "No delayed-session UI race test",
+        "Initial certificate and incomplete mock-shape failures retained in console logs"
+      ]
+    }
+  },
+  "runtime": {
+    "migration": ".genesis/evidence/T05.1-local-migration.json",
+    "rollout": ".genesis/evidence/T05.1-local-rollout.json",
+    "flag": "BANK_SUPPORT_ENABLED=true in local process only",
+    "case_submission": false
+  },
+  "development_attempts": [
+    {
+      "receipt": ".genesis/evidence/T05.1-development.xml",
+      "passed": 6,
+      "failed": 9,
+      "reason": "Turn row lock required unavailable UPDATE privilege; corrected to advisory locking without wider grants"
+    },
+    {
+      "receipt": ".genesis/evidence/T05.1-development-2.xml",
+      "passed": 15,
+      "failed": 0
+    }
+  ],
+  "limits": [
+    "Valid confirmation deliberately unavailable until T05.2 atomic transaction",
+    "No model completion or live model quality claim",
+    "Expired/cancelled previews require a new question; no restart-preview flow yet",
+    "P06+ unstarted; T05.2-T05.4 queued",
+    "Raw evidence is local and ignored, not included in future Git commits"
+  ]
+}
