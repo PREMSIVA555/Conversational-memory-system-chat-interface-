@@ -1,6 +1,6 @@
 # Banking Assistant — manual test scenarios
 
-Last updated: **2026-10-24, Asia/Calcutta**. This is the cumulative guide for testing the banking application. Add scenarios after every completed phase; keep existing IDs. New task scenarios may be added before phase completion, with their approval status shown.
+Last updated: **2026-10-25, Asia/Calcutta**. This is the cumulative guide for testing the banking application. Add scenarios after every completed phase; keep existing IDs. New task scenarios may be added before phase completion, with their approval status shown.
 
 **Human manual runs remain Not run.** Expected answers and automated browser observations are separate. UX01 adds click-based journeys below; older UUID-based inputs remain developer compatibility examples. Reading the database alone does not establish a browser pass.
 
@@ -17,7 +17,8 @@ Last updated: **2026-10-24, Asia/Calcutta**. This is the cumulative guide for te
 | UX01 / TUX01 | User approved on2026-10-24 after the scroll correction; closure checks recorded in Genesis | Welcoming product workspace, automatic chat, checked follow-ups and English/Hindi |
 | P05 / T05.1 | Approved2026-10-25 and checkpoint pushed7bf5014; P05 partial | Save, view, edit and cancel session-bound support previews |
 | P05 / T05.2 | Approved2026-10-25; P05 partial | Explicit local case creation, atomic audit/receipt/outbox and same-key replay |
-| P05 / T05.3–T05.4 | Queued | Cross-session continuity, unknown-outcome reconciliation and complete support journey |
+| P05 / T05.3 | Approved2026-10-25; P05 partial | Read-only submission reconciliation and fresh owned case status across logins |
+| P05 / T05.4 | Queued | Complete support journey verification |
 | P06–P08 | Not started | Reusable evaluator, release comparisons and later maintenance |
 
 Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) was approved and pushed as `2a9f200`. T05.1 workspace integration develops on `codex/p05-workspace` from that approved baseline; the original `feat/banking-support-extension` checkout and its receipts remain preserved. T05.1 approved 2026-10-25; P05 is incomplete.
@@ -301,6 +302,8 @@ T05.1 is approved. T05.2 was approved2026-10-25; P05 is incomplete. Preview save
 
 ### P05-M09 — explicit local confirmation (T05.2 approved)
 
+M09–M12 preserve the approved T05.2 baseline. The current T05.3 review runtime enables continuity and uses updated recovery controls; use M13–M18 for that runtime. `scripts/p052_browser.cjs` requires continuity disabled, while `scripts/p053_browser.cjs` exercises the enabled review behavior. Do not switch flags midway through a submitted scenario.
+
 - **User/setup:** A, fresh current-login `Help` answer. Requires migration0031 and `BANK_SUPPORT_CONFIRM_ENABLED=true` in addition to the preview/workspace flags. The normal demo must never be reset just to enable this task.
 - **Steps:** Open **Get help with this**, choose General, enter `Synthetic local case: please review this issue.` and save. Change the textarea without saving: submission must disable. Restore the saved description and click **Submit support request** once.
 - **Expected:** **Support request created**, an `SR-...` reference and a dated **Creation receipt**. Preview becomes Submitted (API consumed); editing/cancellation disable. The case is recorded only in the local support system. No diagnosis, resolution, external delivery or current case-status promise is implied.
@@ -332,6 +335,55 @@ T05.1 is approved. T05.2 was approved2026-10-25; P05 is incomplete. Preview save
 - **Cleanup/limits:** Guarded worlds own injected faults. Source erasure does not erase minimal committed-case/audit/receipt identifiers. No remote delivery, current-status continuity or production load certification. Manual result: **Not run**.
 
 ## 9. Developer-only checks and known gaps
+
+### T05.3 scenarios — approved2026-10-25
+
+Human manual results for P05-M13–M18: **Not run**. These extend M09–M12 when continuity is enabled. Earlier button names and storage limitations describe the approved T05.2 compatibility mode; the current T05.3 review runtime uses **Support request recorded** and **Check submission status**. Expected results below are not execution evidence. Use customer-a and synthetic descriptions only. Enable additive0032 and `BANK_SUPPORT_CONTINUITY_ENABLED=true` after the existing support/workspace/confirmation prerequisites; no demo reset.
+
+### P05-M13 — creation receipt and current status
+
+- **Steps:** Sign in, send `Help`, open **Get help with this**, select General, enter `Synthetic continuity review issue`, **Save preview**, then **Submit support request** once.
+- **Expected:** **Support request recorded**, an SR reference and dated **Creation receipt**. A separate **Current status: Received** includes **Status updated** and **Checked** timestamps. The product-side **Support requests** panel lists the case. Editing/cancellation are disabled. Refresh/reopen recovers it without another confirmation.
+- **Fail if:** Save submits automatically, a receipt is called current status, or refresh creates another case.
+- **Cleanup/limits:** Synthetic cases remain as local records. No real support delivery or resolution is promised.
+
+### P05-M14 — loss before acceptance and explicit original retry
+
+- **Setup:** Developer-assisted isolated browser; `node scripts/p053_browser.cjs` controls an abort before confirmation reaches the real API.
+- **Steps:** Submit a fresh saved preview while that fault is active. Observe unknown outcome and disabled retry. **Check submission status**. Remove only the submission-storage entry, reload and reopen the same saved preview. Remove transport fault, then explicitly submit/retry.
+- **Expected:** Lookup alone makes no case and sends no confirmation. Before acceptance, the server returns the same prepared operation identity even without browser storage. Explicit submission uses that original identity and creates one case. An unknown response never means failed or created without evidence.
+- **Fail if:** Status checks resubmit, a new operation key is invented automatically, or the UI offers retry before uncertainty is checked.
+- **Cleanup/limits:** Remove transport faults. Do not clear authentication/session storage generally; that would be a different login scenario.
+
+### P05-M15 — loss after commit and missing browser storage
+
+- **Setup:** Developer-assisted transport drops only the acknowledgement after actual API commit, using a fresh preview.
+- **Steps:** Submit, observe uncertainty, then **Check submission status** repeatedly. Remove only bank-support-confirm storage entries, reload and reopen the saved preview.
+- **Expected:** Authenticated lookup recovers the same original operation and case without issuing another confirmation. The receipt records original creation; current status is read afresh. If the status service is unavailable, it says unknown/unavailable. If creation was already acknowledged, keep its known receipt while explaining that current status could not be refreshed.
+- **Fail if:** It silently retries a mutation, generates another key, drops a known successful receipt or claims an unavailable current status is fresh.
+- **Cleanup/limits:** Remove faults; retain the synthetic reference for M16. After24hours the replay receipt may expire; case uniqueness/current owned metadata still remain.
+
+### P05-M16 — next login and foreign customer isolation
+
+- **Steps:** Keep M15's SR reference. Sign out, wait for **Sign in securely**, then sign back in as A. Open **My products → Support requests**, select that SR reference and **Check current status again**. In a separate isolated profile sign in as customer-b.
+- **Expected:** A sees freshly checked owned case metadata in the later login. A cannot reconcile the old session-bound preview. B cannot see/read A's case, even with its internal ID/cursor. A previous-login response cannot repopulate private UI after logout.
+- **Fail if:** A loses access to its owned case solely due to new login, B sees it, or old preview replay becomes authorized by case ownership alone.
+- **Cleanup/limits:** Sign out both profiles. Ordinary demo cases remain Received unless a trusted fixture/admin advances them; no customer or model status-write action exists.
+
+### P05-M17 — Hindi mobile case list and paging
+
+- **Steps:** As A send `Reply in Hindi for this conversation`, use a390px viewport, expand **मेरे उत्पाद**, open an SR reference under **सहायता अनुरोध**, then refresh current status. With more than20 owned cases use **और अनुरोध**. Restore English afterward.
+- **Expected:** Case labels/status/timestamps are usable in the tray, with no horizontal page overflow. Paging appends owned cases without duplicates. Unavailable reads show errors rather than an invented empty list or successful resolution.
+- **Fail if:** A long SR reference hides controls, paging exposes another owner or language changes case facts.
+- **Cleanup/limits:** Restore viewport and language. More-than20 paging may require guarded synthetic setup; do not bulk-create ordinary cases just for this check.
+
+### P05-M18 — durable intent, status advance, expiry and erasure
+
+- **Setup:** Developer only, private manifest-guarded Docker PostgreSQL16/Redis7 worlds. Run `python scripts/p053_check.py`; behavioral operator `scripts/p053_probe.py` supports source-blind independent checks.
+- **Steps:** Inject each mandatory-effect/commit failure after acceptance; read outcome repeatedly, clear fault and explicitly retry original request. Advance created→in_review→resolved using only the migrator fixture seam, then read in A2. Expire receipt, cancel/expire/replace previews, erase source and attempt foreign/stale/revoked operations. Apply0032 over an existing0031 committed case separately.
+- **Expected:** A durable intent alone never proves success. All five effect records still commit atomically; read reconciliation cannot create them. Fresh status advances while creation receipt stays immutable. Receipt expiry does not remove case identity. Erasure denies old-source reconciliation and scrubs issue text while minimal owned case/audit/operation metadata remains. Runtime/model/API cannot advance status. Legacy committed receipts remain unchanged and their original keys are backfilled.
+- **Fail if:** Partial effects, duplicate cases, changed receipt, surviving issue text, foreign access or a runtime status writer appears.
+- **Cleanup/limits:** Guarded fixtures clean their own worlds. Do not alter ordinary statuses, clocks or triggers. Automated race observations are not exhaustive schedule or production load proof; independent behavioral scope is not a source audit.
 
 These commands exercise automated checks, not manual browser scenarios. Run from the repository root with the existing local test configuration. They do not require choosing Astra. Some tests create guarded private databases/namespaces; do not replace them with shared-database reset commands.
 

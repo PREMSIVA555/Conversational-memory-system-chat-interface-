@@ -1,0 +1,128 @@
+{
+  "task": "T05.3",
+  "phase": "P05",
+  "recorded_at": "2026-10-25T08:50:58.056629+00:00",
+  "status": "approved-task",
+  "task_complete": true,
+  "phase_complete": false,
+  "human_approval": {
+    "quote": "approved and proceed",
+    "date_client": "2026-10-25",
+    "scope": "Approve T05.3 and authorize bounded T05.4; not P05 closure or T05.4 result approval"
+  },
+  "approved_baseline": "2699d2f",
+  "branch": "codex/p05-workspace",
+  "spec_ids": [
+    "SPEC10"
+  ],
+  "invariant_ids": [
+    "INV06",
+    "INV20"
+  ],
+  "native_gate": {
+    "hash": "0b2f8675c48e488274e83951db4d6eaf81c1b81c72e3266029b5fd51ce8d76d9",
+    "source_hash": "d3930442ca676e45cf78a1398365e23a006fe6d10c9da107194e13c8406000f2",
+    "config_hash": "bb93f381748c9bc4ebd3c15ab89b2742d41c8f0f4cb36ba33dc10f03136275cd",
+    "observed_at": "2026-10-25T08:50:35.489Z",
+    "path": ".genesis/evidence/T05.3-reconciliation-bfd4d484-8c2b-4cb8-b82d-d8494fff1799.json",
+    "current_source_valid": true,
+    "unchanged_source": true,
+    "pytest_passed": 174,
+    "pytest_failed": 0,
+    "pytest_errors": 0,
+    "pytest_skipped": 0,
+    "typescript_exit": 0,
+    "junit": ".genesis/evidence/T05.3-regression.xml"
+  },
+  "independent_backend": {
+    "report": ".genesis/evidence/T05.3-independent.json",
+    "passed": 162,
+    "failed": 0,
+    "scenario_groups": 15,
+    "fresh_context": true,
+    "source_blind": true,
+    "Astra_used": false
+  },
+  "independent_browser": {
+    "report": ".genesis/evidence/T05.3-independent-browser.json",
+    "passed": 15,
+    "failed": 0,
+    "scenario_groups": 9,
+    "fresh_context": true,
+    "source_blind": true,
+    "Astra_used": false,
+    "contexts_closed": true
+  },
+  "maker_browser": {
+    "report": ".genesis/evidence/T05.3-browser.json",
+    "recovery_checks_passed": 7,
+    "later_login_setup_failed": true,
+    "corrected_bounded_retest": ".genesis/evidence/T05.3-browser-later.json",
+    "corrected_retest_passed": 2,
+    "full_clean_rerun_claim": false
+  },
+  "maker_legacy_migration": {
+    "report": ".genesis/evidence/T05.3-development-final.xml",
+    "tests_passed": 5,
+    "independent_backfill_tested": false
+  },
+  "demo_upgrade": ".genesis/evidence/T05.3-demo-upgrade.json",
+  "manual_guide": "docs/MANUAL_TEST_SCENARIOS.md",
+  "manual_scenarios": [
+    "P05-M13",
+    "P05-M14",
+    "P05-M15",
+    "P05-M16",
+    "P05-M17",
+    "P05-M18"
+  ],
+  "human_manual_results": "Not run",
+  "paid_model_calls": 0,
+  "Astra_used": false,
+  "limits": [
+    "No external delivery or financial mutation",
+    "T05.4 remains queued",
+    "Minimal case and operation metadata retained after source erasure; issue text scrubbed",
+    "Receipt replay retention24hours; durable case identity outlives it",
+    "Independent behavioral verification is instructionally source-blind, not OS isolation or code audit",
+    "Observed races are not exhaustive scheduling proof",
+    "Actual browser status transitions not tested; guarded backend covers them",
+    "Delayed response held through logout, not across another login",
+    "Legacy backfill independently unseeded; covered by maker regression",
+    "Old pre-upgrade random keys lost before acceptance cannot be recovered server-side without browser identity",
+    "Machine evidence is not human approval; raw local artifacts ignored by Git"
+  ],
+  "working_diff_scan": {
+    "known_private_config_and_credential_patterns": "no findings",
+    "files_scanned": 25,
+    "staged": false,
+    "raw_evidence": "ignored and retained locally; no claim of inclusion in Git"
+  },
+  "review_runtime": {
+    "restored_at": "2026-10-25T06:46:50.771453+00:00",
+    "api_health_http_status": 200,
+    "https_frontend_http_status": 200,
+    "tls_health_check": "Local certificate explicitly pinned for read-only health check; system trust unchanged",
+    "live_provider_transport": "blocked",
+    "continuity_enabled": "process override"
+  },
+  "previous_native_gates": [
+    {
+      "path": ".genesis/evidence/T05.3-reconciliation-f903891f-ac4c-4461-bf40-8604bb08f0ae.json",
+      "hash": "1eda55409ba65c501ce29ede6e5a6ac57010ace367b391543faac9398bdde3c4",
+      "source_hash": "c48b30c7255e29e2fc64414204970f69a1a4de76781c0ecf41df0746279c2d65",
+      "config_hash": "bb93f381748c9bc4ebd3c15ab89b2742d41c8f0f4cb36ba33dc10f03136275cd",
+      "observed_at": "2026-10-25T06:44:44.206Z",
+      "unchanged_source": true,
+      "current_source_valid": false,
+      "pytest_passed": 174,
+      "pytest_failed": 0,
+      "pytest_errors": 0,
+      "pytest_skipped": 0,
+      "typescript_exit": 0,
+      "junit": ".genesis/evidence/T05.3-regression.xml",
+      "reuse_validated": true,
+      "prior_to_documentation_approval_labels": true
+    }
+  ]
+}

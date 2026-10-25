@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PreferencePanel from "./PreferencePanel";
 import WorkspaceChat from "./WorkspaceChat";
+import SupportCasesPanel from "./SupportCasesPanel";
 import "./workspace.css";
 import { Action, Kind, ProductPage, Session, money, resource } from "./workspaceTypes";
 
@@ -116,6 +117,7 @@ export default function BankingView() {
             })}
             {pages[kind].next_cursor && <button className="more-products" onClick={() => void loadProducts(kind, true)}>{hi ? "और दिखाएँ" : "Show more"}</button>}
           </section>)}<p className="products-footnote">{hi ? "जानकारी केवल आपके अधिकृत उत्पादों की है।" : "Only products you’re authorized to view appear here."}</p>
+          <SupportCasesPanel key={session.csrf_token} session={session} hi={hi} isCurrentSession={isCurrentSession} onExpired={clear} />
         </div>
       </aside>
       {cid ? <WorkspaceChat key={`${session.csrf_token}:${cid}`} session={session} conversationId={cid} hi={hi} isCurrentSession={isCurrentSession} onExpired={clear} onPreferences={preferences} externalAction={action} onBusyChange={setChatBusy} /> : <section className="workspace-chat workspace-preparing"><p>{hi ? "बातचीत तैयार हो रही है…" : "Preparing your conversation…"}</p></section>}

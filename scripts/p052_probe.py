@@ -10,8 +10,8 @@ from evals.confirmation_world import ConfirmationWorld
 
 TABLES=('support_cases','support_action_audit','support_operations','support_outbox')
 class ConfirmationProbe(Probe):
-    async def start(self):
-        await super().start(world_class=ConfirmationWorld,confirm_enabled=True)
+    async def start(self,*,world_class=ConfirmationWorld,continuity_enabled=False):
+        await super().start(world_class=world_class,confirm_enabled=True,continuity_enabled=continuity_enabled)
         self.telemetry_failures=0
         return self
     async def step(self,step):

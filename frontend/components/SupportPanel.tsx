@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Kind, Product, ProductPage, Resource, Session } from "./workspaceTypes";
+import SupportSubmission from "./SupportSubmission";
 
 type Draft = { source_turn_id: string; topic: "general" | Kind; resource_id: string | null; summary: string };
 type Preview = { id: string; version: number; payload_hash: string; payload: Draft; resource_label: string | null; expires_at: string; status: string };
@@ -28,6 +29,7 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productError, setProductError] = useState(false);
   const [confirmationEnabled, setConfirmationEnabled] = useState(false);
+  const [continuityEnabled, setContinuityEnabled] = useState(false), [continuityFrozen, setContinuityFrozen] = useState(false);
   const [confirmation, setConfirmation] = useState<ConfirmRequest | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [existingCase, setExistingCase] = useState("");
@@ -53,7 +55,7 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
   useEffect(() => {
     if (!open) return;
     void fetch(`${base}/capabilities`, { cache: "no-store", signal: controller.current.signal }).then(async r => {
-      if (r.ok) { const value = await r.json(); if (current()) setConfirmationEnabled(value.confirmation_enabled === true); }
+      if (r.ok) { const value = await r.json(); if (current()) { setConfirmationEnabled(value.confirmation_enabled === true); setContinuityEnabled(value.continuity_enabled === true); } }
     }).catch(() => { /* Default-off confirmation remains unavailable. */ });
   }, [open, current]);
 
@@ -175,7 +177,7 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
   }
 
   const canChoose = topic === "general" || (!loadingProducts && !productError && products.some(p => p.id === resource));
-  const frozen = busy || uncertain || unavailable || !!confirmation || !!receipt || !!existingCase || (!!preview && preview.status !== "pending");
+  const frozen = busy || uncertain || unavailable || (continuityEnabled ? continuityFrozen : !!confirmation || !!receipt || !!existingCase) || (!!preview && preview.status !== "pending");
   const matchesSaved = !!preview && topic === preview.payload.topic && (topic === "general" ? null : resource) === preview.payload.resource_id && summary.replace(/\r\n?/g, "\n").normalize("NFC").trim() === preview.payload.summary;
   const names = { general: say("General help", "सामान्य सहायता"), account: say("Account", "खाता"), card: say("Card", "कार्ड"), loan: say("Loan", "ऋण") };
   const status = preview ? ({ pending: say("Draft", "ड्राफ़्ट"), cancelled: say("Cancelled", "रद्द"), expired: say("Expired", "समय समाप्त"), consumed: say("Submitted", "जमा किया गया") }[preview.status] ?? preview.status) : "";
@@ -208,14 +210,15 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
         <p>{names[preview.payload.topic]}{preview.resource_label ? ` · ${preview.resource_label}` : ""}</p>
         <p className="support-summary">{preview.payload.summary}</p>
         <p className="support-note">{say("Expires", "समय सीमा")}: <time dateTime={preview.expires_at}>{new Date(preview.expires_at).toLocaleString(hi ? "hi-IN" : "en-IN")}</time></p>
-        <button type="button" disabled={busy || uncertain || !!confirmation || preview.status !== "pending"} onClick={() => void mutate("cancel")}>{say("Cancel preview", "पूर्वावलोकन रद्द करें")}</button>
-        {confirmationEnabled && !receipt && !existingCase && (preview.status === "pending" || confirmation) && <div className="support-confirm">
+        <button type="button" disabled={busy || uncertain || (continuityEnabled ? continuityFrozen : !!confirmation) || preview.status !== "pending"} onClick={() => void mutate("cancel")}>{say("Cancel preview", "पूर्वावलोकन रद्द करें")}</button>
+        {continuityEnabled && confirmationEnabled && <SupportSubmission key={preview.id} id={preview.id} turnId={turnId} matchesSaved={matchesSaved} session={session} hi={hi} isCurrentSession={isCurrentSession} onExpired={onExpired} onFreeze={setContinuityFrozen} onConsumed={() => { if (currentPreview.current && currentPreview.current.status !== "consumed") remember({ ...currentPreview.current, status: "consumed" }); }} />}
+        {!continuityEnabled && confirmationEnabled && !receipt && !existingCase && (preview.status === "pending" || confirmation) && <div className="support-confirm">
           <p>{say("Submit only the saved description displayed above.", "केवल ऊपर दिखाया गया सेव किया हुआ विवरण जमा करें।")}</p>
           {!matchesSaved && !confirmation && <p role="status">{say("Save your changes before submitting.", "जमा करने से पहले बदलाव सेव करें।")}</p>}
           <button type="button" disabled={busy || (!confirmation && (!matchesSaved || uncertain || unavailable))} onClick={() => void submitConfirmation()}>{confirmation ? say("Check original submission", "मूल जमा की जाँच करें") : say("Submit support request", "सहायता अनुरोध जमा करें")}</button>
         </div>}
-        {receipt && <div className="support-receipt" role="status"><strong>{say("Support request created", "सहायता अनुरोध बनाया गया")}</strong><p>{receipt.case_number}</p><p>{say("Creation receipt", "निर्माण रसीद")}: <time dateTime={receipt.created_at}>{new Date(receipt.created_at).toLocaleString(hi ? "hi-IN" : "en-IN")}</time></p></div>}
-        {existingCase && <p className="support-receipt">{say("Existing support reference", "मौजूदा सहायता संदर्भ")}: {existingCase}</p>}
+        {!continuityEnabled && receipt && <div className="support-receipt" role="status"><strong>{say("Support request created", "सहायता अनुरोध बनाया गया")}</strong><p>{receipt.case_number}</p><p>{say("Creation receipt", "निर्माण रसीद")}: <time dateTime={receipt.created_at}>{new Date(receipt.created_at).toLocaleString(hi ? "hi-IN" : "en-IN")}</time></p></div>}
+        {!continuityEnabled && existingCase && <p className="support-receipt">{say("Existing support reference", "मौजूदा सहायता संदर्भ")}: {existingCase}</p>}
       </div>}
     </div>}
   </section>;
