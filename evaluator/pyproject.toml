@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "banking-evaluator"
-version = "0.2.0"
+version = "0.3.0"
 description = "Versioned synthetic task/operator evaluation contracts"
 requires-python = ">=3.11"
 dependencies = []
@@ -12,6 +12,7 @@ dependencies = []
 [project.scripts]
 banking-eval = "banking_evaluator.cli:main"
 banking-grade = "banking_evaluator.grade_cli:main"
+banking-rubric = "banking_evaluator.rubric_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

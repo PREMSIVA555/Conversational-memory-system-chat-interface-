@@ -1,0 +1,20 @@
+{
+  "dataset_path": "evaluator/review_sets/pilot_v1.json",
+  "dataset_hash": "72b76c48590622067f1d66c1e9b0fc382a85c8d55c907da2118d3ceb5481f360",
+  "frozen_at": "2026-10-25T13:10:59.174844+00:00",
+  "rubric": "support-helpfulness/1",
+  "families": {
+    "balance": "holdout",
+    "decline": "calibration",
+    "support": "holdout",
+    "policy": "calibration"
+  },
+  "actual_human_labels_collected": 0,
+  "live_judge_requests": 0,
+  "thresholds": {
+    "min_known_per_split": 20,
+    "min_families_per_split": 4,
+    "min_annotators": 2
+  },
+  "purpose": "workflow pilot; inadequate for calibrated-judge claims"
+}

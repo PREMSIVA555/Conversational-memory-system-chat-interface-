@@ -1,4 +1,4 @@
-# Evaluator0.2.0 — T06.2 approved2026-10-25
+# Evaluator0.3.0 — T06.3 approved2026-10-25
 
 T06.1/0.1.0 was approved and pushed as142c36c. Version0.2.0 preserves its version1 task/operator contracts and adds the separate bounded banking grader below. The user approved T06.2 on2026-10-25; P06 remains partial.
 
@@ -33,7 +33,7 @@ Build from the repository root, then change to a new folder outside the checkout
 ```powershell
 python -m pip wheel --no-deps --wheel-dir C:\Temp\bank-wheels .\evaluator
 python -m venv C:\Temp\bank-eval-env
-C:\Temp\bank-eval-env\Scripts\python -m pip install --no-index --no-deps C:\Temp\bank-wheels\banking_evaluator-0.2.0-py3-none-any.whl
+C:\Temp\bank-eval-env\Scripts\python -m pip install --no-index --no-deps C:\Temp\bank-wheels\banking_evaluator-0.3.0-py3-none-any.whl
 Set-Location C:\Temp
 C:\Temp\bank-eval-env\Scripts\banking-eval --demo --output counter-run.json
 C:\Temp\bank-eval-env\Scripts\banking-eval --demo --replay counter-run.json --output counter-replay.json
@@ -70,8 +70,41 @@ Observation has `schema_version`, `state`, `events`. State includes `cases` ({id
 | mutation | owner, source_id, case_id; actual committed/reconciled effect |
 | response | claims: fact {kind,resource,field,value,read_id} or case_created {kind,case_id} |
 
-Every event has id/kind. A trace is chronological evidence, not one golden action sequence. The normalizer must include **all visible claims** and actual authorization/effect facts. Self-declared or omitted events are not authenticated by this grader; hashes do not create authority. It cannot certify hidden side effects, unnormalized prose, open-ended policies or subjective helpfulness. No model judge is used. T06.3 calibration and T06.4 release/recovery remain queued.
+Every event has id/kind. A trace is chronological evidence, not one golden action sequence. The normalizer must include **all visible claims** and actual authorization/effect facts. Self-declared or omitted events are not authenticated by this grader; hashes do not create authority. It cannot certify hidden side effects, unnormalized prose, open-ended policies or subjective helpfulness. No model judge is used. T06.3 rubric tooling is described below; T06.4 release/recovery remains queued.
 
 `python scripts/p062_check.py` runs the declared27-case synthetic mutation corpus, package tests and the preserved clean wheel checks. It then invokes `evaluator/grading_bank_check.py`: actual authenticated owned-account discovery, actual provider balance, an independent migrator SQL balance oracle, and an actual foreign provider404 in a guarded world. Permission observables derive from the successful owned-discovery response; these are not newly instrumented production telemetry. The installed wheel grades these actual read observations, then rejects seeded wrong/foreign reply copies. No unsafe financial mutation is executed: support atomicity/confirmation mutations are synthetic normalized fixtures, with prior P05 execution evidence retained separately. A bounded passing corpus is not universal grader accuracy or production certification. Historical task/grade versions and all failed attempts must remain visible.
 
 Grader1.1 corrects an independently observed false-success counter defect: only a prior matching owner/source mutation backed by explicit confirmation supports the claimed case operation. Earlier1 verdicts/wheels remain retained; the fix does not overwrite them. `extra_read_calls` is successful owned reads minus distinct required resources, clipped at0: a descriptive lower-bound metric, not proof those calls were unnecessary or a latency improvement.
+
+
+## T06.3 — assisted human rubric pilot and optional imported judge
+
+Version0.3.0 adds `analyze_reviews`, `review_view` and the `banking-rubric` CLI without model dispatch or runtime dependencies. T06.2 approved checkpoint6a3f329 remains the baseline. The user approved T06.3 implementation on2026-10-25; P06 remains partial. SPEC14/SPEC15 and INV10/INV30/INV32 apply; subjective ratings never replace exact financial/ownership checks.
+
+The frozen synthetic dataset is `evaluator/review_sets/pilot_v1.json`, canonical SHA256 `72b76c48590622067f1d66c1e9b0fc382a85c8d55c907da2118d3ceb5481f360`. Eight examples cover four families: balance/support in holdout and decline/policy in calibration; English/Hindi variants stay together. The predeclared volume screen needs20 known cases and4 families per split, with2 annotators per case. This pilot is below it. Both partitions were exposed to the maker and reviewer; **holdout is a partition name, not an unseen confirmatory evaluation**. A future confirmatory judge study needs a fresh unexposed set and its own authorization/budget.
+
+On2026-10-25 the user explicitly confirmed all eight AI-proposed ratings: R01S/H, R02U/N, R03S/H, R04U/N, R05U/N, R06S/H, R07U/N, R08S/H. This is **one AI-assisted human reviewer**,8case labels/16axis judgments, not eight reviewers or independent unaided annotation. Raw confirmation and label artifacts remain ignored local evidence under `.genesis/evidence/T06.3-human-*`; their byte hashes and explicit Genesis task inputs bind the actual data. The committed review summary documents counts and limitations, not private raw artifacts. The dataset source receipt records0 collected at freeze time; it is historical, not the current collection count.
+
+Support labels are supported/unsupported/unclear; helpfulness helpful/unhelpful/unclear. One-reviewer references are provisional; inter-reviewer agreement has zero pairs and null rates. Unknown/conflicting/unrated cases are counted explicitly and excluded from reference comparisons. No external model predictions were supplied: judge `not_run`, comparisons empty, calibrated false, tool-issued model requests0. There is **no judge accuracy/confusion result** to claim. Synthetic protocol tests exercise confusion matrices and control comparisons separately; they do not count as collected human or model evidence.
+
+### Reproduce the protocol
+
+After the clean wheel install above, run from any outside-checkout folder, using absolute dataset paths and new output names:
+
+```powershell
+banking-rubric view --dataset C:\path\to\pilot_v1.json --order forward --verbosity base --output review-view.json
+banking-rubric view --dataset C:\path\to\pilot_v1.json --order reverse --verbosity base --output review-reverse.json
+banking-rubric view --dataset C:\path\to\pilot_v1.json --order forward --verbosity expanded --output review-expanded.json
+banking-rubric analyze --dataset C:\path\to\pilot_v1.json --output no-labels.json
+banking-rubric analyze --dataset C:\path\to\pilot_v1.json --ratings C:\private\human-labels.json --output pilot.json
+```
+
+Without ratings, analysis exits0 with `awaiting_human_labels`; exit0 means a valid report, not collection completion or task approval. Invalid inputs produce a safe invalid receipt/exit2. Existing evidence paths cannot be overwritten. Views expose only id, language, evidence, question and candidate answer: no split/family/reference labels. Input hashes bind exact views; declared blindness is not identity/authenticity proof.
+
+Rating artifacts require `schema_version:"1"`, dataset_hash, origin(human/synthetic_test), source and labels. Optional assistance is none/ai_proposed/unknown, default unknown. Each label requires case_id, canonical case_hash of the forward/base displayed case, annotator, support, helpfulness and note. Never import an AI proposal alone as origin human. Human-confirmed proposals require assistance ai_proposed. `human_assistance` reports actual row/distinct-annotator counts by assistance; a person can appear in multiple groups. Declared none does not authenticate independence. Stale hashes and duplicate same-origin reviewer/case rows reject.
+
+Optional predictions require schema_version, dataset_hash, origin(external_model/synthetic_test), source, run_id, judge_id, model_id, control_group, blind, order, verbosity, view_hash and predictions(case_id/support/helpfulness). Only matched judge/model/group conditions yield descriptive order/verbosity comparisons. Partial predictions retain missing/abstention counts and explicit denominators; no reference or pair means null rates. Imported batches remain exploratory and never automatically calibrated. No new provider calls are authorized.
+
+Operational reports validate but exclude synthetic_test artifacts; test mode accepts only synthetic artifacts and always reports actual human annotators0. Origin, assistance, source and blindness are operator attestations, not signatures. Analysis deep-copies inputs. Registry ingestion uses strict duplicate-key JSON parsing and pinned byte hashes, with actual artifacts restricted to retained local evidence paths.
+
+`python scripts/p063_check.py` runs package/clean-install/guarded-read regression and actual registered-pilot analysis through the installed CLI. `python scripts/p063_check.py --require-human-only` independently requires at least one actual reviewer and all8 cases rated; unclear is a collected rating, not a supported claim. Neither machine gate approves implementation. Separate verification passed115assertions; the user approved the implementation on2026-10-25. Future judge claims still require new evidence. See `.genesis/T06.3_REVIEW.json` for current evidence/status when available.

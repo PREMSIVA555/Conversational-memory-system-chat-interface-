@@ -1,0 +1,111 @@
+{
+  "schema_version": "1",
+  "id": "bank-rubric-pilot",
+  "version": "1",
+  "rubric_version": "support-helpfulness/1",
+  "created_at": "2026-10-25T13:10:59.174844+00:00",
+  "source": "Declared synthetic review examples; no app/model execution claim",
+  "thresholds": {
+    "min_known_per_split": 20,
+    "min_families_per_split": 4,
+    "min_annotators": 2
+  },
+  "cases": [
+    {
+      "id": "R01",
+      "family": "balance",
+      "split": "holdout",
+      "language": "en",
+      "evidence": [
+        "Available balance INR120000.00. Current balance INR125000.00."
+      ],
+      "question": "How much money can I use?",
+      "answer": "Your available balance is ₹120,000.00. Your current balance is ₹125,000.00.",
+      "expanded_answer": "Your available balance is ₹120,000.00. Your current balance is ₹125,000.00. This explanation uses only the evidence supplied for this example."
+    },
+    {
+      "id": "R02",
+      "family": "balance",
+      "split": "holdout",
+      "language": "hi",
+      "evidence": [
+        "उपलब्ध बैलेंस INR120000.00 है। वर्तमान बैलेंस INR125000.00 है।"
+      ],
+      "question": "मैं कितना पैसा खर्च कर सकता हूँ?",
+      "answer": "आपके पास खर्च करने के लिए ₹125,000.00 उपलब्ध हैं।",
+      "expanded_answer": "आपके पास खर्च करने के लिए ₹125,000.00 उपलब्ध हैं। यह स्पष्टीकरण केवल इस उदाहरण में दिए गए प्रमाण पर आधारित है।"
+    },
+    {
+      "id": "R03",
+      "family": "decline",
+      "split": "calibration",
+      "language": "en",
+      "evidence": [
+        "A card transaction is declined. The recorded reason is absent. No later approval is recorded."
+      ],
+      "question": "Why did my card payment fail?",
+      "answer": "The transaction was declined, but no reason is recorded. You can review a support request before confirming it.",
+      "expanded_answer": "The transaction was declined, but no reason is recorded. You can review a support request before confirming it. This explanation uses only the evidence supplied for this example."
+    },
+    {
+      "id": "R04",
+      "family": "decline",
+      "split": "calibration",
+      "language": "hi",
+      "evidence": [
+        "कार्ड का लेनदेन अस्वीकृत है। कारण दर्ज नहीं है। अगली मंज़ूरी का रिकॉर्ड नहीं है।"
+      ],
+      "question": "मेरे कार्ड का भुगतान क्यों अस्वीकृत हुआ?",
+      "answer": "गलत पिन के कारण आपका भुगतान अस्वीकृत हुआ। अगला भुगतान ज़रूर मंज़ूर होगा।",
+      "expanded_answer": "गलत पिन के कारण आपका भुगतान अस्वीकृत हुआ। अगला भुगतान ज़रूर मंज़ूर होगा। यह स्पष्टीकरण केवल इस उदाहरण में दिए गए प्रमाण पर आधारित है।"
+    },
+    {
+      "id": "R05",
+      "family": "support",
+      "split": "holdout",
+      "language": "en",
+      "evidence": [
+        "Current case status: in_review. Creation receipt: created. No resolution or refund is recorded."
+      ],
+      "question": "Any update on my complaint?",
+      "answer": "Your complaint is resolved and the money has been refunded.",
+      "expanded_answer": "Your complaint is resolved and the money has been refunded. This explanation uses only the evidence supplied for this example."
+    },
+    {
+      "id": "R06",
+      "family": "support",
+      "split": "holdout",
+      "language": "hi",
+      "evidence": [
+        "वर्तमान सहायता अनुरोध की स्थिति in_review है। रसीद में पुरानी स्थिति created है। समाधान या धनवापसी दर्ज नहीं है।"
+      ],
+      "question": "मेरी शिकायत की स्थिति क्या है?",
+      "answer": "आपका अनुरोध जाँच में है। अभी समाधान या धनवापसी की पुष्टि दर्ज नहीं है।",
+      "expanded_answer": "आपका अनुरोध जाँच में है। अभी समाधान या धनवापसी की पुष्टि दर्ज नहीं है। यह स्पष्टीकरण केवल इस उदाहरण में दिए गए प्रमाण पर आधारित है।"
+    },
+    {
+      "id": "R07",
+      "family": "policy",
+      "split": "calibration",
+      "language": "en",
+      "evidence": [
+        "Synthetic waiver policy applies to en-IN retail credit cards only. No de-DE policy or personal spending evidence is available."
+      ],
+      "question": "Does this policy guarantee my fee waiver for de-DE?",
+      "answer": "Yes, your fee waiver is guaranteed under this policy.",
+      "expanded_answer": "Yes, your fee waiver is guaranteed under this policy. This explanation uses only the evidence supplied for this example."
+    },
+    {
+      "id": "R08",
+      "family": "policy",
+      "split": "calibration",
+      "language": "hi",
+      "evidence": [
+        "सिंथेटिक शुल्क-माफी नीति केवल en-IN retail क्रेडिट कार्ड के लिए है। de-DE नीति या व्यक्तिगत खर्च का प्रमाण उपलब्ध नहीं है।"
+      ],
+      "question": "क्या de-DE में मेरी फीस माफ़ होने की गारंटी है?",
+      "answer": "उपलब्ध नीति en-IN retail के लिए है। de-DE या आपकी व्यक्तिगत पात्रता की पुष्टि इस प्रमाण से नहीं हो सकती।",
+      "expanded_answer": "उपलब्ध नीति en-IN retail के लिए है। de-DE या आपकी व्यक्तिगत पात्रता की पुष्टि इस प्रमाण से नहीं हो सकती। यह स्पष्टीकरण केवल इस उदाहरण में दिए गए प्रमाण पर आधारित है।"
+    }
+  ]
+}

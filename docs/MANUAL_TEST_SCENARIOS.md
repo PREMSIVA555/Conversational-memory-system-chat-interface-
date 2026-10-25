@@ -619,3 +619,28 @@ P05 was approved/closed and pushed36c95d7 before this phase. The user approved T
 - **Expected:** Actual observation passes, financial data unchanged, model_calls0; foreign denial counts blocked rather than leaked. Seeded wrong/foreign copies fail. Source-bound native gate and independent checker evidence are in `.genesis/T06.2_REVIEW.json` when available.
 - **Fail if:** Provider reply is used as its own independent SQL oracle, normal data is reset, paid calls occur, or synthetic support attacks are called real unsafe application executions.
 - **Cleanup/limits:** Keep guarded worlds/raw reports locally; no UI change, new financial operation, production reliability or subjective judge claim.
+
+
+### P06-M09 — review support and helpfulness separately (T06.3 approved2026-10-25)
+
+- **Setup/user:** Human reviewer, no banking login. Open `docs/HUMAN_RUBRIC_REVIEW.md`; these are clearly synthetic explanations, not current demo balances or actual bank executions.
+- **Steps:** Read each R01–R08 evidence block/question/candidate; rate support S/U/? and helpfulness H/N/? separately. Ask for clarification when unable to judge. Disclose whether AI suggestions were used.
+- **Expected:** Only the person's actual confirmed ratings are imported. An implementation approval alone or an AI proposal is not a human label. Unknown stays unknown. The observed2026-10-25 collection is one AI-assisted reviewer confirming8proposals, not independent unaided annotation. It does not establish judge accuracy.
+- **Fail if:** Missing ratings are filled automatically, assistant choices counted as humans, reviewer count inflated, or agreement claimed from one reviewer.
+- **Cleanup/limits:** Keep actual labels and confirmation private in retained local evidence. All8 examples/partitions were exposed; a confirmatory study needs a fresh unseen dataset. This collection was actually confirmed; the developer CLI manual journey below is **Not run**.
+
+### P06-M10 — hashes, missing labels and duplicate protection
+
+- **Setup:** Developer terminal; install candidate evaluator0.3.0 in a new environment outside checkout using `docs/EVALUATOR.md`. Use your own copies/output paths. Human manual result **Not run**; automated proof is separate.
+- **Steps:** Export forward/base view; analyze dataset without ratings. Analyze a synthetic rating artifact normally and with `--test-mode`. Alter a case hash or duplicate one reviewer/case; try an existing output path.
+- **Expected:** No labels yields awaiting_human_labels/actual humans0. Operational fixture rows are excluded; test mode still actual humans0. Wrong hash/duplicate rejects with invalid exit2; existing receipt stays unchanged. An AI-assisted human artifact reports assistance explicitly. Run `python scripts/p063_check.py --require-human-only` in the configured checkout to inspect actual registered collection separately.
+- **Fail if:** A valid report's exit0 is called completed human collection, fixtures become people, unknown assistance is treated as unaided or existing receipts are overwritten.
+- **Cleanup/limits:** Retain variants separately; do not modify the frozen dataset, actual label registry or normal demo. Hashes are integrity checks, not proof of a person's identity.
+
+### P06-M11 — unknown, disagreement and optional judge controls
+
+- **Setup:** Own hand-computable synthetic dataset/ratings/predictions, family-disjoint splits; outside-checkout CLI. No provider calls or banking account. Human manual result **Not run**.
+- **Steps:** In test mode import two synthetic reviewers who disagree on one support label and use unclear on another axis. Import partial synthetic judge predictions, including unclear; export reverse/base and forward/expanded views and compare matched declared runs.
+- **Expected:** Conflicting/unclear references are excluded explicitly; known-pair/unknown-pair denominators remain visible. Missing/abstaining predictions never become correct. Views hide family/split/labels; controls show matched flips/missing conditions, not proof of causal bias. Tool model calls0, calibrated false. Actual pilot with no judge has empty comparisons/not_run, rather than fabricated confusion results.
+- **Fail if:** Majority/unknown cases become hidden gold, missing pairs inflate accuracy, order/verbosity flips alone prove bias or assisted tiny pilot is called calibrated.
+- **Cleanup/limits:** Keep synthetic fixtures visibly separate from actual review records. The frozen pilot is inadequate for reliability or multilingual fairness claims; T06.4 release/recovery remains queued.

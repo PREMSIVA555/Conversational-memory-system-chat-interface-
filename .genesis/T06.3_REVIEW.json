@@ -1,0 +1,216 @@
+{
+  "task": "T06.3",
+  "phase": "P06",
+  "baseline": "6a3f329",
+  "branch": "codex/p06-evaluator",
+  "status": "approved-task",
+  "task_complete": true,
+  "phase_complete": false,
+  "spec_ids": [
+    "SPEC14",
+    "SPEC15"
+  ],
+  "invariant_ids": [
+    "INV10",
+    "INV30",
+    "INV32"
+  ],
+  "version": "0.3.0",
+  "human_rating_confirmation": {
+    "date_client": "2026-10-25",
+    "quote": "I reviewed and confirm all eight proposed ratings",
+    "actual_reviewers": 1,
+    "case_labels": 8,
+    "axis_judgments": 16,
+    "assistance": "ai_proposed",
+    "independent_unaided": false,
+    "implementation_approval": false
+  },
+  "actual_pilot": {
+    "dataset_hash": "72b76c48590622067f1d66c1e9b0fc382a85c8d55c907da2118d3ceb5481f360",
+    "rated_cases": 8,
+    "unrated_cases": 0,
+    "actual_human_annotators": 1,
+    "human_assistance": {
+      "none": {
+        "label_rows": 0,
+        "annotators": 0
+      },
+      "ai_proposed": {
+        "label_rows": 8,
+        "annotators": 1
+      },
+      "unknown": {
+        "label_rows": 0,
+        "annotators": 0
+      }
+    },
+    "unknown_labels": {
+      "support": 0,
+      "helpfulness": 0
+    },
+    "disagreement_cases": {
+      "support": 0,
+      "helpfulness": 0
+    },
+    "agreement": {
+      "support": {
+        "known_pairs": 0,
+        "agree_pairs": 0,
+        "disagree_pairs": 0,
+        "unknown_pairs": 0,
+        "agreement_rate": null
+      },
+      "helpfulness": {
+        "known_pairs": 0,
+        "agree_pairs": 0,
+        "disagree_pairs": 0,
+        "unknown_pairs": 0,
+        "agreement_rate": null
+      }
+    },
+    "reference_summary": {
+      "calibration": {
+        "support": {
+          "known_reference_cases": 4,
+          "unknown_or_unrated_cases": 0,
+          "cases_with_min_annotators": 0,
+          "qualified_families": 0,
+          "volume_screen_met": false
+        },
+        "helpfulness": {
+          "known_reference_cases": 4,
+          "unknown_or_unrated_cases": 0,
+          "cases_with_min_annotators": 0,
+          "qualified_families": 0,
+          "volume_screen_met": false
+        }
+      },
+      "holdout": {
+        "support": {
+          "known_reference_cases": 4,
+          "unknown_or_unrated_cases": 0,
+          "cases_with_min_annotators": 0,
+          "qualified_families": 0,
+          "volume_screen_met": false
+        },
+        "helpfulness": {
+          "known_reference_cases": 4,
+          "unknown_or_unrated_cases": 0,
+          "cases_with_min_annotators": 0,
+          "qualified_families": 0,
+          "volume_screen_met": false
+        }
+      }
+    },
+    "judge": {
+      "status": "not_run",
+      "calibrated": false,
+      "imported_batches": 0,
+      "model_requests_made_by_tool": 0,
+      "volume_screen_met": false,
+      "nonblind_batches": 0,
+      "missing_controls": [
+        "order",
+        "verbosity"
+      ]
+    }
+  },
+  "native_gates": [
+    {
+      "id": "calibration",
+      "status": "pass",
+      "evidence": {
+        "path": ".genesis/evidence/T06.3-calibration-0457cb49-0e9c-4cba-8406-18d0c9c2c237.json",
+        "hash": "c850121ede4aaafc3e41442a0bba4321853718c2b86c452e6dd4ce3127a2fce9",
+        "source_hash": "786ac1717f8dc58704bd6e4e640c51c0ddeaf73d01778d303f6d4782cfc2ca68",
+        "config_hash": "5408b3d089d0f84001707f02b39fc4efdbad9065dcda107e07bbc4b79dec5c77",
+        "observed_at": "2026-10-25T13:47:20.963Z"
+      }
+    },
+    {
+      "id": "human-label-collection",
+      "status": "pass",
+      "evidence": {
+        "path": ".genesis/evidence/T06.3-human-label-collection-1625f76f-06d1-4af4-b751-9a7f415d38ca.json",
+        "hash": "49be8cb941138bfdcf95fe93cf1a543d77ee48290132ff84ff0782c37f2e957b",
+        "source_hash": "786ac1717f8dc58704bd6e4e640c51c0ddeaf73d01778d303f6d4782cfc2ca68",
+        "config_hash": "5408b3d089d0f84001707f02b39fc4efdbad9065dcda107e07bbc4b79dec5c77",
+        "observed_at": "2026-10-25T13:48:10.882Z"
+      }
+    },
+    {
+      "id": "independent-review",
+      "status": "pass",
+      "evidence": {
+        "path": ".genesis/evidence/T06.3-independent-review-1e75fd4d-cab9-4fcc-907b-2cfd99aa8bd0.json",
+        "hash": "0c28ddabb1f0b8f43a4b819af8ce22d81e2f2736643f79cd58a4bdba26f2b9c8",
+        "source_hash": "786ac1717f8dc58704bd6e4e640c51c0ddeaf73d01778d303f6d4782cfc2ca68",
+        "config_hash": "5408b3d089d0f84001707f02b39fc4efdbad9065dcda107e07bbc4b79dec5c77",
+        "observed_at": "2026-10-25T13:48:42.234Z"
+      }
+    }
+  ],
+  "protocol_report": ".genesis/evidence/T06.3-protocol-9bee798d4c5740038574f7414dca72b0.json",
+  "package_tests": {
+    "passed": 46,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "independent": {
+    "report": ".genesis/evidence/T06.3-independent.json",
+    "raw_report_sha256": "3f5868a614b53d77e54cfbf3dabdcaca588ad4e793e5661f9205fb6166b7daa3",
+    "model": "gpt-6.1-sol",
+    "fresh_context": true,
+    "source_blind": true,
+    "assertions_passed": 115,
+    "assertions_failed": 0,
+    "wheel_sha256": "0d224cd676071330b42372e4a8189d3a452276eaef0cb6641bf4d7df433d5b4f",
+    "own_synthetic_inputs": true,
+    "actual_human_collection": false,
+    "judge_calls": 0,
+    "limitations": [
+      "Tooling verification only; no human collection, subjective rubric validity or calibrated judge quality established.",
+      "No provider, browser, bank probe, or Astra calls made.",
+      "Backward compatibility exercised through public installed CLI help entry points, not bank runtime scenarios.",
+      "Human identity, assistance and blindness attestations cannot be authenticated through this protocol."
+    ],
+    "setup_corrections": [
+      {
+        "attempt": "pip wheel --no-build-isolation",
+        "result": "Failed metadata generation because build interpreter lacks bdist_wheel; corrected using standard isolated pip wheel. No product defect inferred."
+      }
+    ]
+  },
+  "runtime_health": {
+    "api_8001": 200,
+    "https_workspace_3443": 200,
+    "tls": "existing local certificate explicitly pinned; no machine trust changes"
+  },
+  "manual_guide": {
+    "path": "docs/MANUAL_TEST_SCENARIOS.md",
+    "new_scenarios": [
+      "P06-M09",
+      "P06-M10",
+      "P06-M11"
+    ],
+    "developer_manual_runs": "Not run",
+    "actual_rating_confirmation": "Observed as actual user reply; separate from application/CLI manual run"
+  },
+  "limits": [
+    "One assisted reviewer; no independent unaided annotation or agreement estimate.",
+    "All pilot partitions exposed; holdout is organizational, not unseen confirmatory data.",
+    "Pilot below frozen reviewer/case/family thresholds; no judge predictions, confusion accuracy, calibration or reliability claim.",
+    "Synthetic protocol confusion/control fixtures are not actual human/model evaluation evidence.",
+    "Raw evidence/input registries retained locally and ignored; safe canonical metadata does not imply raw artifacts are committed.",
+    "T06.4 queued; no P06 closure, implementation approval, new provider allowance or Astra use.",
+    "Historical UX21/20 live-request overrun preserved; this task makes0 tool model calls."
+  ],
+  "human_approval": {
+    "date_client": "2026-10-25",
+    "quote": "approved and proceed",
+    "scope": "Approve reviewed T06.3 implementation and limitations; commit/push before bounded T06.4. No new judge budget/calibration or future phase approval."
+  },
+  "closure_correction": "First closure rejected exact4ignored inputs outside task scope; scope corrected, both executable gates rerun under corrected config and actual user approval re-recorded. No implementation/data changes or fabricated approval."
+}
