@@ -1,0 +1,132 @@
+{
+  "task": "T06.1",
+  "phase": "P06",
+  "baseline": "36c95d7",
+  "branch": "codex/p06-evaluator",
+  "status": "approved-task",
+  "task_complete": true,
+  "phase_complete": false,
+  "human_approval": {
+    "quote": "approved, proceed",
+    "date_client": "2026-10-25",
+    "scope": "Approve reviewed T06.1; commit/push then bounded T06.2, not P06 phase completion or future results"
+  },
+  "spec_ids": [
+    "SPEC14"
+  ],
+  "invariant_ids": [
+    "INV29",
+    "INV31"
+  ],
+  "source": ".genesis/sources/P06_SOURCE.json",
+  "development": {
+    "successful_report": ".genesis/evidence/T06.1-clean-install-bank-evaluator-clean-k06tvkp0.json",
+    "contract_tests_passed": 3,
+    "historical_build_failure": ".genesis/evidence/T06.1-clean-install-bank-evaluator-clean-xhx6_k2d.json"
+  },
+  "independent": {
+    "status": "pass-with-scope-limitations",
+    "report": ".genesis/evidence/T06.1-independent.json",
+    "model": "gpt-6.1-sol",
+    "fresh_context": true,
+    "source_blind": true,
+    "current_assertions": {
+      "count": 72,
+      "passed": 72,
+      "failed": 0
+    },
+    "wheel": "d4ebdcf7598635e48640a6cc07c8567f897e8743c7f79b85138bf059b960ed7d",
+    "defects_found": [],
+    "cleanup": {
+      "owned_processes_remaining": 0,
+      "method": "All subprocess.run calls returned; CIM inventory found no python/banking-eval commands containing own final trial path, toy_child.py or banking_operator.py after completion",
+      "external_services": "Existing private infrastructure was not stopped or reset by checker; bridge lifecycle invoked only through allowed protocol",
+      "database_namespace_cleanup": "Not independently inspected"
+    },
+    "historical_results": [
+      {
+        "kind": "earlier-wheel",
+        "path": "C:\\Users\\mprem\\.codex\\worktrees\\banking-ux\\banking-memory-agent\\.genesis\\evidence\\T06.1-independent-raw-cf9ca3ec0cbc4638a5a70b77149de4a4\\historical",
+        "wheel_sha256": "b6b08a608b75e27fdcad2eabecb7a3a87bc032427451006325307e9bc7d04b96",
+        "assertions": 47,
+        "failed": 0,
+        "reason_rebuilt": "Maker announced whitespace ID/op boundary refinement; current artifact rebuilt and entire main suite rerun"
+      },
+      {
+        "kind": "checker-setup-error",
+        "description": "Initial own toy filename operator.py shadowed Python stdlib operator and caused import failure before behavioral execution. Renamed toy_child.py; package not implicated. Historical record retained."
+      },
+      {
+        "kind": "checker-harness-error",
+        "description": "Two initial extension assertions attempted setattr on frozen Observation dataclass; adapter raised FrozenInstanceError and runner returned unknown correctly. Replaced with dataclasses.replace to construct malformed observations; corrected extension passed. Earlier failure records retained separately; no product change requested."
+      }
+    ],
+    "group_sizes": {
+      "clean_install_public_surface": 3,
+      "cli_api_contract_and_negative_behavior": 50,
+      "manifest_demo_replay_custom_adapter": 11,
+      "guarded_application_bridge": 8
+    }
+  },
+  "native_gate": {
+    "path": ".genesis/evidence/T06.1-clean-install-2c2c04ac-5c0e-4ff5-a309-80ce76ca839c.json",
+    "hash": "cecd4e91a79bb7641f67c28098ea6c4aa44c875ed3d4d33cb3df39268fe4c2b4",
+    "source_hash": "e93af40ef1362178a6617d39f71c9f61e66a055dee0030633ec60ce1404fbbb8",
+    "config_hash": "0f64d56152b4acb9e3a47f7a8a763a14d8ad233cb684888c3bb4f6074de74261",
+    "observed_at": "2026-10-25T12:27:27.922Z",
+    "status": "pass",
+    "unchanged_source": true,
+    "contract_tests_passed": 3,
+    "contract_tests_failed": 0,
+    "contract_tests_errors": 0
+  },
+  "paid_calls": 0,
+  "Astra_used": false,
+  "human_scenarios": {
+    "ids": [
+      "P06-M01",
+      "P06-M02",
+      "P06-M03",
+      "P06-M04"
+    ],
+    "status": "Not run"
+  },
+  "limits": [
+    "Projection-smoke grader is unvalidated; T06.2 not implemented",
+    "No subjective judge or human calibration; T06.3 queued",
+    "Replay is historical, hashes not authenticity",
+    "External banking bridge requires app checkout/private config; standalone demo does not",
+    "Private trials, not normal demo reset or production benchmark",
+    "Raw artifacts remain local/ignored; no phase completion approval"
+  ],
+  "working_diff_scan": {
+    "files_scanned": 19,
+    "credential_matches": 0,
+    "staged": false
+  },
+  "remaining_work": [],
+  "review_runtime": {
+    "api_health": 200,
+    "https_frontend": 200,
+    "paid_transport": "blocked",
+    "system_tls_trust_changed": false
+  },
+  "previous_native_gates": [
+    {
+      "path": ".genesis/evidence/T06.1-clean-install-2526ec5b-b765-42c3-8bf4-6750e7e68541.json",
+      "hash": "0a669f7a6f4c06f9a019dad6fa8c4eca60b9d5c198a3aea3689130f3a121f576",
+      "source_hash": "775150b5cd828f09ac2b42a83c5b0cb158d45af0c8b0fdf9d2a1f2ffaddcfe66",
+      "config_hash": "0f64d56152b4acb9e3a47f7a8a763a14d8ad233cb684888c3bb4f6074de74261",
+      "observed_at": "2026-10-25T12:13:29.215Z",
+      "status": "pass",
+      "unchanged_source": true,
+      "contract_tests_passed": 3,
+      "contract_tests_failed": 0,
+      "contract_tests_errors": 0,
+      "junit": ".genesis/evidence/T06.1-contracts.xml",
+      "reuse_validated": true,
+      "current_source_valid": false,
+      "prior_to_approval_labels": true
+    }
+  ]
+}

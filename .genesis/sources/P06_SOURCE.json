@@ -1,0 +1,90 @@
+{
+  "source_path": "C:\\Users\\mprem\\Documents\\Codex\\2026-10-17\\https-antern-co-evidence-portfolio-https\\outputs\\banking-implementation-plan\\PLAN_READER.html",
+  "sha256": "9f59fb49a54ea305387465fb606deca567d8118d7e296f7edee8605559ba70fd",
+  "authorization": "User approved proceed after T05.4/P05 review; P05 pushed36c95d7 before P06",
+  "baseline": "36c95d7",
+  "tasks": [
+    [
+      "T06.1 · Version evaluator interface and package",
+      "P06 · depends on T05.4 · planned",
+      "EV01, PL02",
+      "SPEC14, INV29, INV31",
+      "Implementation",
+      "Generalize early runner into Task/Adapter/Trace/Grade/RunManifest contracts; second simple adapter; package exports and deterministic CLI example.",
+      "Acceptance gate",
+      "Build wheel and install/run outside source checkout without editable imports; actual command documented.",
+      "Evidence target",
+      "evidence/evaluator/<run-id>/clean-install/"
+    ],
+    [
+      "T06.2 · Implement and attack outcome/trajectory graders",
+      "P06 · depends on T06.1 · planned",
+      "EV02",
+      "SPEC14, INV30",
+      "Implementation",
+      "Project relevant final state, separately enforce mandatory observable invariants, count blocked attempt vs leak and efficiency; accept equivalent valid calls.",
+      "Acceptance gate",
+      "Mutation fixtures induce false success/foreign/duplicate defects and safe extra verification; invalid gold becomes invalid not hidden pass.",
+      "Evidence target",
+      "evidence/evaluator/<run-id>/grader-validation/"
+    ],
+    [
+      "T06.3 · Collect human rubric and calibrate optional judge",
+      "P06 · depends on T06.2 · planned",
+      "EV03, KR03",
+      "SPEC14, SPEC15, INV10, INV30, INV32",
+      "Implementation",
+      "Label synthetic explanation/claim traces with rubric; split calibration/holdout by family; optional judge blind/order/verbosity checks, actual annotator count.",
+      "Acceptance gate",
+      "Confusion/unknown/disagreement data available; judge remains exploratory if held-out evidence inadequate.",
+      "Evidence target",
+      "evidence/evaluator/<run-id>/human-calibration/"
+    ],
+    [
+      "T06.4 · Close release CI and recovery checks",
+      "P06 · depends on T06.3 · planned",
+      "PL02, PL03, OB03",
+      "SPEC12, SPEC16, INV27, INV28, INV31",
+      "Implementation",
+      "Split deterministic CI from opt-in budgeted model eval; check frontend/backend/wheel/security and rehearsal rollback/restore; exercise monitoring alerts.",
+      "Acceptance gate",
+      "Seeded gate failure blocks release; secrets absent; migration/backup recovery and alert delivery actually recorded.",
+      "Evidence target",
+      "evidence/delivery/<run-id>/gates/"
+    ]
+  ],
+  "phase_contract": [
+    "P06 — Reusable evaluator and validated graders",
+    "Entry:",
+    "P05 closed with evidence.",
+    "Outcome:",
+    "Generalize early runner into installable evaluator; validate state/process oracles and subjective rubric.",
+    "Primary components:",
+    "EV02 EV03 PL02",
+    "Work items:",
+    "T06.1, T06.2, T06.3, T06.4. See",
+    "backlog",
+    ".",
+    "First invariant gates:",
+    "INV30",
+    "Exit criteria:",
+    "Clean wheel install outside checkout and two adapters run; seeded defects fail; valid alternate paths pass; judge calibration status is honest; isolated repeatability verified.",
+    "Evidence produced:",
+    "Versioned task/adapter/trace/grade schemas; CLI example; clean install log; oracle mutation tests; human label/rubric and held-out analysis when collected.",
+    "Recovery/rollback:",
+    "Version grader correction; retain old/new verdicts. Mark unsupported subjective grade exploratory; do not overwrite old results."
+  ],
+  "spec14_contract": [
+    "SPEC14 — Evaluator contracts and graders",
+    "Components:",
+    "EV01, EV02, EV03, PL02",
+    "Behavioral contract:",
+    "Version Task/Adapter/ObservableTrace/FinalState/Grade/RunManifest. State oracle checks relevant banking/preference effects; trajectory checks mandatory reads/permissions/confirmations and false success separately from efficiency. Accept equivalent valid paths. Broken oracle -> invalid/unknown. Human rubric labels explanation support and helpfulness; optional model judge uses held-out calibration. Install evaluator wheel outside checkout with a second simple adapter.",
+    "Failure/recovery contract:",
+    "No source/grade evidence -> unknown, not fabricated pass. Invalid cases and infra failures are retained and denominators predeclared. A subjective judge cannot replace exact money/ownership checks.",
+    "Acceptance criteria:",
+    "Seed wrong amount, foreign access, duplicate case, unnecessary safe verification, altered read-log ordering and ambiguous gold. Valid outcomes pass and real violations fail. Clean wheel installs/imports/runs a deterministic fixture.",
+    "Excluded:",
+    "One generic judge as sole correctness measure, requiring one golden action order or pretending an unavailable second annotator exists."
+  ]
+}

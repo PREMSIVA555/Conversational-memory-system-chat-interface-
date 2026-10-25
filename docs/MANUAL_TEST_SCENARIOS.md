@@ -18,10 +18,10 @@ Last updated: **2026-10-25, Asia/Calcutta**. This is the cumulative guide for te
 | P05 / T05.1 | Approved2026-10-25 and checkpoint pushed7bf5014; P05 partial | Save, view, edit and cancel session-bound support previews |
 | P05 / T05.2 | Approved2026-10-25; P05 partial | Explicit local case creation, atomic audit/receipt/outbox and same-key replay |
 | P05 / T05.3 | Approved2026-10-25; P05 partial | Read-only submission reconciliation and fresh owned case status across logins |
-| P05 / T05.4 | Approved 2026-10-25; closure checkpoint | Executable30-checkpoint journey, fault variants and card-payment routing correction |
+| P05 / T05.4 | Approved and closed 2026-10-25 | Executable30-checkpoint journey, fault variants and card-payment routing correction |
 | P06–P08 | Not started | Reusable evaluator, release comparisons and later maintenance |
 
-Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) was approved and pushed as `2a9f200`. T05.1 workspace integration develops on `codex/p05-workspace` from that approved baseline; the original `feat/banking-support-extension` checkout and its receipts remain preserved. T05.1–T05.4 approved 2026-10-25; P05 closure and phase commit follow current native gate validation.
+Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) was approved and pushed as `2a9f200`. T05.1 workspace integration develops on `codex/p05-workspace` from that approved baseline; the original `feat/banking-support-extension` checkout and its receipts remain preserved. T05.1–T05.4 approved and closed2026-10-25; P05 pushed as36c95d7 before P06.
 
 Historical pre-UX T05.1: native gate15 passes; independent90 behavioral plus21 environment assertions; a75-test run had73 passes/two timing failures, both passed targeted reruns. That earlier browser used intercepted replies. Current integration has separate real OIDC/UI/API checks and a fresh non-Astra backend retest with214 passing assertions after an erasure-race correction. See the current [P05 review](../.genesis/P05.md) for final gate/browser results and limits. None of these automated results count as your manual runs.
 
@@ -550,3 +550,39 @@ The independent fresh non-Astra verifier passed28 resource/session checks and32 
 ### P05 automated evidence and approval
 
 The user approved T05.4/P05 on2026-10-25 after the209-test native regression/TypeScript pass and fresh separate non-Astra completion review (124 backend and13 browser assertions). Failed earlier checks/setup runs are retained. See `.genesis/T05.4_REVIEW.json` for the final source-bound native gate and `.genesis/evidence/T05.4-completion-independent.json` for separate browser/backend evidence. Raw evidence remains local/ignored, not implicitly committed. Human manual scenarios remain **Not run**. Synthetic/local scope, queued outbox, unavailable vector lane and blocked legacy model planner remain limitations; approval does not turn them into delivery or live-naturalness claims.
+
+## 13. P06 — evaluator package (T06.1 approved2026-10-25)
+
+P05 was approved/closed and pushed36c95d7 before this phase. The user approved T06.1 with “approved, proceed” on2026-10-25. T06.2 follows its approved checkpoint push; T06.3–T06.4 remain queued. No validated banking grader, subjective judge or P06 completion is claimed. All human scenarios below: **Not run**. Automated evidence is separate in `.genesis/T06.1_REVIEW.json`.
+
+### P06-M01 — standalone install and command adapter
+
+- **Setup/user:** Developer terminal, Python3.11+, new environment/folder outside checkout. No banking login or provider key. Follow `docs/EVALUATOR.md` build/install commands; use fresh output paths.
+- **Steps:** Run installed `banking-eval --demo --output counter-run.json`, inspect import origin from the same interpreter.
+- **Expected:** Exit0, projection count2, three actual counter observations, unique run/namespace, version1, explicit source/data/model/tools/policy/environment/grader/reset identities. Import resolves under new site-packages. Model is not used. This counter is synthetic, not bank evidence.
+- **Fail if:** Editable/source imports are needed, dependencies missing, version/provenance absent or a subjective/banking-security grade is claimed.
+- **Cleanup:** Keep receipts while reviewing; optional environment removal only after checking its exact temporary path. No normal bank data changed.
+
+### P06-M02 — replay is visibly historical
+
+- **Setup:** M01 report, same installed interpreter.
+- **Steps:** Run `banking-eval --demo --replay counter-run.json --output counter-replay.json`.
+- **Expected:** Exit0/count2, distinct run ID, adapter kind replay-not-fresh-execution, original reset identity retained. Saved verdict changes must not override recomputed state; a changed raw observation without matching hash or a different task is invalid, not a fresh pass.
+- **Fail if:** Replay is called a new banking execution/reset, overwrites old evidence, or blindly trusts saved grade.
+- **Cleanup/limits:** Keep original and any deliberately edited copies separately. Hashes do not authenticate a self-consistent malicious record.
+
+### P06-M03 — failure is not success
+
+- **Setup:** Developer's own synthetic operator/task or automated `tests/p06` checks.
+- **Steps:** Supply wrong projection value, unsupported schema version, missing state/identity, boolean true where expected1, malformed JSON, nonzero child exit and a child exceeding the timeout. Reuse an existing output path once.
+- **Expected:** Wrong observed projection/type fails; invalid contracts/state are invalid; process/timeout infra failure is unknown. Existing evidence remains unchanged. No false pass. Projection grades remain explicitly unvalidated smoke checks.
+- **Fail if:** Failure/missing evidence becomes a pass or old output is overwritten.
+- **Cleanup:** Close owned child processes and retain failed receipts. Banking outcome/trajectory mutation validation belongs to T06.2.
+
+### P06-M04 — installed package drives the actual guarded bank operator
+
+- **Setup:** Developer only, existing private PostgreSQL16/Redis7 test configuration. Run `python scripts/p061_check.py`; no normal-demo login, reset or manual financial mutation.
+- **Steps:** Inspect two outside-checkout installed-CLI bridge reports and their observed product HTTP results.
+- **Expected:** Actual HTTP200 product discovery, identity.matched=true, financial_data_unchanged=true, model_calls0. Private namespaces differ; initial semantic hashes match. Source/fixture manifests and active policy version are recorded. The bridge is external application code; the standalone demo needs none of it.
+- **Fail if:** A normal database is reset, namespaces collide, evidence is merely replayed but called fresh, or paid calls occur.
+- **Cleanup/limits:** Guarded worlds and raw artifacts stay available locally. This verifies package integration/repeatability, not the future validated graders or production reliability.
