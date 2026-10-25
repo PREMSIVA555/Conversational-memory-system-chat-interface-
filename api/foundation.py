@@ -82,7 +82,7 @@ class EmptyRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
 
-def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_seconds=10,turn_worker_paused=False,cards_enabled=None,loans_enabled=None,policies_enabled=None,workspace_enabled=None,support_enabled=None):
+def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_seconds=10,turn_worker_paused=False,cards_enabled=None,loans_enabled=None,policies_enabled=None,workspace_enabled=None,support_enabled=None,support_confirmation_enabled=None):
     if workspace_enabled is None:workspace_enabled=os.getenv('BANK_WORKSPACE_ENABLED','false').lower()=='true'
     if turns_enabled is None:turns_enabled=os.getenv('BANK_TURNS_ENABLED','false').lower()=='true'
     configure_security_logging()
@@ -262,7 +262,7 @@ def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_
     from api.turns import install as install_turns
     install_turns(app,database,principal,mutation,enabled=turns_enabled,run_seconds=turn_run_seconds,workspace_enabled=workspace_enabled)
     from api.support import install as install_support
-    install_support(app,database,principal,mutation,enabled=support_enabled if support_enabled is not None else os.getenv('BANK_SUPPORT_ENABLED','false').lower()=='true')
+    install_support(app,database,principal,mutation,enabled=support_enabled if support_enabled is not None else os.getenv('BANK_SUPPORT_ENABLED','false').lower()=='true',confirmation_enabled=support_confirmation_enabled if support_confirmation_enabled is not None else os.getenv('BANK_SUPPORT_CONFIRM_ENABLED','false').lower()=='true')
     if database:
         from store.banking_provider import AccountProvider
         from jobs.banking_turns import TurnWorker

@@ -32,6 +32,16 @@ On this Windows machine, a dependency junction across D: and C: prevented Next b
 
 ## Verification and honest limits
 
+### T05.2 local confirmation (approved2026-10-25)
+
+`BANK_SUPPORT_CONFIRM_ENABLED` defaults false. Enable it only after additive0031 is installed with `python scripts/p052_upgrade.py --recorded-migrations <original-checkout>/store/banking_migrations`; the installer validates actual Docker identity, existing hashes and unchanged financial resources. Earlier migration files remain immutable. The authenticated capabilities route enables a separate **Submit support request** button only for the saved exact description; unsaved edits must first be saved. No model tool can confirm.
+
+Confirmation uses a canonical operation UUID plus exact preview version/hash. The trusted transaction reauthorizes the current session/product, serializes with source erasure/edit, and creates case, mandatory business audit, immutable creation receipt and local outbox before consuming the proposal. Runtime cannot directly write those new tables. An audit/receipt/outbox/commit failure rolls back everything. Optional telemetry stays on its existing bounded exporter path. No external support delivery or worker/status-advance capability is added.
+
+Same key/body returns the same creation receipt within24hours. Same key with changed body conflicts. A consumed preview with a new key, or an expired receipt, returns409 plus an authorized existing-case reference. Durable proposal/customer-source uniqueness outlives receipt replay retention. Replay rechecks current authentication, ownership, source/session and resource access; it never authorizes another login. Receipts describe creation, not current support status. Source erasure scrubs the case issue payload and removes preview text; minimal case uniqueness/audit/receipt/outbox metadata remains without issue text. This retention choice must remain visible to future erasure/continuity work.
+
+The browser retains its original confirmation key under the current login in session storage, freezes editing after uncertain submission, and offers **Check original submission** using exactly that request. It retains successful keys for same-login reload recovery. It never automatically mints a new key to resolve uncertainty. Disabled browser storage limits refresh recovery; full operation reconciliation and current owned case status across later logins remain T05.3. The browser test intentionally drops a real post-commit acknowledgement; SQL fault tests stay in private guarded worlds. Live provider transport remains blocked. Human scenarios P05-M09–M12 remain Not run until actually observed.
+
 ### T05.1 workspace integration (pending review)
 
 Completed banking answers offer **Get help with this**. The support editor selects the source answer's owned product, or lets the customer choose General/account/card/loan and a friendly owned product from paginated APIs. No account UUID entry is required. General has no resource. The server rechecks ownership on every preview read/write; the displayed friendly name is outside the immutable hashed payload.

@@ -1,0 +1,131 @@
+{
+  "task": "T05.2",
+  "phase": "P05",
+  "date_client": "2026-10-25",
+  "recorded_at": "2026-10-25T04:45:32.979994+00:00",
+  "status": "approved-task",
+  "human_approval": {
+    "quote": "approved, proceed",
+    "date_client": "2026-10-25",
+    "scope": "T05.2 result approved; proceed T05.3"
+  },
+  "task_complete": true,
+  "phase_complete": false,
+  "approved_baseline": "7bf5014",
+  "branch": "codex/p05-workspace",
+  "spec_ids": [
+    "SPEC10",
+    "SPEC11"
+  ],
+  "invariant_ids": [
+    "INV17",
+    "INV18",
+    "INV19",
+    "INV28"
+  ],
+  "native_gate": {
+    "path": ".genesis/evidence/T05.2-confirm-atomicity-69b48d9f-ac5c-4d91-a4e2-bd8c5cb2de84.json",
+    "hash": "e709c869b23401bd8aaa89510b6257c42690f433716357e744f5094903f8ede5",
+    "source_hash": "11d6d1f3a493640725acdad63898f8ee42b61c9ecf09fa22f280952a970c237b",
+    "config_hash": "cba3fd4ee1fabd90739bbe7182075c70606127d938fc13aa536dcb2465d2d444",
+    "observed_at": "2026-10-25T04:40:30.482Z",
+    "unchanged_source": true,
+    "current_source_valid": true,
+    "pytest_passed": 169,
+    "pytest_failed": 0,
+    "pytest_errors": 0,
+    "pytest_skipped": 0,
+    "typescript_exit": 0,
+    "junit": ".genesis/evidence/T05.2-regression.xml"
+  },
+  "independent_backend": {
+    "report": ".genesis/evidence/T05.2-independent.json",
+    "status": "passed",
+    "assertions": 134,
+    "passed": 134,
+    "failed": 0,
+    "scenario_groups": 41,
+    "fresh_context": true,
+    "Astra_used": false,
+    "source_tests_operator_maker_results_read": false
+  },
+  "maker_browser": {
+    "report": ".genesis/evidence/T05.2-browser.json",
+    "checks_passed": 7,
+    "errors": 0,
+    "actual_OIDC_HTTPS": true,
+    "post_commit_acknowledgement_dropped": true,
+    "known_and_unknown_reload_recovery": true,
+    "synthetic_case_records_retained": 2
+  },
+  "independent_ui": {
+    "report": ".genesis/evidence/T05.2-ui-independent.json",
+    "status": "passed_with_bounded_copy_retest",
+    "initial_full_run": {
+      "passed": 13,
+      "failed": 2,
+      "assertions": 15,
+      "report": ".genesis/evidence/T05.2-ui-independent-first-failure.json"
+    },
+    "bounded_retest": {
+      "assertion_count": 4,
+      "passed_assertions": 4,
+      "failed_assertions": 0
+    },
+    "current_failures": [],
+    "full_run_repeated_after_copy_correction": false,
+    "interpretation": "Original13 passing behaviors remain evidence from the earlier full UI run; only corrected EN/HI Help guidance, saved-preview submit gating and cleanup were exercised in this bounded retest. This is not a rerun of all15 original assertions.",
+    "actual_OIDC_HTTPS": true,
+    "certificate_permission": {
+      "answer": "Allow for this local test browser",
+      "date_client": "2026-10-25",
+      "scope": "Isolated localhost:3443 browser only; no system-wide trust changes"
+    },
+    "system_certificate_trust_changed": false,
+    "source_tests_operator_maker_results_read": false,
+    "private_credentials_read_for_login": true,
+    "credentials_in_evidence": false,
+    "human_approval": false
+  },
+  "retained_failures": [
+    ".genesis/evidence/T05.2-development-first-failure.xml",
+    ".genesis/evidence/T05.2-development-erasure-failure.xml",
+    ".genesis/evidence/T05.2-first-failure.json",
+    ".genesis/evidence/T05.2-browser-startup-failure.json",
+    ".genesis/evidence/T05.2-ui-independent-first-failure.json",
+    ".genesis/evidence/T05.2-ui-independent-tls-blocked.json"
+  ],
+  "local_upgrade": ".genesis/evidence/T05.2-demo-upgrade.json",
+  "live_provider_calls": 0,
+  "Astra_used": false,
+  "paid_transport": "blocked",
+  "manual_scenarios": "docs/MANUAL_TEST_SCENARIOS.md P05-M09 through P05-M12; human runs Not run",
+  "limits": [
+    "Local support only; no external delivery or financial mutation",
+    "Concurrent erase winner observed nine times; concurrent confirm winner unobserved, sequential confirm then erase passed",
+    "Minimal case/audit/receipt/outbox metadata survives erasure; issue text scrubbed",
+    "Same-login session-storage recovery only; new-login operation/status continuity belongs to T05.3",
+    "Raw evidence ignored/local, not claimed committed",
+    "Native IME, full accessibility, production load and OS sandbox/source audit not certified",
+    "Independent UI evidence combines original13 passing behaviors with4 bounded retest checks; not a full rerun of all15 original assertions."
+  ],
+  "next": "Approved T05.2 checkpoint before implementing T05.3; P05 remains partial.",
+  "prior_native_gates": [
+    {
+      "path": ".genesis/evidence/T05.2-confirm-atomicity-0712c841-0427-45fd-bc79-4d932131ab77.json",
+      "hash": "029a440c85de72d3ddac27eb3180d3902278ac7b3e9e9c46af7fbd41001cf180",
+      "source_hash": "7827dd62d8e2ddf83b612e566dfc6b3edc35c2977b145c337b920f6089dbf99f",
+      "config_hash": "e700bc6bd1996ab55accb4ba17e94d81abf6fa388e56c4fda47db3973fa33c82",
+      "observed_at": "2026-10-25T03:19:23.331Z",
+      "unchanged_source": true,
+      "pytest_passed": 167,
+      "pytest_failed": 0,
+      "pytest_errors": 0,
+      "pytest_skipped": 0,
+      "typescript_exit": 0,
+      "junit": ".genesis/evidence/T05.2-regression-pre-help-correction.xml",
+      "current_source_valid": false,
+      "historical_note": "167-test gate predates independent UI Help-copy defect correction; a new frozen-source gate is required."
+    }
+  ]
+}

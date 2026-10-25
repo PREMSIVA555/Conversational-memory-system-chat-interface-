@@ -2,3 +2,4 @@
 # Existing migrations retain their historical bytes and checksums.
 store/banking_migrations/0029_workspace.sql text eol=lf
 store/banking_migrations/0030_support_erasure_fence.sql text eol=lf
+store/banking_migrations/0031_support_confirmation.sql text eol=lf

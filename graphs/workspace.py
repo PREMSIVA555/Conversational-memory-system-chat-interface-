@@ -113,8 +113,8 @@ class WorkspaceCoordinator:
             elif re.fullmatch(r'(thanks|thank you|धन्यवाद)[! .।]*',lower):
                 say('You’re welcome. I’m here when you need to check something else.','आपका स्वागत है। अन्य जानकारी चाहिए तो बताइए।','greeting')
             elif re.fullmatch(r'(help|what can you do|मदद)[? .!।]*',lower) or request.get('action')=='help':
-                say('I can check balances, transactions, card limits, loan schedules and payment records. Pick a product or ask a question. Transfers and case submission are not available.',
-                    'मैं बैलेंस, लेनदेन, कार्ड सीमा, ऋण अनुसूची और भुगतान रिकॉर्ड देख सकता हूँ। उत्पाद चुनें या प्रश्न पूछें। ट्रांसफर और केस जमा करना उपलब्ध नहीं है।','help')
+                say('I can check balances, transactions, card limits, loan schedules and payment records. Pick a product or ask a question. For support, use Get help with this below an answer to prepare and review your request. Transfers are not available.',
+                    'मैं बैलेंस, लेनदेन, कार्ड सीमा, ऋण अनुसूची और भुगतान रिकॉर्ड देख सकता हूँ। उत्पाद चुनें या प्रश्न पूछें। सहायता अनुरोध तैयार करने और जाँचने के लिए उत्तर के नीचे इस बारे में सहायता लें चुनें। ट्रांसफर उपलब्ध नहीं हैं।','help')
             elif re.search(r'\b(transfer|send money|pay now|block my|unblock|change.*limit|submit.*case)\b|पैसे भेज|ट्रांसफर',lower):
                 say('I can help you review information, but I can’t perform that action.','मैं जानकारी देखने में मदद कर सकता हूँ, लेकिन यह कार्रवाई नहीं कर सकता।','help','unsupported');resource=None;lineage=[]
             elif re.fullmatch(r'(reply in (hindi|english)|be (concise|detailed)|हिंदी में जवाब दो|अंग्रेजी में जवाब दो)[.।]*',lower):

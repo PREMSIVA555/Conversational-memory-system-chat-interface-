@@ -6,6 +6,8 @@ import { Kind, Product, ProductPage, Resource, Session } from "./workspaceTypes"
 type Draft = { source_turn_id: string; topic: "general" | Kind; resource_id: string | null; summary: string };
 type Preview = { id: string; version: number; payload_hash: string; payload: Draft; resource_label: string | null; expires_at: string; status: string };
 type Selected = Resource & { label?: string };
+type ConfirmRequest = { proposal_id: string; operation_key: string; version: number; payload_hash: string };
+type Receipt = { case_number: string; created_at: string; result: string };
 const base = "/bank-api/support/proposals";
 const productLabel = (p: Product) => p.display_name + (p.last_four ? ` · ${p.kind} •••• ${p.last_four}` : "");
 
@@ -25,6 +27,16 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
   const [cursor, setCursor] = useState<string | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productError, setProductError] = useState(false);
+  const [confirmationEnabled, setConfirmationEnabled] = useState(false);
+  const [confirmation, setConfirmation] = useState<ConfirmRequest | null>(null);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [existingCase, setExistingCase] = useState("");
+  const confirmationRef = useRef<ConfirmRequest | null>(null);
+  const operationStorage = `bank-support-confirm:${turnId}`;
+  const rememberConfirmation = useCallback((value: ConfirmRequest | null) => {
+    confirmationRef.current = value; setConfirmation(value);
+    try { if (value) sessionStorage.setItem(operationStorage, JSON.stringify({ session: session.csrf_token, value })); else sessionStorage.removeItem(operationStorage); } catch { /* Same mounted editor retains its key. */ }
+  }, [operationStorage, session.csrf_token]);
   const alive = useRef(true), working = useRef(false);
   const controller = useRef(new AbortController());
   const productController = useRef(new AbortController());
@@ -35,8 +47,15 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
   const remember = useCallback((value: Preview | null) => { currentPreview.current = value; setPreview(value); }, []);
   useEffect(() => {
     alive.current = true; controller.current = new AbortController();
+    try { const saved = JSON.parse(sessionStorage.getItem(operationStorage) || "null"); if (saved?.session === session.csrf_token) { confirmationRef.current = saved.value; setConfirmation(saved.value); } else sessionStorage.removeItem(operationStorage); } catch { /* No recoverable local record. */ }
     return () => { alive.current = false; controller.current.abort(); productController.current.abort(); };
   }, []);
+  useEffect(() => {
+    if (!open) return;
+    void fetch(`${base}/capabilities`, { cache: "no-store", signal: controller.current.signal }).then(async r => {
+      if (r.ok) { const value = await r.json(); if (current()) setConfirmationEnabled(value.confirmation_enabled === true); }
+    }).catch(() => { /* Default-off confirmation remains unavailable. */ });
+  }, [open, current]);
 
   const read = useCallback(async (hydrate = true) => {
     if (working.current) return;
@@ -124,15 +143,47 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
     } finally { working.current = false; if (current()) setBusy(false); }
   }
 
+  async function submitConfirmation() {
+    if (working.current || !preview || !confirmationEnabled || receipt || existingCase) return;
+    working.current = true; setBusy(true); setMessage("");
+    const request = confirmationRef.current ?? { proposal_id: preview.id, operation_key: crypto.randomUUID(), version: preview.version, payload_hash: preview.payload_hash };
+    rememberConfirmation(request);
+    try {
+      const { proposal_id, ...body } = request;
+      const response = await fetch(`${base}/${proposal_id}/confirm`, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": session.csrf_token }, body: JSON.stringify(body), signal: controller.current.signal });
+      if (!current()) return;
+      if (response.status === 401) { onExpired(); return; }
+      const result = await response.json(); if (!current()) return;
+      if (response.ok && result.result === "case.created") {
+        // Retain the original request key across refresh; a consumed preview
+        // can recover its immutable creation receipt without a new operation.
+        setReceipt(result);
+        remember({ ...preview, status: "consumed" });
+        setMessage(say("Your support request was recorded.", "आपका सहायता अनुरोध दर्ज हो गया है।"));
+      } else if (response.status === 409 && result.detail?.case_number) {
+        setExistingCase(result.detail.case_number); rememberConfirmation(null); remember({ ...preview, status: "consumed" });
+        setMessage(say("A support request already exists for this question.", "इस प्रश्न के लिए सहायता अनुरोध पहले से मौजूद है।"));
+      } else if ([404, 409, 422].includes(response.status)) {
+        rememberConfirmation(null); setUncertain(true);
+        setMessage(say("This saved preview cannot be submitted. Refresh its saved state.", "यह सेव किया गया पूर्वावलोकन जमा नहीं हो सकता। सेव की गई स्थिति रीफ़्रेश करें।"));
+      } else {
+        setMessage(say("Submission is uncertain. Check the original submission using the same request.", "जमा होने की स्थिति स्पष्ट नहीं है। उसी अनुरोध से मूल जमा की जाँच करें।"));
+      }
+    } catch (e) {
+      if (current() && (e as Error).name !== "AbortError") setMessage(say("Submission is uncertain. Check the original submission using the same request.", "जमा होने की स्थिति स्पष्ट नहीं है। उसी अनुरोध से मूल जमा की जाँच करें।"));
+    } finally { working.current = false; if (current()) setBusy(false); }
+  }
+
   const canChoose = topic === "general" || (!loadingProducts && !productError && products.some(p => p.id === resource));
-  const frozen = busy || uncertain || unavailable || (!!preview && preview.status !== "pending");
+  const frozen = busy || uncertain || unavailable || !!confirmation || !!receipt || !!existingCase || (!!preview && preview.status !== "pending");
+  const matchesSaved = !!preview && topic === preview.payload.topic && (topic === "general" ? null : resource) === preview.payload.resource_id && summary.replace(/\r\n?/g, "\n").normalize("NFC").trim() === preview.payload.summary;
   const names = { general: say("General help", "सामान्य सहायता"), account: say("Account", "खाता"), card: say("Card", "कार्ड"), loan: say("Loan", "ऋण") };
-  const status = preview ? ({ pending: say("Draft", "ड्राफ़्ट"), cancelled: say("Cancelled", "रद्द"), expired: say("Expired", "समय समाप्त") }[preview.status] ?? preview.status) : "";
+  const status = preview ? ({ pending: say("Draft", "ड्राफ़्ट"), cancelled: say("Cancelled", "रद्द"), expired: say("Expired", "समय समाप्त"), consumed: say("Submitted", "जमा किया गया") }[preview.status] ?? preview.status) : "";
   return <section className="support-preview" aria-label={say("Support preview", "सहायता पूर्वावलोकन")}>
     <button type="button" className="support-toggle" aria-expanded={open} onClick={() => { setOpen(!open); if (!open) void read(); }}>{say("Get help with this", "इस बारे में सहायता लें")}</button>
     {open && <div className="support-editor" ref={panel}>
       <h3>{say("Prepare a support request", "सहायता अनुरोध तैयार करें")}</h3>
-      <p className="support-note">{say("Save and review your description. Case submission is not available yet.", "अपनी समस्या सेव करके जाँचें। अभी केस जमा करना उपलब्ध नहीं है।")}</p>
+      <p className="support-note">{confirmationEnabled ? say("Save and review your exact description before submitting it to this local support system.", "स्थानीय सहायता प्रणाली में जमा करने से पहले अपना पूरा विवरण सेव करके जाँचें।") : say("Save and review your description. Case submission is not available yet.", "अपनी समस्या सेव करके जाँचें। अभी केस जमा करना उपलब्ध नहीं है।")}</p>
       {message && <p role="status" className="support-message">{message}</p>}
       <button type="button" disabled={busy} onClick={() => void read()}>{say("Refresh saved preview", "सेव किया गया पूर्वावलोकन रीफ़्रेश करें")}</button>
       <form onSubmit={e => { e.preventDefault(); if (!frozen && canChoose && summary.trim()) void mutate("save"); }}>
@@ -157,7 +208,14 @@ export default function SupportPanel({ turnId, session, isCurrentSession, onExpi
         <p>{names[preview.payload.topic]}{preview.resource_label ? ` · ${preview.resource_label}` : ""}</p>
         <p className="support-summary">{preview.payload.summary}</p>
         <p className="support-note">{say("Expires", "समय सीमा")}: <time dateTime={preview.expires_at}>{new Date(preview.expires_at).toLocaleString(hi ? "hi-IN" : "en-IN")}</time></p>
-        <button type="button" disabled={busy || uncertain || preview.status !== "pending"} onClick={() => void mutate("cancel")}>{say("Cancel preview", "पूर्वावलोकन रद्द करें")}</button>
+        <button type="button" disabled={busy || uncertain || !!confirmation || preview.status !== "pending"} onClick={() => void mutate("cancel")}>{say("Cancel preview", "पूर्वावलोकन रद्द करें")}</button>
+        {confirmationEnabled && !receipt && !existingCase && (preview.status === "pending" || confirmation) && <div className="support-confirm">
+          <p>{say("Submit only the saved description displayed above.", "केवल ऊपर दिखाया गया सेव किया हुआ विवरण जमा करें।")}</p>
+          {!matchesSaved && !confirmation && <p role="status">{say("Save your changes before submitting.", "जमा करने से पहले बदलाव सेव करें।")}</p>}
+          <button type="button" disabled={busy || (!confirmation && (!matchesSaved || uncertain || unavailable))} onClick={() => void submitConfirmation()}>{confirmation ? say("Check original submission", "मूल जमा की जाँच करें") : say("Submit support request", "सहायता अनुरोध जमा करें")}</button>
+        </div>}
+        {receipt && <div className="support-receipt" role="status"><strong>{say("Support request created", "सहायता अनुरोध बनाया गया")}</strong><p>{receipt.case_number}</p><p>{say("Creation receipt", "निर्माण रसीद")}: <time dateTime={receipt.created_at}>{new Date(receipt.created_at).toLocaleString(hi ? "hi-IN" : "en-IN")}</time></p></div>}
+        {existingCase && <p className="support-receipt">{say("Existing support reference", "मौजूदा सहायता संदर्भ")}: {existingCase}</p>}
       </div>}
     </div>}
   </section>;

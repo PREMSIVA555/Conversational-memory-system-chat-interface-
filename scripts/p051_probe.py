@@ -16,7 +16,7 @@ from evals.support_world import SupportWorld
 
 
 class Probe:
-    async def start(self, *, world_class=SupportWorld):
+    async def start(self, *, world_class=SupportWorld, confirm_enabled=False):
         self.world = world_class.create(json.loads((ROOT/'.genesis/local/p01/config.json').read_text(encoding='utf-8')))
         self.identity = self.world.identity()
         self.before = self.world.semantic_hash()
@@ -26,7 +26,7 @@ class Probe:
             async def acompletion(self, **kwargs):
                 probe.model_calls += 1
                 raise RuntimeError('Paid model transport is disabled for T05.1 verification')
-        self.app = create_app(self.world.settings, turns_enabled=True, turn_worker_paused=True, support_enabled=True,
+        self.app = create_app(self.world.settings, turns_enabled=True, turn_worker_paused=True, support_enabled=True,support_confirmation_enabled=confirm_enabled,
                               workspace_enabled=True, cards_enabled=True, loans_enabled=True, model_transport=NoPaidTransport())
         sock = socket.socket(); sock.bind(('127.0.0.1', 0))
         self.url = f'http://127.0.0.1:{sock.getsockname()[1]}'

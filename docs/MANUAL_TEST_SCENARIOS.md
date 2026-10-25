@@ -15,8 +15,9 @@ Last updated: **2026-10-24, Asia/Calcutta**. This is the cumulative guide for te
 | P04 | Approved and closed | Cards, existing loans, EMI schedule/payment enquiries, bounded synthetic policy explanations |
 | H01 | Approved and closed | Explicit policy constraints and pre-model privacy hardening |
 | UX01 / TUX01 | User approved on2026-10-24 after the scroll correction; closure checks recorded in Genesis | Welcoming product workspace, automatic chat, checked follow-ups and English/Hindi |
-| P05 / T05.1 | Implemented and independently verified; user review pending | Save, view, edit and cancel session-bound support previews |
-| P05 / T05.2–T05.4 | Queued | Atomic case submission, replay, uncertain-outcome recovery and complete support journey |
+| P05 / T05.1 | Approved2026-10-25 and checkpoint pushed7bf5014; P05 partial | Save, view, edit and cancel session-bound support previews |
+| P05 / T05.2 | Approved2026-10-25; P05 partial | Explicit local case creation, atomic audit/receipt/outbox and same-key replay |
+| P05 / T05.3–T05.4 | Queued | Cross-session continuity, unknown-outcome reconciliation and complete support journey |
 | P06–P08 | Not started | Reusable evaluator, release comparisons and later maintenance |
 
 Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) was approved and pushed as `2a9f200`. T05.1 workspace integration develops on `codex/p05-workspace` from that approved baseline; the original `feat/banking-support-extension` checkout and its receipts remain preserved. T05.1 approved 2026-10-25; P05 is incomplete.
@@ -234,15 +235,15 @@ If someone changes demo rows later, re-check the database and update the snapsho
 - **Expected:** Unsupported capability or safe refusal. No transfer, account change, claimed transaction confirmation or fabricated receipt.
 - **Cleanup:** None. Browser answers alone cannot prove absence of all side effects; developer verification must inspect persistence for stronger claims.
 
-## 8. P05 — T05.1 support previews (pending user review)
+## 8. P05 — support previews and local confirmation (phase incomplete)
 
-These are task-level review scenarios. P05 is not complete. No scenario below expects a created support case, case number, submitted receipt or current case status.
+T05.1 is approved. T05.2 was approved2026-10-25; P05 is incomplete. Preview save/edit/cancel scenarios do not submit anything. Only an explicit T05.2 confirmation may create a local support case; no external delivery or current cross-session case-status claim is included.
 
 ### P05-M01 — save an exact preview
 
 - **User/setup:** A; use a finished question created in the current login. Prefer the savings balance question from P03-M02.
 - **Steps:** Click the savings product's **Balance** action, wait for the answer, then click **Get help with this**. Its account should already be selected by name. Choose **General** for this scenario. Enter `Synthetic test: please review my declined card transaction.` Click **Save preview**.
-- **Expected:** Status **pending**, **Version 1**, topic general, exact saved issue text and an expiry approximately 15 minutes after creation. The UI states **Case submission is not available yet.** Refresh the saved preview and verify the same ID/version/text through the browser Network response if needed.
+- **Expected:** Status **Draft** (API pending), **Version 1**, topic general, exact saved issue text and an expiry approximately15minutes after creation. Saving alone creates no case. Preview-only mode says submission is unavailable; T05.2 mode offers a separate **Submit support request** after saving. Refresh restores the same version/text.
 - **Fail if:** It claims a case was opened, or shows different saved text/source.
 - **Cleanup:** Keep it pending for P05-M02.
 
@@ -297,6 +298,38 @@ These are task-level review scenarios. P05 is not complete. No scenario below ex
 - **Expected:** No proposal payload survives source erasure, whether mutation returns201 or404. Later read/latest/edit/confirm cannot recover it. A delayed response never restores signed-out UI. No case writer or financial mutation occurs.
 - **Fail if:** A hidden-but-persisted orphan remains, or old-session text reappears.
 - **Cleanup/limits:** Guarded worlds clean their own data. Browser-created drafts are synthetic and expire normally; cancelled/history rows are not erased by ordinary cancel. Automated evidence is separate from manual status **Not run**.
+
+### P05-M09 — explicit local confirmation (T05.2 approved)
+
+- **User/setup:** A, fresh current-login `Help` answer. Requires migration0031 and `BANK_SUPPORT_CONFIRM_ENABLED=true` in addition to the preview/workspace flags. The normal demo must never be reset just to enable this task.
+- **Steps:** Open **Get help with this**, choose General, enter `Synthetic local case: please review this issue.` and save. Change the textarea without saving: submission must disable. Restore the saved description and click **Submit support request** once.
+- **Expected:** **Support request created**, an `SR-...` reference and a dated **Creation receipt**. Preview becomes Submitted (API consumed); editing/cancellation disable. The case is recorded only in the local support system. No diagnosis, resolution, external delivery or current case-status promise is implied.
+- **Fail if:** Save creates a case automatically, unsaved text is submitted, or a case is claimed before a successful durable receipt.
+- **Cleanup/limits:** Synthetic confirmed cases have no cancellation/status-advance endpoint in T05.2. Keep this reference for M10. Do not use real personal descriptions. Manual result: **Not run**.
+
+### P05-M10 — duplicate confirmation and reload (T05.2 approved)
+
+- **User/setup:** Same login and question as M09; preserve the browser session storage.
+- **Steps:** Reload, reopen that answer's support panel and select **Check original submission**. Repeat. Developer probes also send simultaneous same-key and different-key confirmations and expire replay retention in a guarded world.
+- **Expected:** The same operation key returns the exact original case reference/timestamp/receipt. A new key for an already-consumed preview returns409 with an authorized existing reference, never a second case. Same key with another version/hash/owned proposal returns409. Even after the24-hour receipt-replay window, durable proposal/source uniqueness prevents a second case.
+- **Fail if:** Refresh mints another key automatically, or retry creates a second logical case.
+- **Cleanup/limits:** This receipt records creation time, not today's support status. Same-login key retention uses session storage; disabled storage or a different browser requires T05.3 reconciliation, not a new automatic key. Manual result: **Not run**.
+
+### P05-M11 — lost confirmation acknowledgement (T05.2 approved)
+
+- **User/setup:** A, fresh saved synthetic preview; use `node scripts/p052_browser.cjs` for an exact controlled loss after actual commit.
+- **Steps:** The operator drops the response only after the real confirm API has committed. Observe the uncertain notice and frozen editor. Reload/reopen, then **Check original submission**.
+- **Expected:** The original persisted operation key is reused and the original creation receipt is recovered. No new key or blind automatic resubmission. Sign-out prevents delayed old-login responses from showing private information.
+- **Fail if:** An unknown result is labelled failed/successful without evidence or another request key is generated automatically.
+- **Cleanup/limits:** Operator creates only synthetic local cases and signs out; immutable case metadata remains. Plain offline mode before request acceptance is a different test. Manual result: **Not run**.
+
+### P05-M12 — atomic storage faults, ownership and erasure (developer assisted)
+
+- **User/setup:** Guarded private Docker world only. Run `python scripts/p052_check.py` or the independent confirmation operator; never change the normal demo clock/DB triggers.
+- **Steps:** Fail each case/audit/operation/outbox/proposal-consumption write and deferred commit; inspect SQL. Remove fault and retry the original key. Test A2/B session access, stale/cancelled/expired preview, missing CSRF/wrong Origin, edit/confirm races and replay after source erasure. Separately fail the optional exporter sink.
+- **Expected:** Every mandatory storage failure leaves zero new case/audit/operation/outbox and the preview pending. Retry commits exactly one of each and consumes it. Optional exporter failure preserves the committed receipt. Foreign/new-login replay is denied; erasure succeeds, scrubs case issue text and blocks replay while minimal uniqueness/audit metadata remains. The model tool registry cannot submit.
+- **Fail if:** Any partial write, second case, surviving erased issue text, successful foreign replay or false success appears.
+- **Cleanup/limits:** Guarded worlds own injected faults. Source erasure does not erase minimal committed-case/audit/receipt identifiers. No remote delivery, current-status continuity or production load certification. Manual result: **Not run**.
 
 ## 9. Developer-only checks and known gaps
 

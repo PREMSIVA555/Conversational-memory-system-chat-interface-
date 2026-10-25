@@ -1,15 +1,22 @@
 """Human preview routes, protected by existing server session and CSRF boundaries."""
 from fastapi import Depends, HTTPException
 from store.banking_support import Support, Draft, Edit, PreviewBinding
+from store.banking_confirmation import Confirmation, ConfirmationService, ExistingCase
+from fastapi.responses import JSONResponse
 
 
-def install(app, database, principal, mutation, *, enabled=False):
+def install(app, database, principal, mutation, *, enabled=False, confirmation_enabled=False):
     service = Support(database)
     app.state.support = service
     base = '/api/v1/support/proposals'
 
     def available():
         if not enabled: raise HTTPException(503, 'Support previews are unavailable')
+
+    @app.get(base+'/capabilities')
+    async def capabilities(context=Depends(principal)):
+        available()
+        return {'confirmation_enabled':confirmation_enabled}
 
     @app.post(base, status_code=201)
     async def create(body: Draft, context=Depends(mutation)):
@@ -37,8 +44,12 @@ def install(app, database, principal, mutation, *, enabled=False):
         return await service.validate(context, proposal_id, body, cancel=True)
 
     @app.post(base+'/{proposal_id}/confirm')
-    async def confirm(proposal_id: str, body: PreviewBinding, context=Depends(mutation)):
+    async def confirm(proposal_id: str, body: Confirmation | PreviewBinding, context=Depends(mutation)):
         available()
+        if confirmation_enabled:
+            if not isinstance(body,Confirmation): raise HTTPException(422,'A stable operation key is required')
+            try:return await ConfirmationService(database).confirm(context,proposal_id,body)
+            except ExistingCase as exc:return JSONResponse({'detail':exc.detail},status_code=409)
         await service.validate(context, proposal_id, body)
         # T05.2 will replace this fail-closed boundary with an atomic transaction.
         raise HTTPException(503, 'Case submission is not available yet')
