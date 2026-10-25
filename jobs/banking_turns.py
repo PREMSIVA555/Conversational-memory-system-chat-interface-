@@ -15,7 +15,7 @@ class SourceScopedProvider:
     @property
     def policies_enabled(self):return self.provider.policies_enabled
     def __getattr__(self,name):
-        if name not in ('list_accounts','get_account','list_transactions','list_cards','get_card','list_card_transactions','list_loans','get_loan','list_emi_schedule','list_loan_payments','explain_policy'):raise AttributeError(name)
+        if name not in ('list_accounts','get_account','list_transactions','list_cards','get_card','list_card_transactions','list_loans','get_loan','list_emi_schedule','list_loan_payments','explain_policy','list_support_cases','get_support_case'):raise AttributeError(name)
         async def read(context,**kwargs):
             async with self.database.session(context,worker=True) as c:
                 source=await (await c.execute('SELECT id FROM banking.accepted_user_events s WHERE id=%s AND NOT EXISTS(SELECT 1 FROM banking.erasure_ledger WHERE source_id=s.id)',(self.source_id,))).fetchone()

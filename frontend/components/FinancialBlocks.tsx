@@ -1,9 +1,11 @@
 "use client";
 import { Block, Money, money } from "./workspaceTypes";
+import { CheckedCase, type CurrentCase } from "./SupportCasesPanel";
 
 export default function FinancialBlocks({ blocks, hi }: { blocks: Block[]; hi: boolean }) {
   return <>{blocks.map((block, index) => {
     const d = block.data;
+    if (block.kind === "support_case") return <CheckedCase key={index} value={d as unknown as CurrentCase} hi={hi} />;
     const amount = (key: string) => money(d[key] as Money | null | undefined);
     const pairs: [string, string][] = block.kind === "account" ? [
       [hi ? "उपलब्ध बैलेंस" : "Available balance", amount("available_balance")], [hi ? "वर्तमान बैलेंस" : "Current balance", amount("current_balance")],

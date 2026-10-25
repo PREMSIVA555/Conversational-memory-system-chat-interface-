@@ -1,0 +1,158 @@
+{
+  "source_path": "C:\\Users\\mprem\\Documents\\Codex\\2026-10-17\\https-antern-co-evidence-portfolio-https\\outputs\\banking-complete-flow\\DRY_RUN_STEPS.json",
+  "sha256": "fc8686a848a372c65828c66ce03bde223abb7021958f051264081476f5d36fc8",
+  "authoritative_plan": ".genesis/sources/P05_SOURCE.json",
+  "illustrative_not_execution": true,
+  "steps": [
+    {
+      "id": 1,
+      "title": "Sign in",
+      "internal": "Authentication validates the session credentials. The model is not involved in deciding identity."
+    },
+    {
+      "id": 2,
+      "title": "Open authenticated chat",
+      "internal": "Server resolves customer DEMO-A. All later requests use its validated session, not a caller-selected customer ID."
+    },
+    {
+      "id": 3,
+      "title": "Ask about a declined payment",
+      "internal": "API accepts the message, assigns a turn sequence and request/conversation references."
+    },
+    {
+      "id": 4,
+      "title": "Persist the conversation turn",
+      "internal": "Persist accepted conversation event. Optional capture is durable; current banking data is not written into semantic memory."
+    },
+    {
+      "id": 5,
+      "title": "Read preferences and working context",
+      "internal": "Coordinator reads permitted preference version 7 and working context. No card is selected yet."
+    },
+    {
+      "id": 6,
+      "title": "Clarify which card",
+      "internal": "Authorized product summaries are obtained through the gateway. The scenario has one matching declined payment per card, so card selection disambiguates the task. If still ambiguous, ask another question."
+    },
+    {
+      "id": 7,
+      "title": "Select the Visa card",
+      "internal": "Backend resolves the display reference to canonical CARD-DEMO-01 within the customer\u2019s products. A suffix never serves as the primary key."
+    },
+    {
+      "id": 8,
+      "title": "Request authorized card/payment data",
+      "internal": "Model/coordinator requests registered enquiry tools. Gateway validates arguments and checks operation permission and product ownership."
+    },
+    {
+      "id": 9,
+      "title": "Retrieve recorded transaction facts",
+      "internal": "Provider reads the synthetic bank records: TX-DEMO-17, INR 2,000, declined, recorded reason \u201cmerchant restriction\u201d. If no reason is recorded, the answer must say so."
+    },
+    {
+      "id": 10,
+      "title": "Retrieve the applicable policy",
+      "internal": "Separate policy retrieval filters the synthetic corpus by product and effective date. Policy evidence explains procedure; it does not invent the transaction\u2019s cause."
+    },
+    {
+      "id": 11,
+      "title": "Explain the recorded reason",
+      "internal": "Context builder combines permitted facts and sources. The model explains them; response checks reject unsupported amounts or a claim that settings were changed."
+    },
+    {
+      "id": 12,
+      "title": "Change the durable language preference",
+      "internal": "Interpret as a durable preference correction, not a bank-profile change. Assign source event sequence 19."
+    },
+    {
+      "id": 13,
+      "title": "Accept preference event and outbox",
+      "internal": "Commit event 19 and an outbox record before durable acceptance. Session overlay can use Hindi while projection processing is pending; do not claim saved yet."
+    },
+    {
+      "id": 14,
+      "title": "Apply the validated preference",
+      "internal": "Worker claims durable work, validates key/value/scope and applies the projection transaction with event-order/version checks: Hindi, version 8, last sequence 19."
+    },
+    {
+      "id": 15,
+      "title": "Reject an older late update",
+      "internal": "Inject the planned fault: an older English extraction with source sequence 17 completes after event 19. Version/order check rejects it; no rollback of the newer intent."
+    },
+    {
+      "id": 16,
+      "title": "Confirm the saved preference",
+      "internal": "API/UI reports persisted only after the projection commit is observed. This is a proposed interaction, not a measured working implementation."
+    },
+    {
+      "id": 17,
+      "title": "Ask to raise a support case",
+      "internal": "Use the scoped transaction reference, not a remembered status. Gather any required issue details and prepare an operation proposal."
+    },
+    {
+      "id": 18,
+      "title": "Show the proposed case summary",
+      "internal": "Proposal records the exact normalized fields, principal, operation and validity. Display the preview in the current preferred language."
+    },
+    {
+      "id": 19,
+      "title": "Confirm the exact proposal",
+      "internal": "Confirmation binds to this principal and proposal. An edit, expiry or changed session invalidates it."
+    },
+    {
+      "id": 20,
+      "title": "Check authority and replay record",
+      "internal": "Gateway reauthorizes the operation/resource and checks a principal/operation/payload-bound idempotency key. New execution requires valid proposal confirmation."
+    },
+    {
+      "id": 21,
+      "title": "Commit one case and its evidence",
+      "internal": "Local support service transaction commits CASE-DEMO-1042, its success audit, idempotency result and domain-event outbox together. Memory processing is not required for this commit."
+    },
+    {
+      "id": 22,
+      "title": "Simulate a lost response",
+      "internal": "Inject response loss after commit. This is unknown from the UI\u2019s perspective, not evidence the write failed. Preserve the same operation reference."
+    },
+    {
+      "id": 23,
+      "title": "Retry the same operation",
+      "internal": "Through the authenticated API, the gateway rechecks access and matching payload. A completed replay returns the recorded result without executing a new write; consumed confirmation cannot authorize a different operation."
+    },
+    {
+      "id": 24,
+      "title": "Return the original receipt",
+      "internal": "Return the original authorized receipt. Do not create a second case or a second successful mutation. A replay may have its own operational log."
+    },
+    {
+      "id": 25,
+      "title": "Update permitted conversation context",
+      "internal": "Outbox consumer records an allowed case reference or summary with source provenance. Case status remains authoritative in the support backend; do not persist a stale \u201cOpen\u201d status as preference truth."
+    },
+    {
+      "id": 26,
+      "title": "Return in a new session",
+      "internal": "Validate a fresh session and customer. The simulator advances through a declared event: the case becomes \u201cUnder review\u201d. This is an illustrative status, not a promised bank SLA."
+    },
+    {
+      "id": 27,
+      "title": "Recover preference and case reference",
+      "internal": "Retrieve Hindi preference version 8 and permitted historical case reference. If multiple cases match, clarify. Revalidate reference ownership; memory alone is not permission."
+    },
+    {
+      "id": 28,
+      "title": "Fetch current case status",
+      "internal": "Gateway authorizes the case lookup. Provider reads current support state. Do not answer from the remembered creation receipt."
+    },
+    {
+      "id": 29,
+      "title": "Return current support evidence",
+      "internal": "Validated provider evidence returns through the gateway to the coordinator/context builder. The diagram abstracts return hops; authorization remains in force."
+    },
+    {
+      "id": 30,
+      "title": "Explain the latest update in Hindi",
+      "internal": "Compose the answer from current support evidence and preference version 8. Trace, audit-relevant events and evaluation results stay separate."
+    }
+  ]
+}

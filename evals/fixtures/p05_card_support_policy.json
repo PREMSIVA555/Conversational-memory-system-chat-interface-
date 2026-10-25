@@ -1,0 +1,48 @@
+[
+  {
+    "version": "CARD-SUPPORT-v1",
+    "rule": "card-decline-support",
+    "product": "credit-card",
+    "scope": "retail",
+    "locale": "en-IN",
+    "source": "Synthetic card-decline support procedure: review the recorded transaction and confirm a saved support preview to create a local support request. This procedure does not determine a decline cause, guarantee payment approval, promise resolution, or establish external delivery.",
+    "source_hash": "9c50ff078b9f2f980ed3934e69f10f35b6c2049b3d240cbf61c5d9c86a0358d0",
+    "effective_from": "2026-01-01T00:00:00Z",
+    "effective_until": "2027-01-01T00:00:00Z",
+    "expected_chunks": 1,
+    "chunks": [
+      {
+        "section": "procedure",
+        "text": "Synthetic card-decline support procedure: review the recorded transaction and confirm a saved support preview to create a local support request. This procedure does not determine a decline cause, guarantee payment approval, promise resolution, or establish external delivery.",
+        "embedding": [
+          0,
+          0,
+          1
+        ]
+      }
+    ]
+  },
+  {
+    "version": "CARD-SUPPORT-v1-hi",
+    "rule": "card-decline-support",
+    "product": "credit-card",
+    "scope": "retail",
+    "locale": "hi-IN",
+    "source": "Synthetic card-decline support procedure: review the recorded transaction and confirm a saved support preview to create a local support request. This procedure does not determine a decline cause, guarantee payment approval, promise resolution, or establish external delivery.",
+    "source_hash": "9c50ff078b9f2f980ed3934e69f10f35b6c2049b3d240cbf61c5d9c86a0358d0",
+    "effective_from": "2026-01-01T00:00:00Z",
+    "effective_until": "2027-01-01T00:00:00Z",
+    "expected_chunks": 1,
+    "chunks": [
+      {
+        "section": "procedure",
+        "text": "Synthetic card-decline support procedure: review the recorded transaction and confirm a saved support preview to create a local support request. This procedure does not determine a decline cause, guarantee payment approval, promise resolution, or establish external delivery.",
+        "embedding": [
+          0,
+          0,
+          1
+        ]
+      }
+    ]
+  }
+]

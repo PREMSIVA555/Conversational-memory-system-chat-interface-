@@ -1,0 +1,236 @@
+{
+  "task": "T05.4",
+  "phase": "P05",
+  "status": "approved-phase",
+  "recorded_at": "2026-10-25T10:06:47.952Z",
+  "approved_baseline": "a312afd",
+  "task_complete": true,
+  "phase_complete": true,
+  "human_approval": {
+    "quote": "approved proceed",
+    "date_client": "2026-10-25",
+    "scope": "Approve reviewed T05.4/P05; close and commit/push before bounded P06 work; no future task result approval"
+  },
+  "spec_ids": [
+    "SPEC10",
+    "SPEC13"
+  ],
+  "invariant_ids": [
+    "INV11",
+    "INV17",
+    "INV18",
+    "INV20"
+  ],
+  "original_source": ".genesis/sources/T05.4_SOURCE.json",
+  "adapted_scenario_checkpoints": 30,
+  "variants": [
+    "lost_ack",
+    "audit_rollback"
+  ],
+  "literal_original_illustration_complete": false,
+  "native_gate": {
+    "hash": "3058194ad257255b571bded00d4ff6d0fb0067e4339065b93f08b5da203ff509",
+    "source_hash": "2a7cc043e67e54f4fdd14a902bc03306b0fb5115e48527d55a02d90ead170a15",
+    "config_hash": "9549a195a02c1ec396790d153cfca5ccbb8f86ec6b27b099ae6cbc6148a22506",
+    "observed_at": "2026-10-25T11:55:04.474Z",
+    "path": ".genesis/evidence/T05.4-complete-journey-d546f56b-8ce1-4256-9f65-a80dc4c81e39.json",
+    "unchanged_source": true,
+    "current_source_valid": true,
+    "pytest_passed": 209,
+    "pytest_failed": 0,
+    "pytest_errors": 0,
+    "pytest_skipped": 0,
+    "typescript_exit": 0,
+    "junit": ".genesis/evidence/T05.4-regression.xml"
+  },
+  "development": {
+    "report": ".genesis/evidence/T05.4-routing-development.xml",
+    "passed": 25,
+    "failed": 0,
+    "scope": "two adapted complete journey variants plus workspace suite including routing regressions"
+  },
+  "independent": {
+    "status": "bounded_assertions_passed_original_gaps_remain",
+    "report": ".genesis/evidence/T05.4-independent.json",
+    "fresh_context": true,
+    "source_blind": true,
+    "model": "gpt-6.1-sol",
+    "Astra_used": false,
+    "assertions": {
+      "total": 189,
+      "passed": 189,
+      "failed": 0,
+      "historical_application_failures": 2,
+      "original_step_judgments": 30,
+      "scenario_group_count": 17
+    },
+    "scenario_groups": 17,
+    "original_step_judgments": {
+      "bounded_verified": 17,
+      "adapted": 6,
+      "partial": 5,
+      "unmet": 2
+    },
+    "processes_remaining": 0
+  },
+  "manual_scenarios": [
+    "P05-M19",
+    "P05-M20",
+    "P05-M21",
+    "P05-M22",
+    "P05-M23"
+  ],
+  "human_manual_results": "Not run",
+  "paid_model_calls": 0,
+  "Astra_used": false,
+  "limits": [
+    "Next day is declared domain/status event, not elapsed24h",
+    "Synthetic procedure only; no real-bank policy/cause/approval/resolution/delivery claim",
+    "Step25 pending outbox/canonical history; no semantic-memory consumer or external delivery",
+    "Bounded sole-owned-case or exact friendly SR lookup; multiple cases clarify",
+    "Checked English/Hindi templates; no new live-model naturalness evaluation",
+    "Legacy model-planned annual-fee chat unavailable under blocked review transport; authenticated service control supported",
+    "Instructional source-blind checker, not OS isolation or code audit",
+    "Historical failures/reviews retained; human approval pending"
+  ],
+  "remaining_required_work": [],
+  "working_diff_scan": {
+    "files_scanned": 27,
+    "credential_matches": 0,
+    "staged": false
+  },
+  "review_runtime": {
+    "restored_at": "2026-10-25T11:38:42.698006+00:00",
+    "api_health": 200,
+    "https_frontend": 200,
+    "live_provider_transport": "blocked",
+    "system_tls_trust_changed": false,
+    "temporarily_stopped_for_gate": false
+  },
+  "previous_native_gates": [
+    {
+      "hash": "61c01ff8cf5d7c07d5ab0c067e14aaf6dd4cce5cb9fc33ba34ca37e41de6d973",
+      "source_hash": "817ec4379a7b9bdea043670adc3c51a0bae477d42a80b405d37f753c7d32180a",
+      "config_hash": "42845cb51f2d29be87160448b1ec4fcc447666e2a0949e2e2eaad39909356c6e",
+      "observed_at": "2026-10-25T09:12:46.978Z",
+      "path": ".genesis/evidence/T05.4-complete-journey-68dc6317-413c-4013-abc7-7a1dd7f70e12.json",
+      "unchanged_source": true,
+      "current_source_valid": false,
+      "pytest_passed": 179,
+      "pytest_failed": 0,
+      "pytest_errors": 0,
+      "pytest_skipped": 0,
+      "typescript_exit": 0,
+      "junit": ".genesis/evidence/T05.4-regression.xml",
+      "reuse_validated": true,
+      "junit_archive": ".genesis/evidence/T05.4-regression-179-before-completion.xml"
+    },
+    {
+      "hash": "a60a219931524321de24f38e4a542667405c2e8fcbf9b725c819d18abcbb0b1f",
+      "source_hash": "ffa5d443c707f824dcd91efe0fc797e7ba30f5231e5370b4f1b336ab22384e40",
+      "config_hash": "9549a195a02c1ec396790d153cfca5ccbb8f86ec6b27b099ae6cbc6148a22506",
+      "observed_at": "2026-10-25T10:06:47.952Z",
+      "path": ".genesis/evidence/T05.4-complete-journey-21d791d3-fda2-4a8c-b874-7c049d479121.json",
+      "status": "pass",
+      "unchanged_source": true,
+      "pytest_passed": 209,
+      "pytest_failed": 0,
+      "pytest_errors": 0,
+      "pytest_skipped": 0,
+      "typescript_exit": 0,
+      "junit": ".genesis/evidence/T05.4-regression.xml",
+      "reuse_validated": true,
+      "current_source_valid": false,
+      "prior_to_documentation_approval_labels": true,
+      "junit_archive": ".genesis/evidence/T05.4-regression-209-before-approval-labels.xml"
+    }
+  ],
+  "policy_source_authorization": {
+    "answer": "A clearly labeled synthetic policy for this demo",
+    "scope": "Demo CARD-SUPPORT-v1 source; not a T05.4 approval"
+  },
+  "completion_development": {
+    "report": ".genesis/evidence/T05.4-completion-final-development.xml",
+    "passed": 6,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "policy_install_report": ".genesis/evidence/T05.4-policy-install.json",
+  "completion_independent": {
+    "report": ".genesis/evidence/T05.4-completion-independent.json",
+    "fresh_context": true,
+    "source_blind": true,
+    "model": "gpt-6.1-sol",
+    "Astra_used": false,
+    "backend": {
+      "assertions": 124,
+      "groups": 52,
+      "passed": 124,
+      "failed": 0
+    },
+    "browser": {
+      "assertions": 13,
+      "groups": 8,
+      "passed": 13,
+      "failed": 0
+    },
+    "raw_backend_history": {
+      "assertions": 137,
+      "groups": 56,
+      "passed": 123,
+      "failed": 14
+    },
+    "raw_browser_history": {
+      "assertions": 14,
+      "groups": 9,
+      "passed": 13,
+      "failed": 1,
+      "note": "First 7 checks reconstructed from preserved safe DOM snapshots/tool observations after kernel reset; second run contributes 3 raw assertions, third run 4. Final 13 checks remove duplicate language acknowledgment and correct the Hindi nukta spelling assumption."
+    },
+    "two_gaps": {
+      "actual_applicable_synthetic_policy_retrieval": {
+        "closed": true,
+        "evidence": [
+          "policy-stdout.txt",
+          "retest-stdout.txt",
+          "browser-en.txt",
+          "browser-hi.txt"
+        ],
+        "scope": "Actual immutable policy retrieval plus checked EN CARD-SUPPORT-v1 and HI CARD-SUPPORT-v1-hi procedure; labels/citations/qualifications preserved; wrong applicability and adversarial clauses rejected."
+      },
+      "fresh_owned_support_status_composition": {
+        "closed": true,
+        "evidence": [
+          "integrated-stdout.txt",
+          "controls-stdout.txt",
+          "clarified-stdout.txt",
+          "browser-owned-en.txt",
+          "browser-owned-hi.txt"
+        ],
+        "scope": "Fresh current created/in_review/resolved owned metadata matches checked block/evidence/timestamps; EN/HI and later A2 session work; exact foreign friendly reference reveals no facts; old preview denied."
+      }
+    },
+    "limitations": [
+      "Original step25 adaptation retains owned canonical case history and a pending local support outbox; no semantic-memory consumer or external delivery claim.",
+      "No live-model narrative/naturalness claim. No paid calls or Astra calls. model_calls records blocked transport attempts; one original integrated bare-reference request attempted blocked transport, while final exact-reference controls and local policy/status controls use zero.",
+      "Legacy annual-fee chat planning timed out/unavailable under blocked review transport. Authenticated production-service control supports the independent annual-fee rule and excludes personal charge/waiver conclusions; this is not end-to-end legacy planner coverage.",
+      "Policy retrieval reports degraded lexical surviving evidence with vector lane unavailable; do not claim both retrieval lanes healthy.",
+      "Declared DomainClock next_day is not real 24-hour passage and does not extend auth deadlines.",
+      "Normal-demo browser status remained Received; in_review and resolved were independently exercised in private fixture worlds, without advancing normal data.",
+      "Two earlier dedicated verification-chat-only Hindi overrides remain after checker runtime/locator resets. No global language setting was changed. The final verification chat override was explicitly reset to inherited English.",
+      "Final bare-reference-only routing was not separately retested after refinement; exact prefixed owned/A2/foreign references pass with zero model calls.",
+      "Initial annual/atomicity overlap is non-decisive; later decisive backend runs were serial."
+    ],
+    "cleanup": {
+      "all_owned_probe_processes_completed": true,
+      "all_owned_browser_contexts_closed": true,
+      "headless_playwright_chrome_processes_remaining": 0,
+      "final_browser_override_restored": true,
+      "earlier_verification_chat_only_overrides_remaining": 2,
+      "normal_cases_created_reset_erased_or_advanced": false,
+      "global_preferences_changed": false
+    }
+  },
+  "native_review": "Actual user approval recorded through Genesis; independent-review gate pass"
+}

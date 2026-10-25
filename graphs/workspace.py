@@ -25,6 +25,7 @@ INTRO={
 
 
 class PlanningUnavailable(Exception):pass
+class PolicyClarification(Exception):pass
 
 def bilingual(language,en,hi):return hi if language=='hi' else en
 
@@ -117,6 +118,24 @@ class WorkspaceCoordinator:
                     'मैं बैलेंस, लेनदेन, कार्ड सीमा, ऋण अनुसूची और भुगतान रिकॉर्ड देख सकता हूँ। उत्पाद चुनें या प्रश्न पूछें। सहायता अनुरोध तैयार करने और जाँचने के लिए उत्तर के नीचे इस बारे में सहायता लें चुनें। ट्रांसफर उपलब्ध नहीं हैं।','help')
             elif re.search(r'\b(transfer|send money|pay now|block my|unblock|change.*limit|submit.*case)\b|पैसे भेज|ट्रांसफर',lower):
                 say('I can help you review information, but I can’t perform that action.','मैं जानकारी देखने में मदद कर सकता हूँ, लेकिन यह कार्रवाई नहीं कर सकता।','help','unsupported');resource=None;lineage=[]
+            elif re.search(r'\b(case|complaint|support request)\b.*\b(status|update)\b|\b(status|update)\b.*\b(case|complaint|support request)\b|(?:शिकायत|सहायता अनुरोध|केस).*(?:स्थिति|अपडेट)|(?:स्थिति|अपडेट).*(?:शिकायत|सहायता अनुरोध|केस)',lower) or re.fullmatch(r'sr-[0-9a-f]{32}[? .!]*',lower):
+                resource=None;lineage=[]
+                reference=re.findall(r'\bsr-([0-9a-f]{32})\b',lower)
+                if len(reference)>1:raise ValueError('Choose one support request')
+                if reference:case_id=str(UUID(hex=reference[0]))
+                else:
+                    page=await read('list_support_cases')
+                    if len(page['items'])!=1 or page['next_cursor']:
+                        say('Choose a request in Support requests to check its current status.' if page['items'] else 'You have no support requests yet.',
+                            'वर्तमान स्थिति के लिए सहायता अनुरोध सूची में एक अनुरोध चुनें।' if page['items'] else 'अभी आपका कोई सहायता अनुरोध नहीं है।','clarification','clarify' if page['items'] else 'no_evidence')
+                        case_id=None
+                    else:case_id=str(page['items'][0]['id'])
+                if case_id:
+                    current=await read('get_support_case',case_id=case_id)
+                    en,hi={'created':('received','प्राप्त है'),'in_review':('in review','जाँच में है'),'resolved':('resolved','का समाधान हो गया है')}[current['status']]
+                    say(f"Your support request {current['case_number']} is {en}.",f"आपका सहायता अनुरोध {current['case_number']} {hi}।")
+                    result['blocks']=[dict(kind='support_case',title=bilingual(language,'Current support status','सहायता अनुरोध की वर्तमान स्थिति'),data=current)]
+                    result['evidence']=[dict(ref=current['id'],field='status',value=current['status'],as_of=current['checked_at'],version=current['status_updated_at'],authority='fresh_authorized_support')]
             elif re.fullmatch(r'(reply in (hindi|english)|be (concise|detailed)|हिंदी में जवाब दो|अंग्रेजी में जवाब दो)[.।]*',lower):
                 hindi='hindi' in lower or 'हिंदी' in lower
                 say('Should I use that preference for this conversation or all conversations?','यह पसंद इस बातचीत के लिए रखें या सभी बातचीत के लिए?','clarification','clarify')
@@ -125,14 +144,17 @@ class WorkspaceCoordinator:
                 result['actions']=[dict(label=bilingual(language,'This conversation','इस बातचीत के लिए'),text=phrase),dict(label=bilingual(language,'All conversations','सभी बातचीत के लिए'),text=all_phrase)]
             else:
                 op=request.get('action');kind=None;args={};method=None;ordinal=None
-                policy=bool(re.search(r'annual[ _-]fee|fee[ _-]waiver|वार्षिक शुल्क|शुल्क.?माफी',lower))
+                decline_policy=bool(re.search(r'declin(?:e|ed).*(?:policy|procedure|support)|(?:policy|procedure).*declin|अस्वीकृत.*(?:नीति|प्रक्रिया)',lower))
+                policy=decline_policy or bool(re.search(r'annual[ _-]fee|fee[ _-]waiver|वार्षिक शुल्क|शुल्क.?माफी',lower))
                 if policy:
                     # The existing applicability binder still controls locale/scope/time.
-                    raw=await self.plan(text,dispatch)
-                    plan=Plan.model_validate_json(raw.content)
+                    if decline_policy:plan=Plan(tool='explain_policy',args=dict(product='credit-card',topic='decline_support'))
+                    else:
+                        raw=await self.plan(text,dispatch)
+                        plan=Plan.model_validate_json(raw.content)
                     if plan.tool!='explain_policy':raise ValueError('Policy clarification')
                     args=bind_policy_request(text,TOOLS['explain_policy'].model_validate(plan.args).model_dump(exclude_unset=True),language=language)
-                    if args is None:raise ValueError('Policy constraints')
+                    if args is None:raise PolicyClarification()
                     method='explain_policy'
                 else:
                     if re.search(r'\bcard\b|\bcards\b|\bdebit\b|\bcredit\b|कार्ड|डेबिट|क्रेडिट',lower):kind='card'
@@ -143,7 +165,11 @@ class WorkspaceCoordinator:
                     if not kind and resource:kind=resource['kind']
                     if op is None:
                         if re.search(r'\bschedule\b|due|अनुसूची|नियत',lower):op='schedule';kind='loan'
-                        elif re.search(r'\bpayments?\b|paid|भुगतान',lower):op='payments';kind='loan'
+                        elif re.search(r'\bpayments?\b|paid|भुगतान',lower):
+                            # Payment is not a product type. Keep an explicit or
+                            # validated active product; otherwise ask which one.
+                            if kind is None:raise ValueError('Choose an account, card or loan')
+                            op='payments' if kind=='loan' else 'transactions'
                         elif re.search(r'transaction|history|लेनदेन',lower):op='transactions'
                         elif re.search(r'balance|बैलेंस',lower):
                             kind=kind or 'account';op={'account':'balance','card':'card_details','loan':'loan_details'}[kind]
@@ -246,7 +272,9 @@ class WorkspaceCoordinator:
                             continuation=f'Show {"card transactions" if kind=="card" else "account transactions" if kind=="account" else "actual loan payments" if method=="list_loan_payments" else "EMI schedule"} for {resource["id"]} from {value.start} to {value.end}; page size {args["limit"]}; cursor {value.next_cursor}'
                             result['next_question']=continuation
                     result['evidence']=registry.claims
-                    if detailed or re.search(r'why|explain|समझा|क्यों',lower):
+                    # The new synthetic procedure already has an exact checked
+                    # explanation; it does not need optional model framing.
+                    if not decline_policy and (detailed or re.search(r'why|explain|समझा|क्यों',lower)):
                         started=time.monotonic()
                         try:
                             if stop-time.monotonic()>1:
@@ -266,6 +294,10 @@ class WorkspaceCoordinator:
         except ProviderError as error:
             if error.status==401:raise HTTPException(401) from None
             say('That information isn’t available right now. Please refresh your products and try again.','अभी यह जानकारी उपलब्ध नहीं है। उत्पाद रीफ़्रेश करके फिर कोशिश करें।','answer','no_evidence' if error.code=='not_found' else 'unavailable')
+            result.update(blocks=[],actions=[],evidence=[]);resource=None
+        except PolicyClarification:
+            say('Please specify the policy product and locale. If you supply an effective date, include its time and timezone.',
+                'कृपया नीति का उत्पाद और लोकेल बताएँ। लागू तारीख देने पर समय और टाइमज़ोन भी लिखें।','clarification','clarify')
             result.update(blocks=[],actions=[],evidence=[]);resource=None
         except PlanningUnavailable:
             say('I can’t safely interpret that question right now. Please use a product action or try again.','अभी इस प्रश्न को सुरक्षित ढंग से समझना संभव नहीं है। उत्पाद का विकल्प चुनें या फिर कोशिश करें।','answer','unavailable')
@@ -292,6 +324,6 @@ class WorkspaceCoordinator:
         async def operation():
             try:minimized=await asyncio.to_thread(model_input,text)
             except Exception:raise PlanningUnavailable() from None
-            prompt=[{'role':'system','content':'Return one JSON plan {"tool":registered read name,"args":{}}. Allowed: '+','.join(TOOLS)+',clarify,unsupported. Only read enquiries. No mutations, identity or SQL. Policy requires product credit-card and topic annual_fee or fee_waiver; copy explicit locale/scope/ISO at exactly. Never infer personal waiver eligibility.'}, {'role':'user','content':minimized}]
+            prompt=[{'role':'system','content':'Return one JSON plan {"tool":registered read name,"args":{}}. Allowed: '+','.join(TOOLS)+',clarify,unsupported. Only read enquiries. No mutations, identity or SQL. Policy requires product credit-card and topic annual_fee, fee_waiver or decline_support; copy explicit locale/scope/ISO at exactly. Never infer personal waiver eligibility.'}, {'role':'user','content':minimized}]
             return await llm.structured_completion(prompt,timeout=5,transport=self.transport)
         return await dispatch('model',operation,5)

@@ -12,7 +12,7 @@ SCOPE = re.compile(r'\bscope\s*[:=]?\s*([a-zA-Z0-9_.:-]{1,80})\b',re.I)
 
 def bind_policy_request(request, proposed, *, language='en'):
     """Return bound arguments or None; a model cannot erase a user constraint."""
-    if proposed['product'].replace('-',' ').lower() not in request.replace('-',' ').lower():
+    if proposed['product'].replace('-',' ').lower() not in request.replace('-',' ').lower() and not (proposed['product']=='credit-card' and re.search(r'क्रेडिट[\s-]*कार्ड',request)):
         return None
     locales=LOCALE.findall(request)
     dates=DATE.findall(request)

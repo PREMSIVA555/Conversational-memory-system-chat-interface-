@@ -18,10 +18,10 @@ Last updated: **2026-10-25, Asia/Calcutta**. This is the cumulative guide for te
 | P05 / T05.1 | Approved2026-10-25 and checkpoint pushed7bf5014; P05 partial | Save, view, edit and cancel session-bound support previews |
 | P05 / T05.2 | Approved2026-10-25; P05 partial | Explicit local case creation, atomic audit/receipt/outbox and same-key replay |
 | P05 / T05.3 | Approved2026-10-25; P05 partial | Read-only submission reconciliation and fresh owned case status across logins |
-| P05 / T05.4 | Queued | Complete support journey verification |
+| P05 / T05.4 | Approved 2026-10-25; closure checkpoint | Executable30-checkpoint journey, fault variants and card-payment routing correction |
 | P06–P08 | Not started | Reusable evaluator, release comparisons and later maintenance |
 
-Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) was approved and pushed as `2a9f200`. T05.1 workspace integration develops on `codex/p05-workspace` from that approved baseline; the original `feat/banking-support-extension` checkout and its receipts remain preserved. T05.1 approved 2026-10-25; P05 is incomplete.
+Genesis is the authority for approval state: [KICKOFF](../.genesis/KICKOFF.md). [UX01](../.genesis/UX01.md) was approved and pushed as `2a9f200`. T05.1 workspace integration develops on `codex/p05-workspace` from that approved baseline; the original `feat/banking-support-extension` checkout and its receipts remain preserved. T05.1–T05.4 approved 2026-10-25; P05 closure and phase commit follow current native gate validation.
 
 Historical pre-UX T05.1: native gate15 passes; independent90 behavioral plus21 environment assertions; a75-test run had73 passes/two timing failures, both passed targeted reruns. That earlier browser used intercepted replies. Current integration has separate real OIDC/UI/API checks and a fresh non-Astra backend retest with214 passing assertions after an erasure-race correction. See the current [P05 review](../.genesis/P05.md) for final gate/browser results and limits. None of these automated results count as your manual runs.
 
@@ -385,6 +385,52 @@ Human manual results for P05-M13–M18: **Not run**. These extend M09–M12 when
 - **Fail if:** Partial effects, duplicate cases, changed receipt, surviving issue text, foreign access or a runtime status writer appears.
 - **Cleanup/limits:** Guarded fixtures clean their own worlds. Do not alter ordinary statuses, clocks or triggers. Automated race observations are not exhaustive schedule or production load proof; independent behavioral scope is not a source audit.
 
+### T05.4 scenarios — approved 2026-10-25
+
+Human results P05-M19–M23: **Not run**. T05.3 was approved and pushed as `a312afd`. The user approved T05.4/P05 with “approved proceed” on2026-10-25. These scenarios distinguish the normal demo from the isolated original-walkthrough fixture. Neither expected answers nor the original illustrative30-step diagram count as execution evidence.
+
+### P05-M19 — a card payment question stays with cards
+
+- **User/setup:** Normal demo customer-a, **New chat**, English. No active product.
+- **Steps:** Send `Why did my card payment fail?`. Inspect choices, choose **Synthetic demo credit card**, then request `Transactions from 2026-10-20 to 2026-10-20`. Repeat from a new chat with `मेरे कार्ड का भुगतान अस्वीकृत क्यों हुआ?`. From another fresh chat ask `Why was my payment declined?` without a product.
+- **Expected:** Explicit card questions offer owned cards, never silently switch to loans because of the word payment. Generic payment without product context asks which product to check and shows no financial evidence. The normal credit-card fixture still shows -7.00 declined,0.00 pending,1250.00 posted,-0.01 reversed INR. Missing decline reason remains unknown. Selecting a loan and asking for payment records must still retrieve loan records.
+- **Fail if:** A card question becomes loan choices, a generic payment selects loans automatically, pending becomes paid, or a reason is invented.
+- **Cleanup/limits:** Close extra chats if desired. This is bounded local routing, not unrestricted natural-language understanding. The isolated journey's INR2000/merchant-restriction record is **not** the normal demo record.
+
+### P05-M20 — Hindi survives an older completion
+
+- **User/setup:** A, current chat. For actual inverted processing use only the guarded scenario runner.
+- **Steps:** Send `Always reply in English`, then `Always reply in Hindi`. Wait for persisted acknowledgement and send `Hi`. In the developer scenario the older English source is accepted first but dispatched only after Hindi has committed.
+- **Expected:** Hindi remains the durable effective language, the old source is ignored_stale, and the actual greeting is Hindi. Pending acceptance is not called saved before persistence. Another login of A retains global Hindi; B is unaffected.
+- **Fail if:** Delayed old work changes Hindi back to English, or a failed/pending projection is acknowledged as saved.
+- **Cleanup/limits:** Restore `Always reply in English` afterward if desired. An ordinary sequential manual run does not prove inverted completion; the guarded trace is separate machine evidence.
+
+### P05-M21 — original30 checkpoints and two faults
+
+- **Setup:** Developer only, private manifest-guarded Docker PostgreSQL16/Redis7. Run `python scripts/p054_journey.py lost_ack` and `python scripts/p054_journey.py audit_rollback`, or `python scripts/p054_check.py` for the registered full gate. Read `.genesis/sources/T05.4_SOURCE.json` for original-source mapping and hashes.
+- **Steps:** Follow owned-card clarification, Visa4112 selection, checked declined record, Hindi correction, exact saved support preview, explicit confirmation, fault, original-key recovery/retry and later-session status read.
+- **Expected isolated facts:** Three owned cards including inherited yen debit. Visa's declined record is200000 minor units INR (INR2000.00), with actual recorded merchant restriction, on2026-01-14. Pending/posted/reversed records remain distinct. Each completed variant has30 observed checkpoints and exactly one case/audit/receipt/outbox plus a consumed proposal. Lost acknowledgement uses a real HTTP response hook after commit. Audit-write fault leaves no partial effect before the same-key explicit retry. Initial financial hashes match across clean private runs and remain unchanged during each journey.
+- **Fail if:** Source examples are reported as observed without reads, a retry creates another case, faults leave partial writes, or a queued outbox is called delivered/consumed.
+- **Cleanup/limits:** Private worlds own faults and synthetic records; do not reset the ordinary demo. Sessions are server-issued fixtures rather than a new OIDC/browser test. No model dispatch or paid calls. The runner is specific to this scenario; it is not the P06 evaluator.
+
+### P05-M22 — current support status and truthful boundaries
+
+- **Steps:** In the normal demo complete M13/M16 and select the owned case after a fresh login. In guarded M21 only, advance the domain date one day, apply the migrator-only in_review event and issue a fresh A2 session. Read current case status and attempt B access.
+- **Expected:** Normal demo reports its actual status, usually Received. Guarded fixture reports in_review with fresh check/update timestamps, persisted Hindi and the same single case. The old receipt remains historical; old-session preview and foreign customer are denied. No customer/model status writer exists.
+- **Fail if:** It infers current status from the receipt or claims a real24-hour wait, support delivery or semantic-memory processing that did not occur.
+- **Cleanup/limits:** Do not advance ordinary statuses through test SQL. Step25 verifies owned canonical case history and a **queued** local outbox; it does not claim a semantic-memory consumer. Natural status queries use bounded patterns described in M23. Receipt status is historical, not current authority.
+
+### P05-M23 — synthetic procedure and a natural current-status reply
+
+- **Setup/user:** Normal demo customer-a, support/continuity/policy flags enabled and the authorized synthetic overlay installed. Start **New chat**; use conversation-only language settings. Do not create another case solely for this check if an owned case already exists. Human run: **Not run**. Independent scripted/browser results belong in the T05.4 review packet, separately.
+- **English steps:** Send `Reply in English for this conversation`, then `Explain the synthetic credit card decline support procedure for en-IN at 2026-01-15T12:00:00Z`. Send `Any update on my complaint?`. If several cases exist, copy an actual owned friendly SR reference from **Support requests** and send `Status of support request SR-<that actual reference>` (replace the placeholder), or send that SR reference alone.
+- **Expected:** Procedure explicitly says **Synthetic**, cites **CARD-SUPPORT-v1** and describes reviewing the recorded transaction and confirming a saved local support preview. It gives no invented decline cause, approval guarantee, resolution promise or external-delivery claim. Multiple cases clarify; a sole case or exact owned reference produces a fresh current-status reply and structured case block with matching check/update timestamps. Normal cases usually show Received; inspect the actual record rather than assuming in_review.
+- **Hindi steps:** Send `Reply in Hindi for this conversation`, then `सिंथेटिक क्रेडिट कार्ड की अस्वीकृत सहायता प्रक्रिया समझाएँ`. Send the same owned SR reference or `मेरी शिकायत की स्थिति क्या है?` if only one case exists.
+- **Expected:** Procedure retains **सिंथेटिक**, cites **CARD-SUPPORT-v1-hi**, and preserves the same limitations. Current status is explained in Hindi using fresh owned data. Friendly case reference/status tokens may remain literal. The isolated developer world separately verifies in_review then resolved and a new same-owner login; those are not normal-demo promises.
+- **Negative checks:** Repeat the English policy request with a bare date `2026-01-15` (no time/zone): clarification should explain the date/time/timezone requirement. Unsupported product, locale or effective date must not become an applicable policy claim. Test foreign references/source deletion only in guarded developer worlds; B must receive no A facts. Ordinary source erasure retains minimal owned canonical case metadata while denying issue text and old previews/outcomes.
+- **Fail if:** Synthetic labeling disappears, a model invents a reason or promise, multiple cases select arbitrarily, a foreign reference reveals facts, or the receipt is presented as fresh status.
+- **Cleanup/limits:** Restore English for this conversation if desired and sign out. No financial mutation, status advancement, real24-hour passage or live-model naturalness is certified. The local review transport blocks paid calls; older model-planned annual-fee questions can remain unavailable. Existing P04 fee expectations require supported service evidence, not a pass inferred from safe unavailability.
+
 These commands exercise automated checks, not manual browser scenarios. Run from the repository root with the existing local test configuration. They do not require choosing Astra. Some tests create guarded private databases/namespaces; do not replace them with shared-database reset commands.
 
 | Area | Runnable check / evidence | What it checks |
@@ -399,7 +445,7 @@ These commands exercise automated checks, not manual browser scenarios. Run from
 
 Run suites sequentially: some older suites share development test infrastructure. These commands are entry points, not a claim they all passed today. Live browser questions use the configured model and can incur provider cost; the guide itself did not execute model questions. A user-approved, independently verified phase requires its registered Genesis gates too.
 
-Do not prove outbound privacy just by looking at a polite browser reply. Scanner outages, missing local models, payload minimization, two-worker races, SQL audit failures and crash-after-commit recovery need controlled developer probes and persistence/output inspection. Chinese-name detection and broad multilingual privacy are not certified. UX01 supports the bounded follow-ups documented below; unrestricted conversation and eight-language support remain outside scope. T05.2–T05.4 scenarios will be added as those tasks become reviewable/completed.
+Do not prove outbound privacy just by looking at a polite browser reply. Scanner outages, missing local models, payload minimization, two-worker races, SQL audit failures and crash-after-commit recovery need controlled developer probes and persistence/output inspection. Chinese-name detection and broad multilingual privacy are not certified. UX01 supports the bounded follow-ups documented below; unrestricted conversation and eight-language support remain outside scope. P05-M01–M23 cover the support tasks; approval is distinct from a human manual run.
 
 ## 10. Results sheet and failure report
 
@@ -500,3 +546,7 @@ The user approved the workspace and scroll correction on2026-10-24: “all good,
 ### UX01 execution record
 
 The independent fresh non-Astra verifier passed28 resource/session checks and32 language/policy/wording checks. These are behavioral scripted tests, not human approval. A broad130-test run passed after a prior129-pass/one timing-failure run; native Genesis source-hash validation must also pass on final frozen files before closure. Actual browser receipts preserve failed expectations/setup runs and corrected retests. The budget ledger reserved20 attempts, but an older worker made1 extra live call during a browser run: **21 total,1 over the authorized cap**. That worker is stopped; the current review API blocks live transport. See [operation and limits](WORKSPACE_UX.md).
+
+### P05 automated evidence and approval
+
+The user approved T05.4/P05 on2026-10-25 after the209-test native regression/TypeScript pass and fresh separate non-Astra completion review (124 backend and13 browser assertions). Failed earlier checks/setup runs are retained. See `.genesis/T05.4_REVIEW.json` for the final source-bound native gate and `.genesis/evidence/T05.4-completion-independent.json` for separate browser/backend evidence. Raw evidence remains local/ignored, not implicitly committed. Human manual scenarios remain **Not run**. Synthetic/local scope, queued outbox, unavailable vector lane and blocked legacy model planner remain limitations; approval does not turn them into delivery or live-naturalness claims.

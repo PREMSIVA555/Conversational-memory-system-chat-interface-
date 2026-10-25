@@ -269,7 +269,8 @@ def create_app(settings=None,*,model_transport=None,turns_enabled=None,turn_run_
         provider=AccountProvider(database,hashlib.sha256((settings.client_secret+'account-cursor-v1').encode()).digest(),
             cards_enabled=os.getenv('BANK_CARDS_ENABLED','false').lower()=='true' if cards_enabled is None else cards_enabled,
             loans_enabled=os.getenv('BANK_LOANS_ENABLED','false').lower()=='true' if loans_enabled is None else loans_enabled,
-            policies_enabled=os.getenv('BANK_POLICIES_ENABLED','false').lower()=='true' if policies_enabled is None else policies_enabled)
+            policies_enabled=os.getenv('BANK_POLICIES_ENABLED','false').lower()=='true' if policies_enabled is None else policies_enabled,
+            support_enabled=(support_enabled if support_enabled is not None else os.getenv('BANK_SUPPORT_ENABLED','false').lower()=='true') and (support_continuity_enabled if support_continuity_enabled is not None else os.getenv('BANK_SUPPORT_CONTINUITY_ENABLED','false').lower()=='true'))
         app.state.turn_worker=TurnWorker(database,provider,model_transport,run_seconds=turn_run_seconds)
         app.state.turn_worker.paused=turn_worker_paused
         from api.workspace import install as install_workspace

@@ -4,6 +4,9 @@ from decimal import Decimal
 import re
 from store.banking_contracts import Money
 
+DECLINE_SUPPORT_TEXT='Synthetic card-decline support procedure: review the recorded transaction and confirm a saved support preview to create a local support request. This procedure does not determine a decline cause, guarantee payment approval, promise resolution, or establish external delivery.'
+DECLINE_SUPPORT_HI='सिंथेटिक कार्ड-अस्वीकृति सहायता प्रक्रिया: दर्ज लेनदेन की जाँच करें और स्थानीय सहायता अनुरोध बनाने के लिए सेव किए गए पूर्वावलोकन की पुष्टि करें। यह प्रक्रिया अस्वीकृति का कारण तय नहीं करती और भुगतान मंज़ूरी, समाधान या बाहरी डिलीवरी का वादा नहीं करती।'
+
 
 @dataclass
 class PolicyAnswer:
@@ -13,6 +16,7 @@ class PolicyAnswer:
 
 
 def localize(text):
+    text=text.replace(DECLINE_SUPPORT_TEXT,DECLINE_SUPPORT_HI)
     for source,target in [
         ('The synthetic credit-card annual fee is ', 'सिंथेटिक क्रेडिट कार्ड का वार्षिक शुल्क '),
         ('The synthetic fee-waiver rule requires annual spend of ', 'सिंथेटिक शुल्क-माफी नियम के अनुसार आवश्यक वार्षिक खर्च '),
@@ -42,7 +46,7 @@ def explain(result, topic):
         'fee_waiver': (r'Fee waiver requires annual spend INR ([0-9]{1,12})\.',
                        'The synthetic fee-waiver rule requires annual spend of {amount}.'),
     }
-    if topic not in rules:raise ValueError('Unknown policy topic')
+    if topic not in (*rules,'decline_support'):raise ValueError('Unknown policy topic')
     metadata=dict(retrieval_status=result['status'],lanes=result.get('lanes',{}),set_id=result.get('set_id'),
         applicability=result['applicability'],effective_at=result['effective_at'],support='unsupported',topic=topic)
     limitation='This policy does not establish why a fee was charged or whether your own spending qualifies for a waiver.'
@@ -50,10 +54,22 @@ def explain(result, topic):
         return PolicyAnswer('No complete applicable policy evidence is available. Please clarify the product, locale or effective date, or contact support.',[],metadata)
     if not result.get('complete',False):
         return PolicyAnswer('The retrieved policy context is incomplete. I cannot safely state this rule; please narrow the question or contact support.',[],metadata)
-    pattern, template=rules[topic];supported=[]
+    supported=[]
     context=result.get('context',result['evidence'])
-    if any(not any(re.fullmatch(p,e['text']) for p,_ in rules.values()) for e in context):
+    if any(e['text']!=DECLINE_SUPPORT_TEXT and not any(re.fullmatch(p,e['text']) for p,_ in rules.values()) for e in context):
         return PolicyAnswer('Policy context contains a qualification I cannot safely interpret. Please clarify or contact support.',[],metadata)
+    if topic=='decline_support':
+        matches=[e for e in context if e['text']==DECLINE_SUPPORT_TEXT and e['product']=='credit-card']
+        if not matches:return PolicyAnswer('The retrieved policy does not support this explanation. Please clarify or contact support.',[],metadata)
+        evidence=[dict(ref=result['set_id']+'/'+e['version']+'/'+e['section'],field=topic,value=DECLINE_SUPPORT_TEXT,
+            as_of=result['effective_at'],version=e['version'],authority='applicable_synthetic_policy',
+            citation={k:e[k] for k in ('version','section','source_hash','product','scope','locale','effective_from','effective_until')},
+            source_text=e['text'],set_id=result['set_id']) for e in matches]
+        text=DECLINE_SUPPORT_TEXT+'\n'+'\n'.join('Synthetic policy '+e['citation']['version']+' / '+e['citation']['section']+'; effective '+e['citation']['effective_from']+' to '+e['citation']['effective_until']+' (end exclusive).' for e in evidence)
+        if result['status']=='degraded':text+='\nRetrieval is degraded; this rule is supported by the surviving evidence only.'
+        metadata['support']='supported_template'
+        return PolicyAnswer(text,evidence,metadata)
+    pattern, template=rules[topic]
     for e in context:
         match=re.fullmatch(pattern,e['text'])
         # The supported rule is explicitly a credit-card/INR rule; text alone
@@ -88,7 +104,7 @@ class PolicyReads:
         await self.database.sessions.revalidate(context)
         # No paid embedding calls in this baseline. Missing vector is reported
         # explicitly; a supported template may use surviving lexical evidence.
-        question={'annual_fee':'annual fee','fee_waiver':'waiver annual spend'}.get(topic)
+        question={'annual_fee':'annual fee','fee_waiver':'waiver annual spend','decline_support':'card decline support procedure'}.get(topic)
         if question is None:raise ProviderError('invalid_input',422)
         def read():
             with psycopg.connect(self.database.sessions.settings.runtime_dsn,autocommit=True,connect_timeout=2) as conn:

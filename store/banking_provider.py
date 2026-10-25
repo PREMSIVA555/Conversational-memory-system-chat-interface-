@@ -15,6 +15,7 @@ from store.banking_contracts import (Account, AccountPage, Transaction, Transact
 from store.banking_cards import CardReads
 from store.banking_loans import LoanReads
 from store.banking_policy_answers import PolicyReads
+from store.banking_support_reads import SupportReads
 
 def _json(value):
     return json.dumps(value,sort_keys=True,separators=(',',':')).encode()
@@ -22,8 +23,8 @@ def _json(value):
 def _b64(value):
     return base64.urlsafe_b64encode(value).decode().rstrip('=')
 
-class AccountProvider(CardReads, LoanReads, PolicyReads):
-    def __init__(self, database, cursor_key: bytes, *, clock=None, cards_enabled=False, loans_enabled=False, policies_enabled=False):
+class AccountProvider(CardReads, LoanReads, PolicyReads, SupportReads):
+    def __init__(self, database, cursor_key: bytes, *, clock=None, cards_enabled=False, loans_enabled=False, policies_enabled=False,support_enabled=False):
         if not isinstance(cursor_key,bytes) or len(cursor_key)<32:
             raise ValueError('Cursor key requires at least 32 bytes')
         self.database=database
@@ -32,6 +33,7 @@ class AccountProvider(CardReads, LoanReads, PolicyReads):
         self.cards_enabled=cards_enabled
         self.loans_enabled=loans_enabled
         self.policies_enabled=policies_enabled
+        self.support_enabled=support_enabled
 
     @asynccontextmanager
     async def _read(self,context):

@@ -67,7 +67,7 @@ class PolicyArgs(DTO):
     product: str = Field(pattern=r'^[a-zA-Z0-9_.:-]{1,80}$')
     scope: str = Field(default='retail',pattern=r'^[a-zA-Z0-9_.:-]{1,80}$')
     locale: str | None = Field(default=None,pattern=r'^[a-zA-Z0-9_.:-]{1,80}$')
-    topic: Literal['annual_fee','fee_waiver']
+    topic: Literal['annual_fee','fee_waiver','decline_support']
     at: str | None = Field(default=None,max_length=40)
     @field_validator('at')
     @classmethod
@@ -220,7 +220,7 @@ class AccountCoordinator:
             else:
                 card_prompt=(' Card reads: list_cards(last_four?:four digits,limit?,cursor?), get_card(card_id), list_card_transactions(card_id,start?,end?,status?,limit?,cursor?). card_id requires an explicit canonical UUID in this question; a suffix is never an ID: list_cards to clarify. Copy requested opaque pagination cursor unchanged. Daily limit differs from credit limit, available credit and outstanding. Never change card settings.' if getattr(self.provider,'cards_enabled',False) else '')
                 loan_prompt=(' Existing loan reads: list_loans(limit?,cursor?), get_loan(loan_id), list_emi_schedule(loan_id,start?,end?,limit?,cursor?), list_loan_payments(loan_id,installment_id?,start?,end?,status?,limit?,cursor?). loan_id requires its explicit canonical UUID in this question; otherwise list_loans. Copy requested opaque cursor unchanged. APR is a decimal percentage string. A scheduled EMI/monthly amount is never payment evidence; use actual payment records for payment questions. Missing or partial payment records do not prove fully paid. No loan decisions or payment execution.' if getattr(self.provider,'loans_enabled',False) else '')
-                policy_prompt=(' Synthetic policy read: explain_policy(product,topic:annual_fee|fee_waiver,scope?:retail,locale?,at?:explicit timezone ISO timestamp). Use for general policy explanations, never current balance/payment/fee-charge cause or personal waiver decisions. Product must be explicit in the question (credit card -> credit-card). Omit locale to use response-language default en-IN/hi-IN; other locale/scope and at must be literal in question. Retail is a declared default. Only supported rule templates are displayed; citations alone never justify a claim.' if getattr(self.provider,'policies_enabled',False) else '')
+                policy_prompt=(' Synthetic policy read: explain_policy(product,topic:annual_fee|fee_waiver|decline_support,scope?:retail,locale?,at?:explicit timezone ISO timestamp). Use for general policy explanations, never current balance/payment/fee-charge cause or personal waiver decisions. Product must be explicit in the question (credit card -> credit-card). Omit locale to use response-language default en-IN/hi-IN; other locale/scope and at must be literal in question. Retail is a declared default. Only supported rule templates are displayed; citations alone never justify a claim.' if getattr(self.provider,'policies_enabled',False) else '')
                 allowed='|'.join([k for k in TOOLS if (k not in CARD_TOOLS or getattr(self.provider,'cards_enabled',False)) and (k not in LOAN_TOOLS or getattr(self.provider,'loans_enabled',False)) and (k!='explain_policy' or getattr(self.provider,'policies_enabled',False))]+['unsupported','clarify'])
                 async with asyncio.timeout(max(0,stop-time.monotonic())):
                     minimized=await asyncio.to_thread(model_input,request)

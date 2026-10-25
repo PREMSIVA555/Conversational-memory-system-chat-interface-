@@ -279,3 +279,19 @@ async def test_preference_commands_and_csrf(service):
 def test_unsupported_wording_rejected(value):assert validate_wording(json.dumps(value),'en',['transactions']) is None
 
 def test_checked_wording():assert validate_wording(json.dumps({'intro':'Here’s what I found.','follow_up':'transactions'}),'en',['transactions'])
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('question',['Why did my INR2000 card payment yesterday fail?','मेरे कार्ड का भुगतान अस्वीकृत क्यों हुआ?'])
+async def test_card_payment_does_not_switch_to_loans(service,question):
+    app,cs,ctxs,tr,w=service;c=cs[0];cid=await prepare(c)
+    value=await send(c,cid,question)
+    assert value['actions']
+    assert all(a['resource_selection']['kind']=='card' for a in value['actions'])
+    assert all(a['action']=='transactions' for a in value['actions'])
+
+@pytest.mark.asyncio
+async def test_unspecified_payment_does_not_guess_loan(service):
+    app,cs,ctxs,tr,w=service;c=cs[0];cid=await prepare(c)
+    value=await send(c,cid,'Why was my payment declined?')
+    assert value['status']=='clarify' and not value['evidence']
+    assert not value['actions']
