@@ -4,7 +4,7 @@
     "name": "banking-memory-agent",
     "mode": "adopt",
     "profile": "prototype",
-    "objective": "Banking assistant: P00-P05 and T06.1/T06.2 approved; T06.2 pushed6a3f329. Active T06.3 human rubric pilot and optional imported-judge analysis. Actual ratings required; no judge calls/new budget, future approval or P06 completion inferred.",
+    "objective": "Banking assistant: P00-P05/T06.1-T06.3 approved; T06.3 pushed41a2900. Active bounded T06.4 release/recovery checks, no deployment/new paid model allowance or P06 completion inferred.",
     "constraints": [
       "User approved P00 closure and transition to P01 on 2026-10-18: mark p00 approved. move to p01. P00 evidence and limitations remain historical. P01 authorization does not fabricate future task approvals or passing gates.",
       "Preserve SPECxx/INVxx IDs and original acceptance contracts. User authorized start P02 on 2026-10-18. P02 is approved/closed; subsequent user approved proceed authorizes P03. Do not import or change P04 and later phases.",
@@ -18,7 +18,7 @@
     "non_goals": [],
     "trust_boundary": "local repository",
     "created_at": "2026-10-18T10:15:16.160Z",
-    "updated_at": "2026-10-25T13:49:08.996Z"
+    "updated_at": "2026-10-26T09:49:26.569Z"
   },
   "policy": {
     "ponytail": "full",
@@ -32,11 +32,11 @@
     }
   },
   "lifecycle": {
-    "phase": "build",
-    "status": "active",
-    "active_task": "T06.4",
+    "phase": "verify",
+    "status": "ready",
+    "active_task": null,
     "blocker": null,
-    "next_action": "After T06.3 approval, implement bounded release/recovery checks; no release claim without evidence."
+    "next_action": "Review completed work and choose the next bounded outcome."
   },
   "commands": {
     "test": {
@@ -433,6 +433,26 @@
       "status": "accepted",
       "source": ".genesis/T06.3_REVIEW.json",
       "recorded_at": "2026-10-25T13:44:48.154Z",
+      "paths": [],
+      "tags": []
+    },
+    {
+      "id": "T064-START",
+      "title": "Start isolated release/recovery checks after approved checkpoint push",
+      "text": "User approved and proceed2026-10-25. T06.3 closed with actual approval;41a2900 pushed before T06.4 implementation. Bound to .github/scripts/docs; no financial feature, production deployment, machine trust change or new paid allowance. Source-authoritative SPEC12 SPEC16 INV27 INV28 INV31. Correct obsolete objective before first proof; no objective setter in CLI. Separate fresh non-Astra behavioral verifier required. Production/shared databases not reset; recovery only guarded owned worlds. Historical21/20 request overrun preserved.",
+      "status": "accepted",
+      "source": ".genesis/sources/P06_SOURCE.json",
+      "recorded_at": "2026-10-25T13:50:55.408Z",
+      "paths": [],
+      "tags": []
+    },
+    {
+      "id": "T064-FINAL-FREEZE",
+      "title": "Freeze corrected release candidate and preserve prior failures",
+      "text": "Resumed2026-10-26. T06.3 approved/pushed41a2900; T06.4 remains pending review. Correct stale outcome suffix from Not implemented yet to candidate status without changing SPEC12 SPEC16 INV27 INV28 INV31 acceptance; CLI lacks outcome setter. Preserve legacy116unit suite plus18targeted banking checks. Actual first unit run115pass1fail scanned generated archive; archive relocated outside checkout, original test unchanged, retest116pass. Packaging helper stages application source outside checkout; independent saved follow-up68assertions passed, prior54retained. Final native proof must be fresh. No new paid budget/Astra/deploy/hosted CI or future approval.",
+      "status": "accepted",
+      "source": "docs/RELEASE_RECOVERY.md",
+      "recorded_at": "2026-10-26T06:08:08.324Z",
       "paths": [],
       "tags": []
     }
@@ -9661,8 +9681,8 @@
     },
     {
       "id": "T06.4",
-      "outcome": "Close release CI and recovery checks. SPEC12 SPEC16 INV27 INV28 INV31. Deterministic vs opt-in model evaluation, backend/frontend/wheel/security checks, actual rollback/restore and monitoring evidence. Not implemented yet.",
-      "state": "active",
+      "outcome": "Close release CI and recovery checks. SPEC12 SPEC16 INV27 INV28 INV31. Deterministic vs opt-in model evaluation, backend/frontend/wheel/security checks, actual rollback/restore and monitoring evidence. Implementation candidate pending verification and review.",
+      "state": "done",
       "risk": "high",
       "owner": null,
       "scope": [
@@ -9686,25 +9706,47 @@
           "kind": "command",
           "command": "python scripts/p064_check.py",
           "mandatory": true,
-          "status": "pending",
-          "evidence": null
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.4-delivery-1cbd6746-6ef9-49b1-92c1-828cdc2b67c7.json",
+            "hash": "114f83eac285fe2a7fc186692e58f6fb684f8b172e44da72b184394f7622417b",
+            "source_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+            "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+            "observed_at": "2026-10-26T09:47:16.193Z"
+          }
         },
         {
           "id": "independent-review",
           "kind": "review",
           "command": "",
           "mandatory": true,
-          "status": "pending",
-          "evidence": null
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.4-independent-review-f8296aae-d0fa-4d08-9047-896c9f6c1c7f.json",
+            "hash": "a0c787b7dbbd0b15af3a1d8831f74817a290f4a08ddd48466e73be5a038e7930",
+            "source_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+            "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+            "observed_at": "2026-10-26T09:49:00.556Z"
+          }
         }
       ],
-      "next_action": "After T06.3 approval, implement bounded release/recovery checks; no release claim without evidence.",
+      "next_action": "Obtain a fresh passing native gate on unchanged approved source, then record actual approval/closure and commit/push P06 before P07 implementation.",
       "blocker": null,
-      "notes": [],
-      "failures": [],
+      "notes": [
+        "Approved T06.3 checkpoint41a2900 pushed before implementation. T06.4 source/docs added; real queue-to-Prometheus-to-local-receiver drill passed. Recovery correction under test. No hosted CI/deploy/live-model claim.",
+        "CLI help/unknown arguments now parse before drills; frontend builds/generates Next route types before explicit typecheck. Independent own SQL confirms45tables/policies/grants equality and actual notification delivery; final source-bound gate pending.",
+        "Fresh behavioral verifier54assertions pass. Follow-up independently checks corrected application-wheel packaging leaves versionable source unchanged. Final native gate pending under corrected source; no hosted CI/deploy/live model claim.",
+        "Final corrected native delivery gate passed unchanged source2026-10-26:134backend tests (116legacy+18targeted),46evaluator tests, clean evaluator installation and actual guarded reads, frontend build/typecheck, external-staging application wheel,45table restore/migration/role checks and actual local alert notification. Saved fresh independent68assertions including packaging follow-up. Prior failures retained. T06.4/P06 remain unapproved/unclosed; see T06.4_REVIEW.json."
+      ],
+      "failures": [
+        "Development recovery attempts1024ba2e/a446435f failed on missing legacy guard evidence when re-enable was assumed. Production correctly refused. Retain failed receipts; corrected rehearsal requires refusal and leaves isolated rollout disabled; no guard bypass.",
+        "Initial full delivery attempt intentionally interrupted by stopping verified owned p064_check process tree after12pytest progress markers; no full209-test pass claimed. Delivery-only source changes now use targeted existing security/audit/exporter/retry/erasure/oracle tests; historical approved209-test proof preserved separately. Native failed attempt retained; no ordinary demo process stopped.",
+        "First targeted full pipeline passed18backend/46evaluator tests plus frontend build/typecheck, wheel, recovery and alerts, but native proof rejected source-mutated: root wheel build generated121untracked build files. These files retained under guarded ignored local archive; application packaging moved to outside-checkout source copy. Rejected source proof and all raw stage receipts preserved; no release pass claimed.",
+        "Approval-label refresh2f1fcf1c retained all successful component exit0 receipts and completed pipeline858d58cd, but native shell gate timed out/SIGKILL with unchanged source. Backend reported134passes in2258.71s elapsed. Do not promote this timed-out native proof. Retry unchanged approved source with3600000ms outer deadline; preserve completed receipts and actual user approval, no new code/test/budget claims."
+      ],
       "limitations": [],
       "created_at": "2026-10-25T12:05:44.081Z",
-      "updated_at": "2026-10-25T12:05:44.082Z",
+      "updated_at": "2026-10-26T09:49:26.568Z",
       "base_manifest": {
         ".gitattributes": "d1513a7b048e269d4c18c6b75c73a1ba3f4d1b40e41c8b5a59b274fd51564cab",
         ".github/workflows/deploy.yml": "7e5e349ecd140a0724d064dfb8b0f6901397c3286a25c5e1eab57e8ff614bd3e",
@@ -10372,6 +10414,15 @@
       "task": "T06.3",
       "human": "mprem",
       "reason": "Actual user approved and proceed2026-10-25. Explicit retained-input scope correction revalidated; unchanged implementation and data.46package tests,115independent assertions, no judge calibration. Prior rejected closure preserved; this is approval metadata under corrected config, not a new invented user approval.",
+      "revision": null
+    },
+    {
+      "id": "f8296aae-d0fa-4d08-9047-896c9f6c1c7f",
+      "at": "2026-10-26T09:49:00.556Z",
+      "action": "approve",
+      "task": "T06.4",
+      "human": "mprem",
+      "reason": "Actual user approve and proceed on2026-10-26 after T06.4/P06 review:134backend tests,46evaluator tests,68fresh independent assertions; restore/notification/source isolation limits accepted. Approval-label refresh timeout retained, unchanged source rerun now passed natively with longer outer deadline. Close P06 and commit/push before P07; no paid budget/Astra/deploy/publication/future results approval inferred.",
       "revision": null
     }
   ],
@@ -11959,6 +12010,126 @@
       "cost": null,
       "stop_reason": null,
       "ended_at": "2026-10-25T13:48:10.882Z"
+    },
+    {
+      "id": "820b94ff-f7b3-4b2a-8118-04b7f15d06ad",
+      "task": "T06.4",
+      "kind": "gate",
+      "command": "python scripts/p064_check.py",
+      "timeout": 1200000,
+      "authorization": null,
+      "pid": 676,
+      "child_pid": 37596,
+      "started_at": "2026-10-25T14:00:50.967Z",
+      "status": "failed",
+      "before_hash": "c9c58370bbaa9b3ad2486d88f1f1443b7c9f59ad33e361f844524e78a2a1da26",
+      "config_hash": "9c5049364ded2bfd8fc8415eaad1edd821de857a44c9ca86d2853b53f024e16f",
+      "environment": {
+        "node": "v22.23.0",
+        "platform": "win32",
+        "arch": "x64",
+        "verifier": "cbdddbf25e5ed5f3406b93881ae54f64d11a8c54f0bfe177d19d9d9946a6a971",
+        "variables": {}
+      },
+      "cost": null,
+      "stop_reason": "command-failed",
+      "ended_at": "2026-10-25T14:08:02.687Z"
+    },
+    {
+      "id": "9c262708-fb38-432a-aa6c-5f4b78c5ac60",
+      "task": "T06.4",
+      "kind": "gate",
+      "command": "python scripts/p064_check.py",
+      "timeout": 1200000,
+      "authorization": null,
+      "pid": 10584,
+      "child_pid": 24616,
+      "started_at": "2026-10-25T14:10:40.198Z",
+      "status": "failed",
+      "before_hash": "98c7885b1354905cac469c19082792a00ee2ba6b835482309698d739c0a6b581",
+      "config_hash": "9c5049364ded2bfd8fc8415eaad1edd821de857a44c9ca86d2853b53f024e16f",
+      "environment": {
+        "node": "v22.23.0",
+        "platform": "win32",
+        "arch": "x64",
+        "verifier": "cbdddbf25e5ed5f3406b93881ae54f64d11a8c54f0bfe177d19d9d9946a6a971",
+        "variables": {}
+      },
+      "cost": null,
+      "stop_reason": "source-mutated",
+      "ended_at": "2026-10-25T14:17:37.020Z"
+    },
+    {
+      "id": "778f9092-206f-4956-aec3-e928fc728080",
+      "task": "T06.4",
+      "kind": "gate",
+      "command": "python scripts/p064_check.py",
+      "timeout": 1200000,
+      "authorization": null,
+      "pid": 29084,
+      "child_pid": 34568,
+      "started_at": "2026-10-26T06:09:18.476Z",
+      "status": "passed",
+      "before_hash": "638afaf0aac9cea46944499fea7cb9f96dc84aded4b78227f4be05896a24a6d9",
+      "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+      "environment": {
+        "node": "v22.23.0",
+        "platform": "win32",
+        "arch": "x64",
+        "verifier": "cbdddbf25e5ed5f3406b93881ae54f64d11a8c54f0bfe177d19d9d9946a6a971",
+        "variables": {}
+      },
+      "cost": null,
+      "stop_reason": null,
+      "ended_at": "2026-10-26T06:15:56.333Z"
+    },
+    {
+      "id": "2f1fcf1c-2cdd-4c46-a37a-2bedcbf5f1ab",
+      "task": "T06.4",
+      "kind": "gate",
+      "command": "python scripts/p064_check.py",
+      "timeout": 1200000,
+      "authorization": null,
+      "pid": 6184,
+      "child_pid": 17120,
+      "started_at": "2026-10-26T08:46:55.217Z",
+      "status": "failed",
+      "before_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+      "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+      "environment": {
+        "node": "v22.23.0",
+        "platform": "win32",
+        "arch": "x64",
+        "verifier": "cbdddbf25e5ed5f3406b93881ae54f64d11a8c54f0bfe177d19d9d9946a6a971",
+        "variables": {}
+      },
+      "cost": null,
+      "stop_reason": "timeout",
+      "ended_at": "2026-10-26T09:30:57.479Z"
+    },
+    {
+      "id": "1cbd6746-6ef9-49b1-92c1-828cdc2b67c7",
+      "task": "T06.4",
+      "kind": "gate",
+      "command": "python scripts/p064_check.py",
+      "timeout": 3600000,
+      "authorization": null,
+      "pid": 21296,
+      "child_pid": 13800,
+      "started_at": "2026-10-26T09:39:41.497Z",
+      "status": "passed",
+      "before_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+      "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+      "environment": {
+        "node": "v22.23.0",
+        "platform": "win32",
+        "arch": "x64",
+        "verifier": "cbdddbf25e5ed5f3406b93881ae54f64d11a8c54f0bfe177d19d9d9946a6a971",
+        "variables": {}
+      },
+      "cost": null,
+      "stop_reason": null,
+      "ended_at": "2026-10-26T09:47:16.191Z"
     }
   ],
   "authorizations": [],
@@ -12001,14 +12172,14 @@
     }
   },
   "checkpoint": {
-    "at": "2026-10-25T13:36:32.073Z",
+    "at": "2026-10-26T06:23:10.354Z",
     "revision": {
-      "commit": "6a3f32919a69fa29951b962e06ae142a0f386347",
+      "commit": "41a2900d250696eae0b2647b1fa269b9f379b5b1",
       "dirty": true,
-      "source_hash": "190dd06f1a4a3bf8a645d03cf5f744fed3fa4726f3048c5fa808bdc103c0afad"
+      "source_hash": "638afaf0aac9cea46944499fea7cb9f96dc84aded4b78227f4be05896a24a6d9"
     },
-    "active_task": "T06.3",
-    "next_action": "User reviews T06.3 implementation and limitations. After explicit implementation approval: close task, commit/push verified checkpoint, then bounded T06.4. No task closure inferred from rating confirmation."
+    "active_task": "T06.4",
+    "next_action": "User reviews T06.4/P06 results and limits. Only after actual approval: native closure, reviewed credential-free commit and normal push. No T07 work/deployment/live-model allowance inferred."
   },
   "legacy": null
 }

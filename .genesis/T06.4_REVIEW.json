@@ -1,0 +1,204 @@
+{
+  "task": "T06.4",
+  "phase": "P06",
+  "baseline": "41a2900",
+  "branch": "codex/p06-evaluator",
+  "review_date_client": "2026-10-26",
+  "status": "approved-task-and-phase",
+  "task_complete": true,
+  "phase_complete": true,
+  "human_approval": {
+    "date_client": "2026-10-26",
+    "quote": "approve and proceed",
+    "scope": "Approve reviewed T06.4/P06 with stated limits; close, commit and push before bounded P07. No paid-model allowance, Astra use, publication, deployment or future results approval."
+  },
+  "spec_ids": [
+    "SPEC12",
+    "SPEC16"
+  ],
+  "invariant_ids": [
+    "INV27",
+    "INV28",
+    "INV31"
+  ],
+  "native_gate": {
+    "path": ".genesis/evidence/T06.4-delivery-1cbd6746-6ef9-49b1-92c1-828cdc2b67c7.json",
+    "hash": "114f83eac285fe2a7fc186692e58f6fb684f8b172e44da72b184394f7622417b",
+    "source_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+    "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+    "observed_at": "2026-10-26T09:47:16.193Z"
+  },
+  "native_source_unchanged": true,
+  "local_release": {
+    "path": ".genesis/evidence/T06.4-full-d378e9a4176e42ca9781116be4067f7b.json",
+    "status": "passed",
+    "eligibility_only_not_approval": true,
+    "deployed": false,
+    "source_sha256": "dd3c3d52fbb7077f037c9bc9f645a39545983cd2e22c2bf482c578910194da63",
+    "model_calls": 0,
+    "tools": {
+      "python": "3.11.8 (tags/v3.11.8:db85d51, Feb  6 2024, 22:03:32) [MSC v.1937 64 bit (AMD64)]",
+      "platform": "win32"
+    },
+    "policy": "SPEC12 SPEC16 INV27 INV28 INV31; historical paid budget closed",
+    "grader": "release-checks/1",
+    "reset": "new unique scratch folders/worlds; no normal database reset",
+    "data_fixture_manifest": {
+      "evals/fixtures/__init__.py": "3840c259656acdccae3101aca2f4e74f95ef63eab902ae86badc5a4989d43d1f",
+      "evals/fixtures/embedding_cache.json": "0e71b614707dc9d71c65e500f1de92c16ec8a4154d1862f137f80f94834df4e1",
+      "evals/fixtures/p00_memory_incident.json": "990104b5b336d6e0635ad44e70c5c64b35b97b4ce31b1edf62d757e37bc712a7",
+      "evals/fixtures/p00_world.json": "619e2d75b988810aab4115d6a52ff8809dd8d519b8ef216e9ae624627bda4f10",
+      "evals/fixtures/p03_account_slice.json": "09318cf19e31873a7e7457fbe3fe184290551ab544b5a23ac5cf850a96478e41",
+      "evals/fixtures/p04_card_slice.json": "723b7ab27bdb5bdba4a8cab8ef9475b4739e726a2ae2806311eed3892d274c35",
+      "evals/fixtures/p04_loan_slice.json": "c557000de308a003f5027db3ad3084b306a18e16c871cb838b8233e186067545",
+      "evals/fixtures/p04_policy_claims.json": "ecb41d2a2574a02eb53e0b575847e077a5fc5c31d7622f517a49c555b232918e",
+      "evals/fixtures/p04_policy_queries.json": "ea6972fcb0d2dca4b4ca7293a35f824f43adc274b6b4b0f0fc3bb3721754f93d",
+      "evals/fixtures/p05_card_support_policy.json": "4d6039c16993008334b1f4ab30de854c6aeab1a33253597a85d57fc5dda6f286",
+      "evals/fixtures/query_embedding_cache.json": "1d062b285a2309463da9f0473bc6af1378e61cf9f544e5bfc235148a749d7cdd",
+      "evals/fixtures/seed_memories.py": "c4bbf124f29ac98d4c6b5133abe4b7d7dd9b98a2f9c5eea954e42cb36e1f2b96"
+    }
+  },
+  "tests": {
+    "backend": {
+      "passed": 134,
+      "failed": 0,
+      "errors": 0,
+      "legacy_unit_cases": 116,
+      "targeted_banking_cases": 18
+    },
+    "evaluator": {
+      "passed": 46,
+      "failed": 0,
+      "errors": 0
+    },
+    "frontend": {
+      "outside_checkout": "C:\\Users\\mprem\\AppData\\Local\\Temp\\bank-release-ui-5n0fx1ae",
+      "typecheck_and_production_build": true,
+      "runtime_env_copied": false
+    },
+    "application_wheel": {
+      "outside_checkout_source": "C:\\Users\\mprem\\AppData\\Local\\Temp\\bank-release-app-nspxw4mi",
+      "wheel_sha256": "6cedb1afe0f86f5607dc5125afebed572f8ce925a35fdc1f3359c843505eb322",
+      "migration_payload_present": true,
+      "claim": "Application wheel build/content check; clean dependency-free evaluator installation is separate."
+    },
+    "security_scan": {
+      "scanned_files": 441,
+      "private_value_hits": 0,
+      "scope": "versionable files, known local fixture credentials, high-signal key patterns; not universal secret detection"
+    }
+  },
+  "seeded_block": {
+    "path": ".genesis/evidence/T06.4-seeded-block-2880432d04db4d1b903839bfe6da355a.json",
+    "status": "failed-as-seeded",
+    "later_stages_absent": true,
+    "release_allowed": false,
+    "actual_child_exit": 19
+  },
+  "recovery": {
+    "path": ".genesis/evidence/T06.4-recovery-74124ef2aad04e60b1cfe8e842d8f684.json",
+    "identity": {
+      "postgresql_version": "16.15 (Debian 16.15-1.pgdg12+2)",
+      "postgresql_system_identifier": "7698041948604231718",
+      "postgres_container": "bank-p01-postgres-cab72254",
+      "redis_version": "7.4.11",
+      "redis_run_id": "0bec160e2d87b857baaed7609119c67ad871837e",
+      "redis_container": "bank-p01-redis-cab72254",
+      "matched": true
+    },
+    "restored_equal": true,
+    "tables": 45,
+    "source_unchanged": true,
+    "migration_reapply_idempotent": true,
+    "roles_and_owner_preserved": true,
+    "rollback": {
+      "new_preference_write_http": 503,
+      "compatible_reads_http": 200,
+      "confirmed_case_replay_unchanged": true,
+      "one_case_audit_operation_outbox": true,
+      "method": "database feature disable; re-enable correctly refused without legacy evidence; no binary downgrade"
+    },
+    "reenable_refused_without_legacy_evidence": true,
+    "limits": [
+      "Same verified local cluster, guarded banking schema dump only; roles already exist; not full disaster recovery or Redis backup.",
+      "Restored feature remains disabled; re-enable requires separately verified legacy evidence. Feature rollback retains committed support effects and exact same-key replay; no external service delivery or binary downgrade claim.",
+      "Private dump/raw evidence retained locally; no normal/shared database dropped."
+    ]
+  },
+  "alerts": {
+    "path": ".genesis/evidence/T06.4-alerts-ea6de095ed3241ba996428a23efa335b.json",
+    "alertname": "BankingAccessQueueRejected",
+    "production_rules_sha256": "881986b5c53f858cb224dd580151a3f8349fa05d1ad889ec3302eeb721caf5a5",
+    "production_counter_delta": 1,
+    "notification_path": "/api/v2/alerts",
+    "observed_notifications": 1,
+    "limits": [
+      "Local synthetic receiver implementing the notification endpoint, not a production Alertmanager/downstream paging service.",
+      "Unmodified production alert expressions; isolated1s scrape/evaluation and1s resend cadence.",
+      "No machine-wide firewall/trust configuration changes; no external recipient messaged."
+    ]
+  },
+  "independent": {
+    "path": ".genesis/evidence/T06.4-independent.json",
+    "sha256": "4b657781ae2fe7f3ff00394dba6635c05a6178d40672e2f35360f5c4dc3c221a",
+    "assertions_passed": 68,
+    "group_count": 5,
+    "fresh_context": true,
+    "source_blind": true,
+    "model_requested": "gpt-6.1-sol",
+    "model_attestation": "Inherited non-Astra Codex checker; exact runtime model label not exposed to this checker. No Astra invoked.",
+    "scope_limits": [
+      "Fresh checker read contract, CLI/public own-run receipts, own private operational manifests/config/SQL/archive/Prometheus artifacts only; no implementation, tests, maker reports or actual human rubric data inspected.",
+      "Own actual recovery/alerts runs predate root CLI-parser-only correction; corrected parser behavior rechecked afterward. No independent source audit or final source-hash approval issued.",
+      "Recovery is same verified PostgreSQL16 local cluster with existing roles and banking-schema dump; no full-cluster or Redis backup, role reprovisioning, binary downgrade, external delivery or post-restore session replay certification.",
+      "Recovery HTTP rollback/re-enable/idempotent-migration observations are from this checker own public drill receipt; table contents/flags/roles/owners/ACL/RLS/grants were additionally queried independently in read-only transactions.",
+      "Alerts use local synthetic receiver /api/v2/alerts, production expressions with isolated1s cadence, no real production Alertmanager/downstream paging or external human recipient.",
+      "Full/backend/evaluator release pipeline, clean evaluator installation, hosted GitHub execution and deployment are outside this checker scope. Selected actual application wheel build/content/checkout-isolation was independently checked in the follow-up. Root owns native gate.",
+      "Ordinary configured database was never reset or used for data queries; only own guard-owned worlds were queried. Shared PostgreSQL catalog inventory and authenticated Redis INFO were read-only.",
+      "No provider/model/deployment/external-recipient calls made. No task, human or phase approval granted."
+    ],
+    "saved_report_before_later_usage_error": true
+  },
+  "runtime_health": {
+    "http://127.0.0.1:8001/health": {
+      "status": 200
+    },
+    "https://localhost:3443/": {
+      "status": 200
+    }
+  },
+  "manual_guide": {
+    "path": "docs/MANUAL_TEST_SCENARIOS.md",
+    "scenario_ids": [
+      "P06-M12",
+      "P06-M13",
+      "P06-M14",
+      "P06-M15"
+    ],
+    "human_manual_runs": "Not run"
+  },
+  "retained_failures": [
+    "Development recovery re-enable refused without legacy guard evidence; corrected rehearsal requires refusal, never forges attestation.",
+    "Overbroad209-test child run deliberately interrupted after12progress markers; no pass claimed.",
+    "First targeted full pipeline passed stages but was rejected source-mutated due generated build files; packaging fixed to external staging.",
+    "Initial legacy unit development run115pass1fail scanned retained generated-source archive; archive moved outside checkout, original116tests passed unchanged.",
+    "Approval-label refresh2f1fcf1c completed successful component/pipeline receipts but outer native gate timed out/SIGKILL on unchanged source; retained as failed. Fresh3600000ms deadline rerun passed natively; this does not relabel the timeout as a pass."
+  ],
+  "generated_build_archive": "C:\\Users\\mprem\\AppData\\Local\\Temp\\bank-p064-retained-build-edd5898f8ad84eacb63eb5a6f020ae54",
+  "limits": [
+    "Local Windows checks and YAML structure validation are observed; hosted GitHub CI run not observed, no deployment or production uptime claim.",
+    "The manual model-evaluation workflow is intentionally blocked, not a functional live runner. Historical21/20 budget remains closed; future budget/governed runner requires explicit authorization.",
+    "Same-cluster banking-schema restore with existing roles only; no full-cluster/Redis disaster recovery or binary downgrade/post-restore session replay claim.",
+    "Local endpoint-compatible synthetic alert receiver only; no production Alertmanager/downstream human paging certification.",
+    "Application wheel build/content checked; only standalone evaluator has separate dependency-free clean-install proof.",
+    "Raw reports/dumps/logs/config remain local/ignored; safe canonical summaries do not imply raw evidence is committed.",
+    "No P06 closure or T07 authorization inferred."
+  ],
+  "human_review_gate": {
+    "path": ".genesis/evidence/T06.4-independent-review-f8296aae-d0fa-4d08-9047-896c9f6c1c7f.json",
+    "hash": "a0c787b7dbbd0b15af3a1d8831f74817a290f4a08ddd48466e73be5a038e7930",
+    "source_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+    "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+    "observed_at": "2026-10-26T09:49:00.556Z"
+  }
+}

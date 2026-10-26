@@ -644,3 +644,40 @@ P05 was approved/closed and pushed36c95d7 before this phase. The user approved T
 - **Expected:** Conflicting/unclear references are excluded explicitly; known-pair/unknown-pair denominators remain visible. Missing/abstaining predictions never become correct. Views hide family/split/labels; controls show matched flips/missing conditions, not proof of causal bias. Tool model calls0, calibrated false. Actual pilot with no judge has empty comparisons/not_run, rather than fabricated confusion results.
 - **Fail if:** Majority/unknown cases become hidden gold, missing pairs inflate accuracy, order/verbosity flips alone prove bias or assisted tiny pilot is called calibrated.
 - **Cleanup/limits:** Keep synthetic fixtures visibly separate from actual review records. The frozen pilot is inadequate for reliability or multilingual fairness claims; T06.4 release/recovery remains queued.
+
+
+### P06-M12 — release failure blocks later steps (T06.4 approved 2026-10-26)
+
+- **Setup/user:** Developer terminal, configured checkout, Python test interpreter. No banking login/provider key. Manual result **Not run**.
+- **Steps:** Run `python scripts/p064_release.py --seed-failure security --output NEW.json`. Then run `--only security` with another new output. Try the first output path again.
+- **Expected:** Seeded subprocess exits19 and runner exits1, only security listed/failed, release_allowedfalse/deployedfalse. A successful selected check still release_allowedfalse. Existing evidence unchanged. Full `python scripts/p064_check.py` is required for local pipeline eligibility; approval/deployment remain separate.
+- **Fail if:** Later stages run after failure, partial success permits release, prior receipt overwritten or failed setup becomes pass.
+- **Cleanup/limits:** Retain receipts; no deploy command, no normal bank data touched. See `docs/RELEASE_RECOVERY.md`; hosted CI is not inferred from YAML/local success.
+
+### P06-M13 — compatible rollback and actual restore
+
+- **Setup:** Developer only, existing private PG16/Redis7 test stack. Run `python scripts/p064_recovery.py`; no demo customer is used. Manual result **Not run**.
+- **Steps:** Inspect its new safe receipt and privately retained dump/restore log; check two different guarded world IDs, source/target table hashes and migration reapply result.
+- **Expected:** One case/audit/operation/outbox preserved; new preference acceptance503 with compatible reads200; support same-key retry identical/no duplicate. Re-enable without legacy evidence refuses. Banking schema restored on same verified cluster with original owner/roles; hashes equal, source unchanged, migrations idempotent. Test rollout remains disabled.
+- **Fail if:** Shared database reset, normal flag altered, missing legacy evidence bypassed, owner becomes a superuser, source rows change or restore called full-cluster/Redis recovery.
+- **Cleanup/limits:** Worlds/dumps stay private and retained; do not delete guessed paths or restore into the normal demo. No binary downgrade, external case delivery or post-restore old-session reuse is implied.
+
+### P06-M14 — actual local alert delivery
+
+- **Setup:** Developer terminal/Docker, no bank login. Run `python scripts/p064_alerts.py`. Manual result **Not run**.
+- **Steps:** Inspect safe receipt for production counter delta1, unchanged production-rule hash and actually received BankingAccessQueueRejected notification.
+- **Expected:** Real queue overflow -> Prometheus scrape/rule -> local receiver `/api/v2/alerts`; owned container/server stopped afterward. No external person messaged or system trust/firewall change.
+- **Fail if:** Only a rule-unit test or fabricated webhook is called delivered, unrelated container stopped, or production/downstream paging claimed.
+- **Cleanup/limits:** Keep private run config/logs; temporary1s cadence/local endpoint-compatible receiver only. This does not certify full production monitoring coverage.
+
+### P06-M15 — deterministic and live evaluation boundaries
+
+- **Setup:** Developer/reviewer; read `.github/workflows/release.yml`, `deploy.yml` and `model-evaluation.yml`. Manual result **Not run**.
+- **Steps:** Confirm main deploy depends on reusable deterministic checks, PR/branch checks receive no paid provider secrets, and separate manually invoked model boundary exits without model calls. Run full local gate to new receipts when setup is available.
+- **Expected:** Backend/evaluator/frontend/wheel/security/recovery/alert checks required; exhausted live budget remains closed. No GitHub pass/deployment inferred until actually observed. Local partial-stage pass is not approval.
+- **Fail if:** Paid calls happen during deterministic CI, failure is ignored/continue-on-error, release occurs without checks or raw configs/dumps are uploaded.
+- **Cleanup/limits:** Do not trigger a production deployment or grant new paid budget as part of this manual check. Expected results are not execution evidence; automated records remain separate.
+
+### P06 approval record
+
+The user approved T06.4/P06 on 2026-10-26 with “approve and proceed”, following the reviewed 134 backend tests, 46 evaluator tests and 68 separate verifier assertions. Human manual scenario runs remain **Not run**. Automated results, rejected attempts and limitations are linked from `.genesis/T06.4_REVIEW.json`; this approval does not create a hosted CI pass, production deployment, new paid-model budget or independent human reproduction.

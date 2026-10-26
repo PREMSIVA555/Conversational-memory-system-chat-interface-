@@ -1,0 +1,17 @@
+name: Model evaluation authorization boundary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authorization-required:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep the exhausted live evaluation budget closed
+        run: |
+          echo 'No live calls dispatched. Historical UX budget is closed (21/20).'
+          echo 'A new explicitly approved budget, persisted reservations, fresh dataset and governed runner are required.'
+          exit 1

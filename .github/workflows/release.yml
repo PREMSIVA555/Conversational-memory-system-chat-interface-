@@ -1,0 +1,35 @@
+name: Deterministic banking release checks
+
+on:
+  push:
+    branches: ['codex/**']
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUTF8: '1'
+      LITELLM_LOCAL_MODEL_COST_MAP: 'True'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend and test dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Create disposable local PostgreSQL16 Redis7 and signed test issuer
+        run: python scripts/p01_setup.py
+      - name: Seeded release block, backend, evaluator, frontend, wheel, recovery and notification delivery
+        run: python scripts/p064_check.py
+      # Private configs, dumps, credentials and raw logs are never uploaded.

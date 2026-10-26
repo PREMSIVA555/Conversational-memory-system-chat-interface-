@@ -1,0 +1,151 @@
+{
+  "phase": "P06",
+  "status": "approved-closed",
+  "date_client": "2026-10-26",
+  "human_approval": {
+    "quote": "approve and proceed",
+    "scope": "Close reviewed P06, commit/push before bounded P07; no new provider budget or publication/deployment authority."
+  },
+  "tasks": [
+    {
+      "id": "T06.1",
+      "state": "done",
+      "review": ".genesis/T06.1_REVIEW.json",
+      "gates": [
+        {
+          "id": "clean-install",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.1-clean-install-2c2c04ac-5c0e-4ff5-a309-80ce76ca839c.json",
+            "hash": "cecd4e91a79bb7641f67c28098ea6c4aa44c875ed3d4d33cb3df39268fe4c2b4",
+            "source_hash": "e93af40ef1362178a6617d39f71c9f61e66a055dee0030633ec60ce1404fbbb8",
+            "config_hash": "0f64d56152b4acb9e3a47f7a8a763a14d8ad233cb684888c3bb4f6074de74261",
+            "observed_at": "2026-10-25T12:27:27.922Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.1-independent-review-aeec21e0-45cb-4f6f-9d22-61375f89c773.json",
+            "hash": "8d4eda03ec554317f19fbe3354f546bf3ecb567fa5d02b1a8b8343ffa559208c",
+            "source_hash": "e93af40ef1362178a6617d39f71c9f61e66a055dee0030633ec60ce1404fbbb8",
+            "config_hash": "0f64d56152b4acb9e3a47f7a8a763a14d8ad233cb684888c3bb4f6074de74261",
+            "observed_at": "2026-10-25T12:28:47.786Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "T06.2",
+      "state": "done",
+      "review": ".genesis/T06.2_REVIEW.json",
+      "gates": [
+        {
+          "id": "grader-validation",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.2-grader-validation-d6eb2ea0-76e0-4f66-8c46-5cede59f8cbd.json",
+            "hash": "87630896bcbff355dda99811362db4958319f72c447777c7c0f6d2b5d850c467",
+            "source_hash": "3d7d34ba030c11b40a4dd6388fd88213f15b4cfb0d838fe7c4ca48591c5e32e2",
+            "config_hash": "dc8f6fe39951d5fa9606cb4456f3d78c1eaf8d874fac3264addd67794cd16fa9",
+            "observed_at": "2026-10-25T13:05:58.716Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.2-independent-review-a5ffce73-dd88-413e-a420-83cacacff1d2.json",
+            "hash": "1431e29ee68cd81ece936d69b0b247cd17eeec94d815c1828ddd3e69fc196b34",
+            "source_hash": "3d7d34ba030c11b40a4dd6388fd88213f15b4cfb0d838fe7c4ca48591c5e32e2",
+            "config_hash": "dc8f6fe39951d5fa9606cb4456f3d78c1eaf8d874fac3264addd67794cd16fa9",
+            "observed_at": "2026-10-25T13:06:27.297Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "T06.3",
+      "state": "done",
+      "review": ".genesis/T06.3_REVIEW.json",
+      "gates": [
+        {
+          "id": "calibration",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.3-calibration-0457cb49-0e9c-4cba-8406-18d0c9c2c237.json",
+            "hash": "c850121ede4aaafc3e41442a0bba4321853718c2b86c452e6dd4ce3127a2fce9",
+            "source_hash": "786ac1717f8dc58704bd6e4e640c51c0ddeaf73d01778d303f6d4782cfc2ca68",
+            "config_hash": "5408b3d089d0f84001707f02b39fc4efdbad9065dcda107e07bbc4b79dec5c77",
+            "observed_at": "2026-10-25T13:47:20.963Z"
+          }
+        },
+        {
+          "id": "human-label-collection",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.3-human-label-collection-1625f76f-06d1-4af4-b751-9a7f415d38ca.json",
+            "hash": "49be8cb941138bfdcf95fe93cf1a543d77ee48290132ff84ff0782c37f2e957b",
+            "source_hash": "786ac1717f8dc58704bd6e4e640c51c0ddeaf73d01778d303f6d4782cfc2ca68",
+            "config_hash": "5408b3d089d0f84001707f02b39fc4efdbad9065dcda107e07bbc4b79dec5c77",
+            "observed_at": "2026-10-25T13:48:10.882Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.3-independent-review-1e75fd4d-cab9-4fcc-907b-2cfd99aa8bd0.json",
+            "hash": "0c28ddabb1f0b8f43a4b819af8ce22d81e2f2736643f79cd58a4bdba26f2b9c8",
+            "source_hash": "786ac1717f8dc58704bd6e4e640c51c0ddeaf73d01778d303f6d4782cfc2ca68",
+            "config_hash": "5408b3d089d0f84001707f02b39fc4efdbad9065dcda107e07bbc4b79dec5c77",
+            "observed_at": "2026-10-25T13:48:42.234Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "T06.4",
+      "state": "done",
+      "review": ".genesis/T06.4_REVIEW.json",
+      "gates": [
+        {
+          "id": "delivery",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.4-delivery-1cbd6746-6ef9-49b1-92c1-828cdc2b67c7.json",
+            "hash": "114f83eac285fe2a7fc186692e58f6fb684f8b172e44da72b184394f7622417b",
+            "source_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+            "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+            "observed_at": "2026-10-26T09:47:16.193Z"
+          }
+        },
+        {
+          "id": "independent-review",
+          "status": "pass",
+          "evidence": {
+            "path": ".genesis/evidence/T06.4-independent-review-f8296aae-d0fa-4d08-9047-896c9f6c1c7f.json",
+            "hash": "a0c787b7dbbd0b15af3a1d8831f74817a290f4a08ddd48466e73be5a038e7930",
+            "source_hash": "31e4fc76bf18c92af50710280669dd3b55a8daa1c1aa1c4302a768045993c06c",
+            "config_hash": "c0a6cf367cffc84d30f953c8797a5e8c14141516b64948d3337c96fb7ca30e11",
+            "observed_at": "2026-10-26T09:49:00.556Z"
+          }
+        }
+      ]
+    }
+  ],
+  "checkpoint": {
+    "branch": "codex/p06-evaluator",
+    "status_at_snapshot": "approved source awaiting commit/push",
+    "previous_approved_commit": "41a2900"
+  },
+  "limits": [
+    "Human rubric:8exposed examples/one AI-assisted reviewer, no independent unaided annotation, judge not_run/not calibrated.",
+    "Bounded deterministic graders and local Windows integration evidence; no universal correctness/reliability guarantee.",
+    "Hosted CI not observed at closure; no production deployment.",
+    "Same-cluster banking-schema recovery and synthetic local notification receiver only.",
+    "Paid evaluation budget remains closed; model workflow deliberately blocked.",
+    "Ignored raw artifacts retained locally and referenced, not committed."
+  ]
+}

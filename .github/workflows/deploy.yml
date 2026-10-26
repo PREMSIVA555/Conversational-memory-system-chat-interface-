@@ -6,31 +6,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    env:
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install backend deps and run tests
-        run: |
-          pip install -e ".[dev]"
-          python -m pytest tests/unit/ -v
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Frontend typecheck
-        run: |
-          cd frontend
-          npm install
-          npm run typecheck
+    uses: ./.github/workflows/release.yml
 
   deploy:
     needs: test
