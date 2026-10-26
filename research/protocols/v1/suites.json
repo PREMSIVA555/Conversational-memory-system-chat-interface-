@@ -1,0 +1,149 @@
+{
+  "schema_version": "1",
+  "cases": [
+    {
+      "id": "D01",
+      "split": "development",
+      "comparison": "preference_update",
+      "family": "accepted-order",
+      "source_family": "authored-p07-accepted-order",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Accept global Hindi then English; finish Hindi extraction last.",
+      "expected_outcome": "Effective global language English from later accepted event.",
+      "expected_process": "Observe real acceptance sequence and stored rows; no completion-order overwrite."
+    },
+    {
+      "id": "D02",
+      "split": "development",
+      "comparison": "preference_update",
+      "family": "temporary-scope",
+      "source_family": "authored-p07-temporary-scope",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Global English; ask Hindi for this reply; ask next reply normally.",
+      "expected_outcome": "Temporary reply Hindi; later reply English; global unchanged.",
+      "expected_process": "No permanent acknowledgement without durable acceptance; inspect independent scopes."
+    },
+    {
+      "id": "D03",
+      "split": "development",
+      "comparison": "memory",
+      "family": "conversation-detail",
+      "source_family": "authored-p07-conversation-detail",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Persist detailed answer preference for current conversation; ask owned balance.",
+      "expected_outcome": "Balance matches fresh owned evidence; detail follows condition with persistence unchanged.",
+      "expected_process": "Disable only preference-context read; preserve resource context and ownership."
+    },
+    {
+      "id": "D04",
+      "split": "development",
+      "comparison": "memory",
+      "family": "global-language",
+      "source_family": "authored-p07-global-language",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Persist global Hindi then start another conversation and request loan payment records.",
+      "expected_outcome": "Actual payment records retain statuses; preference adherence evaluated separately.",
+      "expected_process": "Schedule is not payment evidence; required reads in both conditions."
+    },
+    {
+      "id": "D05",
+      "split": "development",
+      "comparison": "optional_clarification",
+      "family": "single-product",
+      "source_family": "authored-p07-single-product",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "One owned savings account; ask for balance with an unambiguous product selection.",
+      "expected_outcome": "Fresh balance with friendly name; optional clarification may change extra turns.",
+      "expected_process": "No required authorization or evidence check disabled."
+    },
+    {
+      "id": "D06",
+      "split": "development",
+      "comparison": "optional_clarification",
+      "family": "duplicate-product",
+      "source_family": "authored-p07-duplicate-product",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Two owned cards share a friendly name; request its transactions without selection.",
+      "expected_outcome": "Required clickable choice in both conditions, then selected owned transactions.",
+      "expected_process": "Optional-off must not choose arbitrarily or read a foreign product."
+    },
+    {
+      "id": "C01",
+      "split": "calibration",
+      "comparison": "preference_update",
+      "family": "erased-late-write",
+      "source_family": "authored-p07-erased-late-write",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Erase a captured preference source before its delayed extraction resumes.",
+      "expected_outcome": "Erased preference never serves or resurrects.",
+      "expected_process": "Audit serving tombstones and no claim of memory saved."
+    },
+    {
+      "id": "C02",
+      "split": "calibration",
+      "comparison": "memory",
+      "family": "source-dates",
+      "source_family": "authored-p07-source-dates",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Ask existing EMI schedule with global concise preference in English.",
+      "expected_outcome": "Due schedule and actual payments remain distinct facts; wording adherence separate.",
+      "expected_process": "Fresh owned schedule/payment evidence, no pending-as-paid claim."
+    },
+    {
+      "id": "C03",
+      "split": "calibration",
+      "comparison": "optional_clarification",
+      "family": "policy-scope",
+      "source_family": "authored-p07-policy-scope",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Ask fee explanation with two applicable product choices but no selected product.",
+      "expected_outcome": "Required product/policy clarification in both conditions.",
+      "expected_process": "No wrong policy qualification or financial-action promise."
+    },
+    {
+      "id": "H01",
+      "split": "holdout",
+      "comparison": "preference_update",
+      "family": "parallel-first-insert",
+      "source_family": "authored-p07-parallel-first-insert",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Barrier-controlled first writes to same empty preference slot, opposite completion order.",
+      "expected_outcome": "Highest accepted sequence wins with one current projection.",
+      "expected_process": "Unique guarded namespace per attempt, safe CAS/transaction behavior."
+    },
+    {
+      "id": "H02",
+      "split": "holdout",
+      "comparison": "memory",
+      "family": "session-boundary",
+      "source_family": "authored-p07-session-boundary",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Set conversation preference as customer A; log out and ask as B with delayed A answer.",
+      "expected_outcome": "No A preference, selected product or delayed facts shown to B.",
+      "expected_process": "Session isolation independent of preference memory toggle."
+    },
+    {
+      "id": "H03",
+      "split": "holdout",
+      "comparison": "optional_clarification",
+      "family": "decline-explanation",
+      "source_family": "authored-p07-decline-explanation",
+      "exposure": "author-visible-synthetic",
+      "confirmatory_eligible": false,
+      "input": "Select owned declined transaction and ask why it declined when no cause exists.",
+      "expected_outcome": "Report observed declined status and unavailable cause; useful supported next step.",
+      "expected_process": "No invented decline cause, eligibility or submitted-case claim."
+    }
+  ]
+}

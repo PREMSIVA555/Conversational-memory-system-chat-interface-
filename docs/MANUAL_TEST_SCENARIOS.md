@@ -681,3 +681,19 @@ P05 was approved/closed and pushed36c95d7 before this phase. The user approved T
 ### P06 approval record
 
 The user approved T06.4/P06 on 2026-10-26 with “approve and proceed”, following the reviewed 134 backend tests, 46 evaluator tests and 68 separate verifier assertions. Human manual scenario runs remain **Not run**. Automated results, rejected attempts and limitations are linked from `.genesis/T06.4_REVIEW.json`; this approval does not create a hosted CI pass, production deployment, new paid-model budget or independent human reproduction.
+
+### P07-M01 — inspect frozen comparison design (T07.1 approved 2026-10-26)
+
+- **Setup/user:** Developer/reviewer terminal in the banking-ux checkout, configured Python interpreter. No customer login, demo account or provider key. Manual result **Not run**.
+- **Steps:** Read `docs/EXPERIMENT_PROTOCOL.md`; inspect `research/protocols/v1/protocol.json`, `suites.json`, `locks.json` and `freeze.json`. Run `python scripts/p071_protocol.py check --output .genesis/local/MY_NEW_P07_CHECK.json` using a fresh filename.
+- **Expected:** Exit0/passed-design-integrity, twelve author-visible synthetic cases, 24 planned pilot attempts, actual trials0/model calls0. Confirmatory and live budgets0; no unseen holdout or measured improvement claimed. All backend controls remain enabled in every condition.
+- **Fail if:** Planned counts are presented as executed tests; exposed cases called unseen; optional clarification disables required authorization/ambiguity checks; failed/invalid attempts disappear from denominators.
+- **Cleanup/limits:** Keep receipt local. Do not edit frozen v1 or normal bank data. This checks research protocol integrity, not new customer behavior or completed P07. Automated evidence is separate from this manual result.
+
+### P07-M02 — blocked execution and immutable receipts (T07.1 approved 2026-10-26)
+
+- **Setup/user:** Same developer setup; no accounts or credentials. Manual result **Not run**.
+- **Steps:** Run `python scripts/p071_protocol.py execution-ready --output .genesis/local/MY_NEW_P07_READY.json`. Inspect the receipt, record its bytes/hash and try the same output filename with `check`. For adverse checks use only your own temporary copies of the four protocol data files; change one case without updating its freeze hash, then check that copy using `--protocol`.
+- **Expected:** Readiness exits2/blocked: comparison operators unimplemented/unpinned, new execution freeze required, exposed reserve and zero confirmatory/live budgets. Existing receipt cannot be overwritten. Unsealed case edit exits1/rejected. No trial/provider calls, database resets or application UI changes.
+- **Fail if:** A ready/complete claim appears, a receipt changes on retry, edited frozen bytes pass, or a provider is invoked.
+- **Cleanup/limits:** Retain your own receipts; delete only personally created temporary copies if desired, never shared worlds. T07.2 must implement/pin operators and retain a new execution freeze before trials. Publication remains separately authorized.

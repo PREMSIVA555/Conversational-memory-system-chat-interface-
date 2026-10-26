@@ -1,0 +1,96 @@
+{
+  "schema_version": "1",
+  "task": "T07.1",
+  "phase": "P07",
+  "status": "approved-task-complete",
+  "recorded_at": "2026-10-26T10:16:14.872121+00:00",
+  "baseline": {
+    "commit": "ac45cb68c72007b372a93ccea7954e8a6633eb49",
+    "branch": "codex/p06-evaluator",
+    "push": "observed successful before P07"
+  },
+  "working_branch": "codex/p07-experiments",
+  "requirements": [
+    "SPEC15",
+    "INV29",
+    "INV30",
+    "INV31"
+  ],
+  "approval": {
+    "T06.4_P06": {
+      "quote": "approve and proceed",
+      "client_date": "2026-10-26",
+      "recorded_in": ".genesis/P06_CLOSURE.json"
+    },
+    "T07.1": {
+      "quote": "approved and proceed",
+      "client_date": "2026-10-26",
+      "recorded_at": "2026-10-26T10:29:38.771102+00:00",
+      "scope": "Approve reviewed T07.1 design/limits and proceed to bounded T07.2; no new paid model allowance/publication"
+    }
+  },
+  "native_protocol_gate": {
+    "path": ".genesis/evidence/T07.1-protocol-f34e5451-7a0d-41a4-b11e-bc693de58430.json",
+    "hash": "ad457017b75822cd3a98f4bd34ddb905822bf8fa3ae231c2e3d2347831464be8",
+    "source_hash": "014ba9e4a0cd83ad284ea58f1e642e5d0faf0908cb1278be47d193d8559ac22b",
+    "config_hash": "6e9f30ebdb0db8334c834686aaf34c4d64c75d10a2c356d970264990a0514f69",
+    "observed_at": "2026-10-26T10:30:31.936Z"
+  },
+  "maker": {
+    "tooling_tests_passed": 22,
+    "latest_native_tool_receipt": "C:\\Users\\mprem\\.codex\\worktrees\\banking-ux\\banking-memory-agent\\.genesis\\evidence\\T07.1-protocol-45d83687c53e4991a159c0501f57c10e.json",
+    "meaning": "Protocol integrity/adverse tooling checks only; not banking integrations or comparison trial results"
+  },
+  "independent": {
+    "report": ".genesis/evidence/T07.1-independent.json",
+    "sha256": "5b4c61c573c8ea28a9e1eff04ecb7ae5acf51a72a2bff09dc1af4ed52404638e",
+    "requested_model": "gpt-6.1-sol",
+    "requested_reasoning_effort": "high",
+    "fresh_context": true,
+    "code_tests_and_maker_report_hidden": true,
+    "corrected_assertions_passed": 370,
+    "corrected_assertions_total": 370,
+    "git_byte_checks_passed": 4,
+    "original_assertions_passed": 367,
+    "original_assertions_total": 370,
+    "original_failures_retained": true,
+    "actual_serving_alias_independently_attested": false,
+    "Astra_selected": false
+  },
+  "frozen_design": {
+    "directory": "research/protocols/v1",
+    "cases": 12,
+    "development": 6,
+    "calibration": 3,
+    "exposed_holdout_reserve": 3,
+    "planned_deterministic_pilot_attempts": 24,
+    "actual_trials": 0,
+    "live_model_requests": 0,
+    "confirmatory_attempts": 0,
+    "unseen_holdout": false,
+    "comparison_operators": "not implemented/pinned",
+    "execution_ready": false,
+    "new_execution_freeze_required": true
+  },
+  "corrections": [
+    "Original generator guessed absent policy category and failed; corrected to actual versioned policy modules/scripts before freeze, no false pass",
+    "Original maker19 test/native pass retained, not reused for corrected source",
+    "Separate checker unknown protocol/case fields and bool integer budget attacks originally passed too permissively; exact field/type checks corrected, same attacks retested",
+    "Git exact-byte attributes added; original LF transport failure retained, no actual Linux checkout claim",
+    "Checker backslash Git-path probe failed attribute matching; corrected forward-slash probe saved separately",
+    "Git version reads batched, frozen source/data identities unchanged"
+  ],
+  "limits": [
+    "No experiment results, reliability or improvement claim",
+    "No unseen confirmatory holdout; all authored cases exposed",
+    "No executed new comparison adapters; T07.2 needs versioned secured operators/oracle bindings/reset evidence/environment/policy bundle and new freeze",
+    "No provider/model judge/Astra evaluation or new paid allowance; historical UX21/20 overrun remains closed",
+    "Protocol checks do not prove banking runtime control behavior",
+    "Receipt reuse preserves bytes but emits a cosmetic CLI traceback",
+    "No external unaided human reproduction, publication, DOI, hosted CI pass or deployment",
+    "Human manual scenarios P07-M01/M02 Not run; raw checker receipts remain local ignored evidence"
+  ],
+  "task_complete": true,
+  "phase_complete": false,
+  "next": "Approved T07.1 checkpoint commit/push before bounded T07.2 implementation; P07 remains incomplete."
+}

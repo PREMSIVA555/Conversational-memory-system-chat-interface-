@@ -1,0 +1,109 @@
+{
+  "schema_version": "1",
+  "id": "p07-exploratory-v1",
+  "status": "frozen-design-no-trials",
+  "prior_exposure": "P06 R01-R08 and all authored P07 cases are exposed; no unseen holdout claimed.",
+  "budget": {
+    "pilot_attempts": 24,
+    "repeats_per_case_condition": 2,
+    "confirmatory_attempts": 0,
+    "live_model_requests": 0,
+    "retries_count_toward_budget": true,
+    "automatic_replacements": false
+  },
+  "model": {
+    "enabled": false,
+    "provider": null,
+    "version": null,
+    "judge_enabled": false,
+    "astra_authorized": false
+  },
+  "mandatory_controls": {
+    "identity": true,
+    "ownership": true,
+    "rls": true,
+    "csrf_origin": true,
+    "audit": true,
+    "erasure": true,
+    "evidence_validation": true,
+    "durable_acceptance": true,
+    "replay": true,
+    "deadline": true,
+    "required_disambiguation": true
+  },
+  "comparisons": [
+    {
+      "id": "preference_update",
+      "conditions": [
+        "secured-old-mechanism",
+        "ordered-projection"
+      ],
+      "only_variable": "preference_mechanism",
+      "operator_status": "not-implemented",
+      "operator_digest": null,
+      "hypothesis": "Ordered projection preserves accepted preference order under delayed completion; secured old mechanism may regress. No reproduction claim until observed."
+    },
+    {
+      "id": "memory",
+      "conditions": [
+        "preference-context-on",
+        "preference-context-off"
+      ],
+      "only_variable": "preference_context_read",
+      "operator_status": "not-implemented",
+      "operator_digest": null,
+      "hypothesis": "Preference context may improve preference adherence; factual accuracy and resource context remain measured in both."
+    },
+    {
+      "id": "optional_clarification",
+      "conditions": [
+        "optional-proactive-on",
+        "optional-proactive-off"
+      ],
+      "only_variable": "optional_proactive_clarification",
+      "operator_status": "not-implemented",
+      "operator_digest": null,
+      "hypothesis": "Optional proactive clarification may help or harm completion and interaction cost; no expected negative finding required."
+    }
+  ],
+  "matched_fields": [
+    "input",
+    "actor_authorization",
+    "world_hash",
+    "domain_clock",
+    "security_clock_policy",
+    "tools",
+    "policy",
+    "model",
+    "grader",
+    "deadline",
+    "budgets"
+  ],
+  "optional_gate_definition": "Proactive nonessential conversational clarification only; required ownership/product/policy disambiguation remains on in both conditions.",
+  "order": [
+    "A,B",
+    "B,A"
+  ],
+  "pilot_split": "development",
+  "execution_requires_new_freeze": true,
+  "world": {
+    "db": "unique-guarded-per-attempt",
+    "redis": "unique-guarded-per-attempt",
+    "files": "unique-guarded-per-attempt",
+    "domain_clock": "2026-10-17T12:00:00Z",
+    "security_clock": "real-monotonic-expiry",
+    "reset": "verify-marker-and-canonical-hash",
+    "parallel_probe_required": true
+  },
+  "metrics": {
+    "primary": "paired outcome counts by family; process violations reported separately",
+    "attempt_denominator": "every started attempt including task_failure, infra_failure, invalid and incomplete",
+    "valid_outcome_denominator": "valid passed + task_failure only; report exclusions and coverage separately",
+    "all_k": "family/condition passes all 2 repeats; any missing/invalid/infra repeat is not all-k success",
+    "uncertainty": "descriptive paired deltas and exact counts only; two families do not establish reliability",
+    "latency": "monotonic product-load, checked-answer, optional-wording separately; no synthetic speed claim",
+    "cost": "actual provider requests/tokens/currency only; unavailable is null; no provider calls planned",
+    "regressions": "retain wins, ties, losses, blocked attempts, leaks and invalid-oracle cases",
+    "corrections": "append corrected version and old/new labels; retain every raw attempt"
+  }
+}

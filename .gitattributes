@@ -4,3 +4,5 @@ store/banking_migrations/0029_workspace.sql text eol=lf
 store/banking_migrations/0030_support_erasure_fence.sql text eol=lf
 store/banking_migrations/0031_support_confirmation.sql text eol=lf
 store/banking_migrations/0032_support_continuity.sql text eol=lf
+# Frozen protocol hashes describe exact bytes, including line endings.
+research/protocols/** -text

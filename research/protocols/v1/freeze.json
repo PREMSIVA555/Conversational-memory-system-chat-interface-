@@ -1,0 +1,9 @@
+{
+  "schema_version": "1",
+  "frozen_at": "2026-10-26T10:01:45.732975+00:00",
+  "files": {
+    "protocol.json": "0426ea218204cff63616c5190886901debe58244893f46c7e405c188394ed2b3",
+    "suites.json": "294150664533b1c814b1ddbfa01c657464a7292ecf9e04feb56edd55d891a8b5",
+    "locks.json": "1356327a79de1e665bb91c93adcf39b8838ac898477b3b7e1fd2d8095130cff8"
+  }
+}
